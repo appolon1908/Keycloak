@@ -94,6 +94,7 @@ expected_managed='[
   "alertmanager",
   "beyvra-backend",
   "breero-backend",
+  "codestra-agent-desktop",
   "codestra-ai",
   "codestra-communication",
   "codestra-marketing",
