@@ -329,7 +329,7 @@ for file in "$CONFIG_ROOT"/clients/*.json; do
 
   # A client whose every redirect URI lives on a staging host can never be planned into
   # production, whatever the rest of its desired state says.
-  if jq -e '(.redirectUris | length > 0) and all(.redirectUris[]; test("^https://[^/]*staging[^/]*/"))' "$file" >/dev/null; then
+  if jq -e '(.redirectUris | length > 0) and all(.redirectUris[]; test("^https://[^/]*staging[^/]*(/|$)"))' "$file" >/dev/null; then
     jq -e --arg client_id "$client_id" '
       (.clients[$client_id] | type == "array")
       and ((.clients[$client_id] | index("production")) == null)

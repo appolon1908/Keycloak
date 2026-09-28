@@ -47,12 +47,12 @@
     },
     {
       "path": "scripts/validate.sh",
-      "sha256": "4b4a42b88d16d1d045e40e54064f239e595d999df8d5aadc1c5584d523dca188"
+      "sha256": "ab36b2dd7b46f28dd183bd62b627709651b36d4079befab5943333f409adcea8"
     },
     {
       "path": "tests/test_kyyow_identity.py",
       "sha256": "f1133e8b04226a854b3484ded27149995d54dfceb8b1ff9dfbf062a9140d33e6"
     }
   ],
-  "manifest_sha256": "1bb46866a6d511fe6b63ec9f84c73835711cdb66226831da65000cce28b8b75a"
+  "manifest_sha256": "a463edca30d095a2df7b413b0476787e8a6cd0b49c6a3cce8de990f429a4a359"
 }
