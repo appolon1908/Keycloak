@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib, json, time
 from pathlib import Path
 from typing import Any
+from keycloak_execution_store import redact_secret_material
 
 DEFAULT_POLICY={"schema":"codestra.keycloak.recovery-policy.v1","maximumBackupAgeSeconds":86400,"maximumRestoreRehearsalAgeSeconds":604800,"checksumRequired":True,"encryptionRequired":True,"isolatedRestoreRequired":True,"minimumRequiredEvidence":["backup","checksum","encrypted","restoreRehearsal"]}
 
@@ -31,6 +32,8 @@ class RecoveryController:
         for p in sorted(self.evidence_dir.glob("*.json"),key=lambda x:x.stat().st_mtime,reverse=True):
             try: value=json.loads(p.read_text(encoding="utf-8"))
             except Exception: value={"valid":False,"error":"corrupt_evidence"}
+            # Restore evidence is operator-written; it is served only after secret-bearing entries are dropped.
+            value=redact_secret_material(value)[0] if isinstance(value,(dict,list)) else {"valid":False,"error":"invalid_evidence"}
             out.append({"name":p.name,"createdAt":int(p.stat().st_mtime),"ageSeconds":max(0,int(time.time()-p.stat().st_mtime)),"evidence":value})
         return out
 

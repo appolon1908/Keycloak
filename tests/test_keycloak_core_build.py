@@ -164,3 +164,81 @@ def test_scope_mapping_apply_adds_and_removes_exact_roles():
     out=apply_plan(p,desired,live,api,enabled=True,environment="test")
     assert out["status"]=="APPLIED"
     assert [x["name"] for x in api.added]==["viewer"] and [x["name"] for x in api.removed]==["old"]
+
+
+def test_scope_mapping_for_absent_unmanaged_client_stays_unmanaged():
+    from keycloak_reconciliation import plan
+    desired={"clients":[{"clientId":"middleware-api"}],"scopeMappings":[{"clientId":"grafana-observability","realmRoles":["viewer"],"fullScopeAllowed":False,"crossFamilyRolesAllowed":False}]}
+    live={"clients":[{"id":"1","clientId":"middleware-api"}],"scopeMappings":[]}
+    a=[x for x in plan(desired,live)["actions"] if x["resource_type"]=="scope_mapping"]
+    assert len(a)==1 and a[0]["kind"]=="KEEP" and a[0]["managed"] is False and a[0]["reason"]=="scope_mapping_client_not_managed"
+    live["clients"].append({"id":"2","clientId":"grafana-observability"})
+    a=[x for x in plan(desired,live)["actions"] if x["resource_type"]=="scope_mapping"]
+    assert a[0]["kind"]=="UPDATE"
+
+
+def test_store_accepts_keycloak_configuration_keys_and_rejects_secret_values(tmp_path):
+    from keycloak_execution_store import redact_secret_material
+    s=EvidenceStore(tmp_path)
+    s.put("executions","config",{"realm":{"resetPasswordAllowed":True,"otpPolicyDigits":6,"accessTokenLifespan":300,"passwordPolicy":""},
+                                  "client":{"attributes":{"access.token.lifespan":"300","oauth2.device.authorization.grant.enabled":"false","client.secret.creation.time":"1700000000","jwt.credential.certificate":"MIICertificate"}}})
+    for payload in ({"secret":"abc"},{"registrationAccessToken":"x"},{"attributes":{"client.secret.rotated":"zzz"}},{"smtpServer":{"password":"p"}},{"credentials":[{"value":"x"}]},{"attributes":{"saml.signing.private.key":"MIIE"}}):
+        with pytest.raises(EvidenceStoreError,match="secret_material_forbidden"): s.put("executions","bad",payload)
+    live={"realm":{"resetPasswordAllowed":False,"otpPolicyType":"totp","smtpServer":{"host":"mail","password":"hunter2"}},"clients":[{"clientId":"c","secret":"s3","attributes":{"client.secret.creation.time":"1","client.secret.rotated":"old"}}]}
+    clean,dropped=redact_secret_material(live)
+    assert "password" not in clean["realm"]["smtpServer"] and clean["realm"]["smtpServer"]["host"]=="mail"
+    assert "secret" not in clean["clients"][0] and clean["clients"][0]["attributes"]=={"client.secret.creation.time":"1"}
+    assert set(dropped)=={"root.realm.otpPolicyType","root.realm.smtpServer.password","root.clients[0].secret","root.clients[0].attributes.client.secret.rotated"}
+    s.put("executions","clean",clean)
+
+
+def test_store_prune_keeps_mutation_evidence(tmp_path):
+    import os
+    s=EvidenceStore(tmp_path,retention=10)
+    base=1_700_000_000
+    s.put("executions","apply-old",{"mode":"APPLY","status":"COMPLETED"}); os.utime(tmp_path/"executions"/"apply-old.json",(base,base))
+    for i in range(12):
+        s.put("executions",f"dry-{i}",{"mode":"DRY_RUN"}); os.utime(tmp_path/"executions"/f"dry-{i}.json",(base+1+i,base+1+i))
+    s.put("executions","dry-last",{"mode":"DRY_RUN"})
+    names={p.stem for p in (tmp_path/"executions").glob("*.json")}
+    assert "apply-old" in names and "dry-0" not in names and len(names)<=11
+
+
+def test_promotion_blocks_test_syn_prefix_regardless_of_group_and_target_case():
+    boundaries={"production":{"issuer":"https://auth.codestra.co/realms/codestra"},"staging":{"issuer":"https://auth-staging.codestra.co/realms/codestra"},"testSyn":{"namingPrefix":"test-syn-","productionPromotion":False}}
+    desired={"sourceSha256":"abc","clients":[],"environmentBoundaries":boundaries,
+             "stagedClients":[{"authorityGroup":"edge-integration-certification","client":{"clientId":"test-syn-portal","redirectUris":[],"webOrigins":[]}},
+                              {"authorityGroup":"observability","client":{"clientId":"grafana-observability","redirectUris":[],"webOrigins":[]}}]}
+    prod="https://auth.codestra.co/realms/codestra"
+    out=promotion_plan(desired,{"promotionId":"p","sourceAuthorityGroup":"edge-integration-certification","targetEnvironment":"Production","targetIssuer":prod,"targetMapping":{"test-syn-portal":"portal"}})
+    assert out["promotionStatus"]=="BLOCK" and "test_syn_production_forbidden" in out["blockers"] and out["targetEnvironment"]=="production"
+    out=promotion_plan(desired,{"promotionId":"p","sourceAuthorityGroup":"observability","targetEnvironment":"production","targetIssuer":prod,"targetMapping":{"grafana-observability":"test-syn-grafana"}})
+    assert "test_syn_production_forbidden" in out["blockers"]
+    out=promotion_plan(desired,{"promotionId":"p","sourceAuthorityGroup":"observability","targetEnvironment":"production","targetIssuer":"https://auth-staging.codestra.co/realms/codestra","targetMapping":{"grafana-observability":"grafana"}})
+    assert out["blockers"]==["target_issuer_mismatch"]
+    out=promotion_plan(desired,{"promotionId":"p","sourceAuthorityGroup":"observability","targetEnvironment":"production","targetMapping":{"grafana-observability":"grafana"}})
+    assert out["blockers"]==["target_issuer_required"]
+    out=promotion_plan(desired,{"promotionId":"p","sourceAuthorityGroup":"observability","targetEnvironment":"production","targetIssuer":prod,"targetMapping":{"grafana-observability":"grafana"}})
+    assert out["promotionStatus"]=="PROMOTE"
+    out=promotion_plan(desired,{"promotionId":"p","sourceAuthorityGroup":"edge-integration-certification","targetEnvironment":"staging","targetIssuer":"https://auth-staging.codestra.co/realms/codestra","targetMapping":{"test-syn-portal":"test-syn-portal"}})
+    assert out["promotionStatus"]=="PROMOTE"
+    out=promotion_plan(desired,{"promotionId":"p","sourceAuthorityGroup":"observability","targetEnvironment":"lab","targetMapping":{"grafana-observability":"grafana"}})
+    assert "target_environment_invalid" in out["blockers"]
+
+
+def test_admin_adapter_rejects_lookalike_loopback_hosts():
+    from keycloak_admin_api import KeycloakAdminAPI,KeycloakAdminError,is_safe_admin_url
+    for url in ("http://127.0.0.1.attacker.example","http://localhost.attacker.example","http://auth.codestra.co","ftp://127.0.0.1"):
+        with pytest.raises(KeycloakAdminError,match="HTTPS or loopback"): KeycloakAdminAPI(url,"codestra","token")
+    assert is_safe_admin_url("http://127.0.0.1:8080") and is_safe_admin_url("http://[::1]:8080") and is_safe_admin_url("https://auth.codestra.co")
+
+
+def test_recovery_restore_evidence_is_redacted(tmp_path):
+    b=tmp_path/"b"; r=tmp_path/"r"; b.mkdir(); r.mkdir()
+    f=b/"backup.sql.gpg"; f.write_bytes(b"safe")
+    Path(str(f)+".sha256").write_text(hashlib.sha256(b"safe").hexdigest()+"  backup.sql.gpg\n")
+    (r/"restore.json").write_text(json.dumps({"isolated":True,"success":True,"dbPassword":"x","notes":{"token":"abc","host":"db"}}))
+    ctl=RecoveryController(b,r)
+    evidence=ctl.restores()[0]["evidence"]
+    assert evidence=={"isolated":True,"success":True,"notes":{"host":"db"}}
+    assert ctl.status()["state"]=="HEALTHY"

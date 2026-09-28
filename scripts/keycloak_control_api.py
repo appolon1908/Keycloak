@@ -5,15 +5,18 @@ from pathlib import Path
 from urllib.parse import parse_qs,urlsplit
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from keycloak_admin_api import KeycloakAdminAPI,KeycloakAdminError
-from keycloak_identity_compiler import compile_identity,write_output
-from keycloak_reconciliation import plan,apply_plan,verify_readback,rollback_plan,digest
-from keycloak_execution_store import EvidenceStore,EvidenceStoreError
+from keycloak_identity_compiler import OUT as GENERATED_AUTHORITY,compile_identity
+from keycloak_reconciliation import plan,apply_plan,verify_readback,rollback_plan,created_inventory,mutation_performed,normalize_environment,digest
+from keycloak_execution_store import EvidenceStore,EvidenceStoreError,redact_secret_material
 from keycloak_recovery_controller import RecoveryController
 from keycloak_observability import normalize_events,metrics as event_metrics,status as observability_status,ObservabilityError
 from keycloak_environment_promotion import POLICY as PROMOTION_POLICY,promotion_plan
 
 HOST="127.0.0.1"
 PORT=8785
+MUTATION_ENVIRONMENTS={"production","staging","test-syn"}
+
+def _flag(name:str)->bool: return os.environ.get(name,"").strip().lower()=="true"
 
 class Service:
     def __init__(self,store=None):
@@ -22,6 +25,9 @@ class Service:
         self._lock=threading.Lock()
 
     def desired(self): return compile_identity()
+    def environment(self):
+        env=normalize_environment(os.environ.get("KEYCLOAK_ENVIRONMENT"))
+        return "test-syn" if env=="testsyn" else (env or "unknown")
     def _api(self):
         base=os.environ.get("KEYCLOAK_ADMIN_BASE_URL",""); token=os.environ.get("KEYCLOAK_ADMIN_BEARER","")
         if not base or not token: raise KeycloakAdminError("admin_not_configured","admin readback is not configured")
@@ -36,8 +42,13 @@ class Service:
             roles=api.client_realm_role_mappings(str(client["id"]))
             mappings.append({"clientId":client["clientId"],"fullScopeAllowed":bool(client.get("fullScopeAllowed",False)),"realmRoles":sorted(r.get("name") for r in roles if r.get("name")),"crossFamilyRolesAllowed":False})
         return {"realm":api.realm_state(),"clients":clients,"clientScopes":api.client_scopes(),"realmRoles":api.realm_roles(),"scopeMappings":mappings,"requiredActions":api.required_actions()}
-    def drift(self): return plan(self.desired(),self.live(),environment=os.environ.get("KEYCLOAK_ENVIRONMENT","unknown"))
-    def compile(self): return {"compiled":True,"identity":write_output(False)}
+    def drift(self): return plan(self.desired(),self.live(),environment=self.environment())
+    def compile(self):
+        # Compilation over HTTP is read-only: it reports drift against the checked-in
+        # authority but never rewrites repository files.
+        model=compile_identity(); text=json.dumps(model,indent=2,sort_keys=True,ensure_ascii=False)+"\n"
+        drift=(not GENERATED_AUTHORITY.exists()) or GENERATED_AUTHORITY.read_text(encoding="utf-8")!=text
+        return {"compiled":True,"generatedDrift":drift,"identity":model}
     def validate(self):
         d=compile_identity(); return {"valid":True,"clients":len(d["clients"]),"scopes":len(d["clientScopes"])}
 
@@ -46,34 +57,75 @@ class Service:
         record={"executionId":str(uuid.uuid4()),"idempotencyKey":key,"mode":"DRY_RUN","status":"COMPLETED","mutationPerformed":False,"desiredStateDigest":result["desiredSha256"],"preStateDigest":result["liveSha256"],"resultDigest":digest(result),"plan":result}
         self.store.put("executions",record["executionId"],record); return record
 
+    def _require_mutation_enabled(self):
+        if not _flag("KEYCLOAK_MUTATION_ENABLED"): raise KeycloakAdminError("apply_disabled","live apply is disabled by default",403)
+
+    def _mutation_environment(self,desired):
+        env=self.environment()
+        if env not in MUTATION_ENVIRONMENTS: raise KeycloakAdminError("environment_unknown","KEYCLOAK_ENVIRONMENT must name production, staging or test-syn before live mutation",409)
+        admin_host=(urlsplit(os.environ.get("KEYCLOAK_ADMIN_BASE_URL","")).hostname or "").lower()
+        issuer_hosts={}
+        for name,value in (desired.get("environmentBoundaries") or {}).items():
+            issuer=value.get("issuer") if isinstance(value,dict) else None
+            if issuer: issuer_hosts[normalize_environment(name)]=(urlsplit(str(issuer)).hostname or "").lower()
+        expected=issuer_hosts.get(env)
+        # The admin endpoint must belong to the environment being mutated: production and
+        # staging bind to their issuer host, and TEST_SYN may never target either of them.
+        if expected and admin_host!=expected: raise KeycloakAdminError("environment_issuer_mismatch","admin API host does not match the target environment issuer",409)
+        if not expected and admin_host in set(issuer_hosts.values()): raise KeycloakAdminError("environment_issuer_mismatch","test-syn mutation cannot target a production or staging issuer",409)
+        return env
+
     def apply(self,idempotency_key):
-        if os.environ.get("KEYCLOAK_MUTATION_ENABLED","").lower()!="true": raise KeycloakAdminError("apply_disabled","live apply is disabled by default",403)
+        self._require_mutation_enabled()
         if not idempotency_key: raise KeycloakAdminError("idempotency_key_required","X-Idempotency-Key is required",400)
-        for row in self.store.list("executions"):
-            old=row["payload"]
-            if old.get("idempotencyKey")==idempotency_key and old.get("mode")=="APPLY": return old
-        desired=self.desired(); pre=self.live(); p=plan(desired,pre,environment=os.environ.get("KEYCLOAK_ENVIRONMENT","unknown"))
-        execution_id=str(uuid.uuid4()); outcome=apply_plan(p,desired,pre,self._api(),enabled=True,allow_delete=os.environ.get("KEYCLOAK_DELETE_ENABLED","").lower()=="true",environment=os.environ.get("KEYCLOAK_ENVIRONMENT","unknown"))
-        post=self.live(); readback=verify_readback(desired,post)
-        status="COMPLETED" if outcome.get("applied") and readback["equal"] else ("READBACK_MISMATCH" if outcome.get("applied") else "PARTIAL_FAILURE")
-        record={"executionId":execution_id,"idempotencyKey":idempotency_key,"mode":"APPLY","status":status,"mutationPerformed":bool(outcome.get("journal")),"desiredStateDigest":p["desiredSha256"],"preStateDigest":p["liveSha256"],"resultDigest":digest(post),"plan":p,"actionJournal":outcome.get("journal",[]),"readback":readback,"preState":pre,"rollbackStatus":"NOT_RUN"}
-        self.store.put("executions",execution_id,record); return record
+        with self._lock:
+            for row in self.store.list("executions"):
+                old=row["payload"]
+                if old.get("idempotencyKey")!=idempotency_key or old.get("mode")!="APPLY": continue
+                if old.get("status")=="IN_PROGRESS": raise KeycloakAdminError("apply_in_progress","an apply with this idempotency key has not finalized; inspect its evidence before retrying",409)
+                return old
+            desired=self.desired(); env=self._mutation_environment(desired); api=self._api()
+            pre=self.live(); p=plan(desired,pre,environment=env)
+            execution_id=str(uuid.uuid4()); pre_state,redacted=redact_secret_material(pre)
+            record={"executionId":execution_id,"idempotencyKey":idempotency_key,"mode":"APPLY","environment":env,"status":"IN_PROGRESS","mutationPerformed":False,"desiredStateDigest":p["desiredSha256"],"preStateDigest":p["liveSha256"],"plan":p,"actionJournal":[],"preState":pre_state,"preStateRedactedPaths":redacted,"rollbackStatus":"NOT_RUN"}
+            # Evidence is durable before the first mutation; if it cannot be written nothing is applied.
+            self.store.put("executions",execution_id,record)
+            outcome=apply_plan(p,desired,pre,api,enabled=True,allow_delete=_flag("KEYCLOAK_DELETE_ENABLED"),environment=env)
+            journal=outcome.get("journal",[])
+            if outcome.get("status")=="REJECTED":
+                status="REJECTED"; readback=None; result_digest=p["liveSha256"]
+            else:
+                post=self.live(); readback=verify_readback(desired,post); result_digest=digest(post)
+                status="COMPLETED" if outcome.get("applied") and readback["equal"] else ("READBACK_MISMATCH" if outcome.get("applied") else "PARTIAL_FAILURE")
+            record.update({"status":status,"mutationPerformed":mutation_performed(journal),"resultDigest":result_digest,"actionJournal":journal,"readback":readback,"error":outcome.get("error")})
+            self.store.put("executions",execution_id,record,replace=True); return record
 
     def rollback(self,execution_id):
-        original=self.execution(execution_id)
-        if original.get("mode")!="APPLY" or not original.get("preState"): raise KeycloakAdminError("rollback_not_available","rollback evidence is not available",409)
-        if os.environ.get("KEYCLOAK_MUTATION_ENABLED","").lower()!="true": raise KeycloakAdminError("apply_disabled","live apply is disabled by default",403)
-        current=self.live(); pre=original["preState"]; p=rollback_plan(pre,current,environment=os.environ.get("KEYCLOAK_ENVIRONMENT","unknown"))
-        outcome=apply_plan(p,pre,current,self._api(),enabled=True,allow_delete=True,environment=os.environ.get("KEYCLOAK_ENVIRONMENT","unknown"))
-        after=self.live(); check=verify_readback(pre,after)
-        record={"executionId":str(uuid.uuid4()),"mode":"ROLLBACK","sourceExecutionId":execution_id,"status":"COMPLETED" if outcome.get("applied") and check["equal"] else "ROLLBACK_FAILED","actionJournal":outcome.get("journal",[]),"readback":check}
-        self.store.put("rollbacks",record["executionId"],record); return record
+        self._require_mutation_enabled()
+        with self._lock:
+            original=self.execution(execution_id)
+            if original.get("mode")!="APPLY" or not original.get("preState"): raise KeycloakAdminError("rollback_not_available","rollback evidence is not available",409)
+            desired=self.desired(); env=self._mutation_environment(desired)
+            if normalize_environment(original.get("environment"))!=env: raise KeycloakAdminError("environment_mismatch","rollback must run in the environment the apply targeted",409)
+            api=self._api(); current=self.live(); pre=original["preState"]
+            p=rollback_plan(pre,current,created_inventory=created_inventory(original.get("actionJournal")),environment=env)
+            outcome=apply_plan(p,pre,current,api,enabled=True,allow_delete=True,environment=env)
+            after=self.live(); check=verify_readback(pre,after); journal=outcome.get("journal",[])
+            status="COMPLETED" if outcome.get("applied") and check["equal"] else "ROLLBACK_FAILED"
+            record={"executionId":str(uuid.uuid4()),"mode":"ROLLBACK","sourceExecutionId":execution_id,"environment":env,"status":status,"mutationPerformed":mutation_performed(journal),"actionJournal":journal,"readback":check,"error":outcome.get("error")}
+            self.store.put("rollbacks",record["executionId"],record)
+            original["rollbackStatus"]="ROLLED_BACK" if status=="COMPLETED" else "ROLLBACK_FAILED"; original["rollbackExecutionId"]=record["executionId"]
+            self.store.put("executions",execution_id,original,replace=True)
+            return record
 
     def execution(self,execution_id):
         try: return self.store.get("executions",execution_id)["payload"]
         except EvidenceStoreError as exc:
             raise KeycloakAdminError("execution_not_found","reconciliation execution not found",404) from exc
-    def evidence(self,execution_id): return self.store.get("executions",execution_id)
+    def evidence(self,execution_id):
+        try: return self.store.get("executions",execution_id)
+        except EvidenceStoreError as exc:
+            raise KeycloakAdminError("execution_not_found","reconciliation execution not found",404) from exc
 
     def recovery(self):
         return RecoveryController(os.environ.get("KEYCLOAK_BACKUP_DIR","/var/backups/keycloak"),os.environ.get("KEYCLOAK_RESTORE_EVIDENCE_DIR","/var/lib/keycloak/recovery-evidence"))
@@ -92,7 +144,7 @@ class Service:
     def promotion_get(self,pid):
         try:return self.store.get("promotions",pid)["payload"]
         except EvidenceStoreError as exc: raise KeycloakAdminError("promotion_not_found","promotion plan not found",404) from exc
-    def health(self): return {"service":"keycloak-control-api","status":"ok","applyEnabled":os.environ.get("KEYCLOAK_MUTATION_ENABLED","").lower()=="true"}
+    def health(self): return {"service":"keycloak-control-api","status":"ok","applyEnabled":_flag("KEYCLOAK_MUTATION_ENABLED"),"environment":self.environment()}
 
 class Handler(BaseHTTPRequestHandler):
     service=Service()
@@ -115,7 +167,8 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(raw)
 
     def body(self,max_bytes=65536):
-        length=int(self.headers.get("Content-Length") or "0")
+        try: length=int(self.headers.get("Content-Length") or "0")
+        except ValueError as exc: raise KeycloakAdminError("invalid_request","Content-Length must be an integer",400) from exc
         if length<0 or length>max_bytes: raise KeycloakAdminError("request_too_large","request body exceeds limit",413)
         if not length:return {}
         try:value=json.loads(self.rfile.read(length))

@@ -7,10 +7,21 @@ class KeycloakAdminError(RuntimeError):
     def __init__(self,code:str,message:str,status:int|None=None):
         super().__init__(message); self.code=code; self.status=status
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    # A redirect would forward the bearer to another host; refusing it surfaces as an HTTP error.
+    def redirect_request(self,req,fp,code,msg,headers,newurl): return None
+
+_OPENER=urllib.request.build_opener(_NoRedirect)
+
+def is_safe_admin_url(url:str)->bool:
+    parts=urllib.parse.urlsplit(url)
+    if parts.scheme=="https": return bool(parts.hostname)
+    return parts.scheme=="http" and parts.hostname in {"127.0.0.1","localhost","::1"}
+
 class KeycloakAdminAPI:
     def __init__(self,base_url:str,realm:str,bearer:str,timeout:float=10.0):
         self.base_url=base_url.rstrip("/"); self.realm=realm; self._bearer=bearer; self.timeout=timeout
-        if not self.base_url.startswith(("https://","http://127.0.0.1","http://localhost")):
+        if not is_safe_admin_url(self.base_url):
             raise KeycloakAdminError("unsafe_admin_url","admin API must use HTTPS or loopback")
 
     def _url(self,suffix:str)->str:
@@ -22,7 +33,7 @@ class KeycloakAdminAPI:
         if data is not None: headers["Content-Type"]="application/json"
         req=urllib.request.Request(self._url(suffix),data=data,headers=headers,method=method)
         try:
-            with urllib.request.urlopen(req,timeout=self.timeout) as resp:
+            with _OPENER.open(req,timeout=self.timeout) as resp:
                 status=resp.status; raw=resp.read()
         except urllib.error.HTTPError as exc:
             raise KeycloakAdminError("admin_http_error",f"Keycloak Admin API returned HTTP {exc.code}",exc.code) from exc

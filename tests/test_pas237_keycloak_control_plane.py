@@ -56,8 +56,8 @@ def test_apply_disabled_by_default():
 def test_apply_executes_only_managed_create_update_keep():
     desired={"clients":[{"clientId":"a","enabled":True},{"clientId":"b","enabled":True}]}
     live={"clients":[{"id":"2","clientId":"b","enabled":False}]}
-    p=plan(desired,live); api=FakeAPI()
-    out=apply_plan(p,desired,live,api,enabled=True)
+    p=plan(desired,live,environment="test"); api=FakeAPI()
+    out=apply_plan(p,desired,live,api,enabled=True,environment="test")
     assert out["applied"] is True
     assert ("create","a") in api.calls
     assert any(c[0]=="update" and c[1]=="2" for c in api.calls)
@@ -103,3 +103,173 @@ def test_missing_execution_is_404_error():
         service.execution("missing")
     assert exc.value.code=="execution_not_found"
     assert exc.value.status==404
+
+
+# --- live mutation contracts -------------------------------------------------
+# A fake Admin API with realistic Keycloak representations: server-populated
+# attributes, secret material on confidential clients and realm SMTP settings.
+
+BOUNDARIES={"production":{"issuer":"https://auth.codestra.co/realms/codestra"},"staging":{"issuer":"https://auth-staging.codestra.co/realms/codestra"},"testSyn":{"namingPrefix":"test-syn-","productionPromotion":False}}
+DESIRED={"sourceSha256":"x","realm":{"realm":"codestra","enabled":True,"sslRequired":"external","verifyEmail":True,"resetPasswordAllowed":True,"bruteForceProtected":True,"accessTokenLifespan":300},
+         "clients":[{"clientId":"svc-a","enabled":True,"protocol":"openid-connect","publicClient":False,"standardFlowEnabled":False,"serviceAccountsEnabled":True,"fullScopeAllowed":False,"redirectUris":[],"webOrigins":[],"defaultClientScopes":["basic"],"optionalClientScopes":[],"attributes":{"access.token.lifespan":"300","oauth2.device.authorization.grant.enabled":"false"},"protocolMappers":[{"name":"aud","protocol":"openid-connect","protocolMapper":"oidc-audience-mapper","config":{"included.custom.audience":"middleware-api","access.token.claim":"true"}}]}],
+         "stagedClients":[],"clientScopes":[],"realmRoles":[],"scopeMappings":[],"environmentBoundaries":BOUNDARIES}
+
+def live_fixture():
+    return {"realm":{"realm":"codestra","enabled":True,"sslRequired":"external","verifyEmail":True,"resetPasswordAllowed":False,"bruteForceProtected":True,"accessTokenLifespan":300,"otpPolicyType":"totp","passwordPolicy":"length(12)","smtpServer":{"host":"mail.internal","password":"hunter2"}},
+            "clients":[{"id":"id-account","clientId":"account","enabled":True,"publicClient":True,"secret":"account-secret-value","attributes":{"client.secret.creation.time":"1700000000"},"protocolMappers":[]}],
+            "clientScopes":[{"id":"s-profile","name":"profile","protocol":"openid-connect"}],
+            "realmRoles":[{"id":"r-offline","name":"offline_access"}],
+            "requiredActions":[{"alias":"VERIFY_EMAIL","name":"Verify Email","enabled":True}]}
+
+class FakeAdminAPI:
+    def __init__(self,state):
+        self.state=state; self.calls=[]; self.on_mutate=None
+    def _mutate(self,*call):
+        if self.on_mutate: self.on_mutate()
+        self.calls.append(call)
+    def realm_state(self): return copy.deepcopy(self.state["realm"])
+    def clients(self): return copy.deepcopy(self.state["clients"])
+    def client_scopes(self): return copy.deepcopy(self.state["clientScopes"])
+    def realm_roles(self): return copy.deepcopy(self.state["realmRoles"])
+    def required_actions(self): return copy.deepcopy(self.state["requiredActions"])
+    def client_realm_role_mappings(self,internal_id): return []
+    def update_realm(self,payload): self._mutate("update_realm"); self.state["realm"].update(payload)
+    def create_client(self,payload):
+        self._mutate("create_client",payload["clientId"])
+        self.state["clients"].append({"id":f"id-{payload['clientId']}","secret":"live-secret-value",**copy.deepcopy(payload)})
+    def update_client(self,internal_id,payload):
+        self._mutate("update_client",internal_id)
+        for c in self.state["clients"]:
+            if c["id"]==internal_id: c.update(copy.deepcopy(payload))
+    def delete_client(self,internal_id):
+        self._mutate("delete_client",internal_id); self.state["clients"]=[c for c in self.state["clients"] if c["id"]!=internal_id]
+
+def make_service(tmp_path,api,desired=DESIRED):
+    from keycloak_execution_store import EvidenceStore
+    class Local(Service):
+        def __init__(self): super().__init__(EvidenceStore(tmp_path/"store"))
+        def desired(self): return copy.deepcopy(desired)
+        def _api(self): return api
+    return Local()
+
+def enable_staging_mutation(monkeypatch):
+    monkeypatch.setenv("KEYCLOAK_MUTATION_ENABLED","true")
+    monkeypatch.setenv("KEYCLOAK_ENVIRONMENT","staging")
+    monkeypatch.setenv("KEYCLOAK_ADMIN_BASE_URL","https://auth-staging.codestra.co")
+    monkeypatch.setenv("KEYCLOAK_ADMIN_BEARER","unused-by-fake")
+    monkeypatch.delenv("KEYCLOAK_DELETE_ENABLED",raising=False)
+
+def test_apply_persists_redacted_evidence_before_any_mutation(tmp_path,monkeypatch):
+    enable_staging_mutation(monkeypatch)
+    api=FakeAdminAPI(live_fixture()); service=make_service(tmp_path,api)
+    seen=[]
+    api.on_mutate=lambda: seen.append([(r["payload"]["status"],bool(r["payload"].get("preState"))) for r in service.store.list("executions")])
+    record=service.apply("apply-key-1")
+    assert seen and all(rows==[("IN_PROGRESS",True)] for rows in seen)
+    assert record["status"]=="COMPLETED" and record["mutationPerformed"] is True and record["environment"]=="staging"
+    assert ("update_realm",) in api.calls and ("create_client","svc-a") in api.calls
+    stored=service.evidence(record["executionId"])["payload"]
+    assert stored==record and stored["readback"]["equal"] is True and stored["error"] is None
+    pre=stored["preState"]
+    assert pre["realm"]["resetPasswordAllowed"] is False and "password" not in pre["realm"]["smtpServer"]
+    assert "secret" not in pre["clients"][0] and pre["clients"][0]["attributes"]["client.secret.creation.time"]=="1700000000"
+    assert "root.realm.smtpServer.password" in stored["preStateRedactedPaths"] and "root.clients[0].secret" in stored["preStateRedactedPaths"]
+    raw=json.dumps(stored)
+    assert "hunter2" not in raw and "account-secret-value" not in raw and "live-secret-value" not in raw
+
+def test_apply_replays_idempotency_key_without_mutating_again(tmp_path,monkeypatch):
+    enable_staging_mutation(monkeypatch)
+    api=FakeAdminAPI(live_fixture()); service=make_service(tmp_path,api)
+    first=service.apply("same-key"); calls=len(api.calls)
+    second=service.apply("same-key")
+    assert second["executionId"]==first["executionId"] and len(api.calls)==calls
+    # A converged realm applies as a no-op with no mutation recorded.
+    third=service.apply("other-key")
+    assert third["status"]=="COMPLETED" and third["mutationPerformed"] is False and len(api.calls)==calls
+
+def test_apply_refuses_unknown_environment_and_foreign_issuer(tmp_path,monkeypatch):
+    from keycloak_admin_api import KeycloakAdminError
+    enable_staging_mutation(monkeypatch)
+    api=FakeAdminAPI(live_fixture()); service=make_service(tmp_path,api)
+    cases=[({"KEYCLOAK_ENVIRONMENT":None},"environment_unknown"),
+           ({"KEYCLOAK_ENVIRONMENT":"lab"},"environment_unknown"),
+           ({"KEYCLOAK_ENVIRONMENT":"production"},"environment_issuer_mismatch"),
+           ({"KEYCLOAK_ENVIRONMENT":"test-syn"},"environment_issuer_mismatch"),
+           ({"KEYCLOAK_ENVIRONMENT":"TEST_SYN","KEYCLOAK_ADMIN_BASE_URL":"https://auth.codestra.co"},"environment_issuer_mismatch")]
+    for env,code in cases:
+        for name,value in env.items():
+            if value is None: monkeypatch.delenv(name,raising=False)
+            else: monkeypatch.setenv(name,value)
+        with pytest.raises(KeycloakAdminError) as exc: service.apply(f"key-{code}")
+        assert exc.value.code==code and exc.value.status==409
+    assert api.calls==[] and service.store.list("executions")==[]
+    monkeypatch.setenv("KEYCLOAK_ENVIRONMENT","test-syn"); monkeypatch.setenv("KEYCLOAK_ADMIN_BASE_URL","http://127.0.0.1:8080")
+    assert service.apply("loopback-test-syn")["environment"]=="test-syn"
+
+def test_apply_rejects_unexecutable_plan_before_mutation():
+    desired={"clients":[{"clientId":"a","enabled":True}],"scopeMappings":[]}
+    live={"clients":[{"id":"9","clientId":"stale","enabled":True}]}
+    api=FakeAPI()
+    bad=plan(desired,live,environment="test")
+    bad["actions"].append({"kind":"CREATE","resource_type":"scope_mapping","resource_id":"ghost","reason":"x","managed":True})
+    out=apply_plan(bad,desired,live,api,enabled=True,environment="test")
+    assert out["status"]=="REJECTED" and out["applied"] is False and out["journal"]==[] and api.calls==[]
+    unauthorized=plan(desired,live,managed_inventory={"clients":["stale"]},environment="test")
+    out=apply_plan(unauthorized,desired,live,api,enabled=True,environment="test")
+    assert out["status"]=="REJECTED" and "delete_not_authorized" in out["error"] and api.calls==[]
+    with pytest.raises(RuntimeError,match="environment_mismatch"):
+        apply_plan(plan(desired,live,environment="staging"),desired,live,api,enabled=True,environment="production")
+    with pytest.raises(RuntimeError,match="environment_unknown"):
+        apply_plan(plan(desired,live),desired,live,api,enabled=True,environment="unknown")
+
+def test_rollback_restores_pre_state_and_deletes_only_what_apply_created(tmp_path,monkeypatch):
+    enable_staging_mutation(monkeypatch)
+    api=FakeAdminAPI(live_fixture()); service=make_service(tmp_path,api)
+    record=service.apply("rollback-me")
+    api.state["clients"].append({"id":"id-foreign","clientId":"foreign","enabled":True,"publicClient":True,"attributes":{},"protocolMappers":[]})
+    api.calls.clear()
+    result=service.rollback(record["executionId"])
+    assert result["status"]=="COMPLETED" and result["mutationPerformed"] is True
+    assert ("delete_client","id-svc-a") in api.calls and ("delete_client","id-foreign") not in api.calls and ("update_realm",) in api.calls
+    assert api.state["realm"]["resetPasswordAllowed"] is False
+    assert {c["clientId"] for c in api.state["clients"]}=={"account","foreign"}
+    original=service.execution(record["executionId"])
+    assert original["rollbackStatus"]=="ROLLED_BACK" and original["rollbackExecutionId"]==result["executionId"]
+
+def test_readback_ignores_unmanaged_live_resources():
+    from keycloak_reconciliation import verify_readback
+    live=live_fixture(); live["realm"]["resetPasswordAllowed"]=True
+    live["clients"].append({"id":"id-svc-a","secret":"s","attributes":{"access.token.lifespan":"300","oauth2.device.authorization.grant.enabled":"false","client.secret.creation.time":"1"},"protocolMappers":[{"id":"m1",**DESIRED["clients"][0]["protocolMappers"][0]}],**{k:v for k,v in DESIRED["clients"][0].items() if k not in {"attributes","protocolMappers"}}})
+    result=verify_readback(DESIRED,live)
+    assert result["equal"] is True and result["pendingActions"]==[]
+    live["clients"][-1]["attributes"]["access.token.lifespan"]="60"
+    result=verify_readback(DESIRED,live)
+    assert result["equal"] is False and [a["resource_id"] for a in result["pendingActions"]]==["svc-a"]
+
+def test_control_api_apply_over_http_never_returns_secret_material(tmp_path,monkeypatch):
+    enable_staging_mutation(monkeypatch)
+    api=FakeAdminAPI(live_fixture()); service=make_service(tmp_path,api)
+    class T(Handler): pass
+    T.service=service
+    server=ThreadingHTTPServer(("127.0.0.1",0),T); threading.Thread(target=server.serve_forever,daemon=True).start()
+    try:
+        conn=http.client.HTTPConnection("127.0.0.1",server.server_port,timeout=3)
+        conn.request("POST","/platform/v1/keycloak/reconcile/apply",headers={"X-Idempotency-Key":"http-1"})
+        r=conn.getresponse(); raw=r.read().decode(); body=json.loads(raw)
+        assert r.status==200 and body["execution"]["status"]=="COMPLETED"
+        assert "hunter2" not in raw and "live-secret-value" not in raw and "account-secret-value" not in raw
+        conn.request("GET",f"/platform/v1/keycloak/reconcile/executions/{body['execution']['executionId']}/evidence")
+        r=conn.getresponse(); evidence=json.loads(r.read()); assert r.status==200 and evidence["evidence"]["sha256"]
+        conn.request("GET","/platform/v1/keycloak/reconcile/executions/missing/evidence")
+        r=conn.getresponse(); missing=json.loads(r.read()); assert r.status==404 and missing["error"]["code"]=="execution_not_found"
+        conn.request("POST","/platform/v1/keycloak/reconcile/rollback",body=b"{}",headers={"Content-Length":"abc"})
+        r=conn.getresponse(); bad=json.loads(r.read()); assert r.status==400 and bad["error"]["code"]=="invalid_request"
+    finally:
+        server.shutdown(); server.server_close()
+
+def test_compile_endpoint_is_read_only():
+    generated=ROOT/"generated"/"keycloak-identity-authority.v1.json"
+    before=generated.read_bytes(); stamp=generated.stat().st_mtime_ns
+    result=Service().compile()
+    assert result["compiled"] is True and result["generatedDrift"] is False
+    assert generated.read_bytes()==before and generated.stat().st_mtime_ns==stamp
