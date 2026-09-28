@@ -109,10 +109,11 @@ def test_api_rejects_bad_observability_limit(tmp_path):
     server=ThreadingHTTPServer(("127.0.0.1",0),T); threading.Thread(target=server.serve_forever,daemon=True).start()
     try:
         c=http.client.HTTPConnection("127.0.0.1",server.server_port,timeout=3)
-        for value in ("nope","0","501"):
-            c.request("GET",f"/platform/v1/keycloak/observability/events?limit={value}")
-            r=c.getresponse(); body=json.loads(r.read())
-            assert r.status==400 and body["error"]["code"]=="invalid_query"
+        for route in ("events","metrics"):
+            for value in ("nope","0","501"):
+                c.request("GET",f"/platform/v1/keycloak/observability/{route}?limit={value}")
+                r=c.getresponse(); body=json.loads(r.read())
+                assert r.status==400 and body["error"]["code"]=="invalid_query"
     finally:
         server.shutdown(); server.server_close()
 
@@ -224,6 +225,34 @@ def test_promotion_blocks_test_syn_prefix_regardless_of_group_and_target_case():
     assert out["promotionStatus"]=="PROMOTE"
     out=promotion_plan(desired,{"promotionId":"p","sourceAuthorityGroup":"observability","targetEnvironment":"lab","targetMapping":{"grafana-observability":"grafana"}})
     assert "target_environment_invalid" in out["blockers"]
+    desired["stagedClients"].append({"authorityGroup":"mixed","client":{"clientId":"TEST-SYN-Upper","redirectUris":[],"webOrigins":[]}})
+    out=promotion_plan(desired,{"promotionId":"p","sourceAuthorityGroup":"mixed","targetEnvironment":"production","targetIssuer":prod,"targetMapping":{"TEST-SYN-Upper":"upper"}})
+    assert "test_syn_production_forbidden" in out["blockers"]
+
+
+def test_undeclared_client_fields_are_not_drift_and_are_not_sent():
+    from keycloak_reconciliation import apply_plan,plan
+    desired={"clients":[{"clientId":"a","enabled":True,"attributes":{"x":"1"}}]}
+    live={"clients":[{"id":"1","clientId":"a","enabled":True,"fullScopeAllowed":False,"defaultClientScopes":["basic"],"attributes":{"x":"1","client.secret.creation.time":"9"},"protocolMappers":[{"id":"m","name":"n"}]}]}
+    assert [a["kind"] for a in plan(desired,live)["actions"] if a["resource_type"]=="client"]==["KEEP"]
+    desired["clients"][0]["enabled"]=False
+    class API:
+        def __init__(self): self.payload=None
+        def update_client(self,i,p): self.payload=p
+    api=API(); p=plan(desired,live,environment="test")
+    assert apply_plan(p,desired,live,api,enabled=True,environment="test")["status"]=="APPLIED"
+    assert api.payload["enabled"] is False and api.payload["fullScopeAllowed"] is False and api.payload["defaultClientScopes"]==["basic"]
+    assert None not in api.payload.values() and api.payload["attributes"]=={"x":"1","client.secret.creation.time":"9"}
+
+
+def test_recovery_list_typed_evidence_is_invalid_not_a_crash(tmp_path):
+    b=tmp_path/"b"; r=tmp_path/"r"; b.mkdir(); r.mkdir()
+    f=b/"backup.sql.gpg"; f.write_bytes(b"safe")
+    Path(str(f)+".sha256").write_text(hashlib.sha256(b"safe").hexdigest()+"  backup.sql.gpg\n")
+    (r/"restore.json").write_text(json.dumps([{"isolated":True,"success":True}]))
+    ctl=RecoveryController(b,r)
+    assert ctl.restores()[0]["evidence"]=={"valid":False,"error":"invalid_evidence"}
+    assert ctl.status()["state"]=="INVALID"
 
 
 def test_admin_adapter_rejects_lookalike_loopback_hosts():

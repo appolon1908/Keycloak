@@ -33,7 +33,7 @@ class RecoveryController:
             try: value=json.loads(p.read_text(encoding="utf-8"))
             except Exception: value={"valid":False,"error":"corrupt_evidence"}
             # Restore evidence is operator-written; it is served only after secret-bearing entries are dropped.
-            value=redact_secret_material(value)[0] if isinstance(value,(dict,list)) else {"valid":False,"error":"invalid_evidence"}
+            value=redact_secret_material(value)[0] if isinstance(value,dict) else {"valid":False,"error":"invalid_evidence"}
             out.append({"name":p.name,"createdAt":int(p.stat().st_mtime),"ageSeconds":max(0,int(time.time()-p.stat().st_mtime)),"evidence":value})
         return out
 

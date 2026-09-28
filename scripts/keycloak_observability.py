@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import hashlib
 from typing import Any
 from keycloak_event_redaction import redact_event
-from keycloak_identity_compiler import canonical
+from keycloak_reconciliation import verify_readback
 EVENT_TYPES={"LOGIN","LOGIN_ERROR","LOGOUT","TOKEN_ERROR","RESET_PASSWORD","RESET_PASSWORD_ERROR","UPDATE_PASSWORD","ADMIN_CHANGE","ACCOUNT_LOCKOUT"}
 class ObservabilityError(RuntimeError): pass
 def normalize_events(events:list[dict[str,Any]],*,limit:int=100)->list[dict[str,Any]]:
@@ -25,5 +24,7 @@ def metrics(events:list[dict[str,Any]],*,configuration_drift:bool=False,readback
         elif t=="ADMIN_CHANGE": counts["admin_changes"]+=1
     return counts
 def status(desired:dict[str,Any],live:dict[str,Any])->dict[str,Any]:
-    d=hashlib.sha256(canonical(desired).encode()).hexdigest(); l=hashlib.sha256(canonical(live).encode()).hexdigest()
-    return {"realm":str((live.get("realm") or {}).get("realm") or desired.get("realm",{}).get("realm") or ""),"desiredStateDigest":d,"liveConfigurationDigest":l,"configurationDrift":d!=l,"eventsEnabled":bool((live.get("realm") or {}).get("eventsEnabled",False))}
+    # Drift means a managed resource still needs a mutation; raw digests would always
+    # differ because Keycloak serialises ids, secrets and server-populated fields.
+    readback=verify_readback(desired,live)
+    return {"realm":str((live.get("realm") or {}).get("realm") or desired.get("realm",{}).get("realm") or ""),"desiredStateDigest":readback["desiredDigest"],"liveConfigurationDigest":readback["liveDigest"],"configurationDrift":not readback["equal"],"pendingMutations":len(readback["pendingActions"]),"eventsEnabled":bool((live.get("realm") or {}).get("eventsEnabled",False))}

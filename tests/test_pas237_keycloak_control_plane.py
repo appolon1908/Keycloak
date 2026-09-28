@@ -123,16 +123,21 @@ def live_fixture():
 
 class FakeAdminAPI:
     def __init__(self,state):
-        self.state=state; self.calls=[]; self.on_mutate=None
+        self.state=state; self.calls=[]; self.on_mutate=None; self.fail_reads=False
     def _mutate(self,*call):
         if self.on_mutate: self.on_mutate()
         self.calls.append(call)
-    def realm_state(self): return copy.deepcopy(self.state["realm"])
-    def clients(self): return copy.deepcopy(self.state["clients"])
-    def client_scopes(self): return copy.deepcopy(self.state["clientScopes"])
-    def realm_roles(self): return copy.deepcopy(self.state["realmRoles"])
-    def required_actions(self): return copy.deepcopy(self.state["requiredActions"])
+    def _read(self,key):
+        from keycloak_admin_api import KeycloakAdminError
+        if self.fail_reads: raise KeycloakAdminError("admin_transport_error","Keycloak Admin API transport failed")
+        return copy.deepcopy(self.state[key])
+    def realm_state(self): return self._read("realm")
+    def clients(self): return self._read("clients")
+    def client_scopes(self): return self._read("clientScopes")
+    def realm_roles(self): return self._read("realmRoles")
+    def required_actions(self): return self._read("requiredActions")
     def client_realm_role_mappings(self,internal_id): return []
+    def events(self,**_): return []
     def update_realm(self,payload): self._mutate("update_realm"); self.state["realm"].update(payload)
     def create_client(self,payload):
         self._mutate("create_client",payload["clientId"])
@@ -262,10 +267,101 @@ def test_control_api_apply_over_http_never_returns_secret_material(tmp_path,monk
         r=conn.getresponse(); evidence=json.loads(r.read()); assert r.status==200 and evidence["evidence"]["sha256"]
         conn.request("GET","/platform/v1/keycloak/reconcile/executions/missing/evidence")
         r=conn.getresponse(); missing=json.loads(r.read()); assert r.status==404 and missing["error"]["code"]=="execution_not_found"
+        conn.request("GET","/platform/v1/keycloak/reconcile/rollbacks/missing")
+        r=conn.getresponse(); missing=json.loads(r.read()); assert r.status==404 and missing["error"]["code"]=="rollback_not_found"
         conn.request("POST","/platform/v1/keycloak/reconcile/rollback",body=b"{}",headers={"Content-Length":"abc"})
         r=conn.getresponse(); bad=json.loads(r.read()); assert r.status==400 and bad["error"]["code"]=="invalid_request"
     finally:
         server.shutdown(); server.server_close()
+
+def test_apply_journal_survives_readback_failure_and_rollback_uses_it(tmp_path,monkeypatch):
+    from keycloak_admin_api import KeycloakAdminError
+    enable_staging_mutation(monkeypatch)
+    api=FakeAdminAPI(live_fixture()); service=make_service(tmp_path,api)
+    api.on_mutate=lambda: setattr(api,"fail_reads",True)
+    record=service.apply("readback-fails")
+    assert record["status"]=="READBACK_UNAVAILABLE" and record["error"]=="admin_transport_error"
+    assert record["mutationPerformed"] is True and {(j["kind"],j["resourceId"]) for j in record["actionJournal"]}>={("CREATE","svc-a"),("UPDATE","codestra")}
+    assert service.evidence(record["executionId"])["payload"]["actionJournal"]==record["actionJournal"]
+    # The finalized record answers a replay; nothing is applied again until an operator chooses a new key.
+    calls=len(api.calls)
+    assert service.apply("readback-fails")["executionId"]==record["executionId"] and len(api.calls)==calls
+    api.fail_reads=False; api.on_mutate=None; api.calls.clear()
+    assert service.metrics()["keycloak_readback_failures"]==1
+    result=service.rollback(record["executionId"])
+    assert result["status"]=="COMPLETED" and ("delete_client","id-svc-a") in api.calls
+    assert {c["clientId"] for c in api.state["clients"]}=={"account"} and api.state["realm"]["resetPasswordAllowed"] is False
+
+def test_apply_replay_ignores_failed_record_only_by_design_and_is_not_capped_by_retention(tmp_path,monkeypatch):
+    from keycloak_execution_store import EvidenceStore
+    enable_staging_mutation(monkeypatch)
+    api=FakeAdminAPI(live_fixture())
+    class Local(Service):
+        def __init__(self): super().__init__(EvidenceStore(tmp_path/"store",retention=10))
+        def desired(self): return copy.deepcopy(DESIRED)
+        def _api(self): return api
+    service=Local()
+    first=service.apply("durable-key"); calls=len(api.calls)
+    for _ in range(12): service.dry_run()
+    assert len(list((tmp_path/"store"/"executions").glob("*.json")))<=11
+    again=service.apply("durable-key")
+    assert again["executionId"]==first["executionId"] and len(api.calls)==calls
+
+def test_rollback_removes_attributes_the_apply_added_and_refuses_a_second_rollback(tmp_path,monkeypatch):
+    from keycloak_admin_api import KeycloakAdminError
+    enable_staging_mutation(monkeypatch)
+    desired=copy.deepcopy(DESIRED)
+    desired["clients"].append({"clientId":"account","enabled":True,"publicClient":True,"attributes":{"pkce.code.challenge.method":"S256"},"protocolMappers":[]})
+    api=FakeAdminAPI(live_fixture()); service=make_service(tmp_path,api,desired)
+    record=service.apply("attr-key")
+    account=next(c for c in api.state["clients"] if c["clientId"]=="account")
+    assert record["status"]=="COMPLETED" and account["attributes"]["pkce.code.challenge.method"]=="S256"
+    assert record["attributeAdditions"]=={"account":["pkce.code.challenge.method"]}
+    # The desired state moves on after the apply; rollback relies on the recorded additions, not on it.
+    desired["clients"][-1]["attributes"]={}
+    result=service.rollback(record["executionId"])
+    account=next(c for c in api.state["clients"] if c["clientId"]=="account")
+    assert result["status"]=="COMPLETED" and "pkce.code.challenge.method" not in account["attributes"]
+    assert account["attributes"]["client.secret.creation.time"]=="1700000000" and account["secret"]=="account-secret-value"
+    with pytest.raises(KeycloakAdminError) as exc: service.rollback(record["executionId"])
+    assert exc.value.code=="rollback_already_applied" and exc.value.status==409
+
+def converged_svc_a():
+    return {"id":"id-svc-a","secret":"s","attributes":{"access.token.lifespan":"300","oauth2.device.authorization.grant.enabled":"false","client.secret.creation.time":"1"},"protocolMappers":[{"id":"m1",**DESIRED["clients"][0]["protocolMappers"][0]}],**{k:v for k,v in DESIRED["clients"][0].items() if k not in {"attributes","protocolMappers"}}}
+
+def test_observability_status_reports_managed_drift_only():
+    from keycloak_observability import status
+    live=live_fixture(); live["realm"]["resetPasswordAllowed"]=True; live["clients"].append(converged_svc_a())
+    st=status(DESIRED,live)
+    assert st["realm"]=="codestra" and st["configurationDrift"] is False and st["pendingMutations"]==0 and st["eventsEnabled"] is False
+    live["clients"][-1]["enabled"]=False; live["realm"]["eventsEnabled"]=True
+    st=status(DESIRED,live)
+    assert st["configurationDrift"] is True and st["pendingMutations"]==1 and st["eventsEnabled"] is True
+
+def test_rollback_journal_survives_readback_failure_and_can_be_retried(tmp_path,monkeypatch):
+    from keycloak_admin_api import KeycloakAdminError
+    enable_staging_mutation(monkeypatch)
+    api=FakeAdminAPI(live_fixture()); service=make_service(tmp_path,api)
+    record=service.apply("rollback-readback")
+    assert record["status"]=="COMPLETED"
+    seen=[]
+    api.on_mutate=lambda: (seen.append([r["payload"]["status"] for r in service.store.list("rollbacks")]),setattr(api,"fail_reads",True))
+    first=service.rollback(record["executionId"])
+    assert seen and all(rows==["IN_PROGRESS"] for rows in seen)
+    assert first["status"]=="READBACK_UNAVAILABLE" and first["error"]=="admin_transport_error" and first["mutationPerformed"] is True
+    assert ("delete_client","id-svc-a") in api.calls and first["plan"]["planSha256"]
+    stored=service.rollback_evidence(first["executionId"])["payload"]
+    assert stored==first and stored["actionJournal"]==first["actionJournal"] and "hunter2" not in json.dumps(stored)
+    original=service.execution(record["executionId"])
+    assert original["rollbackStatus"]=="ROLLBACK_FAILED" and original["rollbackExecutionId"]==first["executionId"]
+    with pytest.raises(KeycloakAdminError) as exc: service.rollback_evidence("missing")
+    assert exc.value.code=="rollback_not_found" and exc.value.status==404
+    # With reads restored the second attempt finds the realm already restored and confirms it.
+    api.fail_reads=False; api.on_mutate=None; api.calls.clear()
+    second=service.rollback(record["executionId"])
+    assert second["status"]=="COMPLETED" and second["mutationPerformed"] is False and api.calls==[]
+    assert service.execution(record["executionId"])["rollbackStatus"]=="ROLLED_BACK"
+    assert {c["clientId"] for c in api.state["clients"]}=={"account"} and api.state["realm"]["resetPasswordAllowed"] is False
 
 def test_compile_endpoint_is_read_only():
     generated=ROOT/"generated"/"keycloak-identity-authority.v1.json"

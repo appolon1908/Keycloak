@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse, json, os, threading, uuid
+import argparse, json, os, sys, threading, uuid
 from pathlib import Path
 from urllib.parse import parse_qs,urlsplit
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from keycloak_admin_api import KeycloakAdminAPI,KeycloakAdminError
 from keycloak_identity_compiler import OUT as GENERATED_AUTHORITY,compile_identity
-from keycloak_reconciliation import plan,apply_plan,verify_readback,rollback_plan,created_inventory,mutation_performed,normalize_environment,digest
+from keycloak_reconciliation import plan,apply_plan,verify_readback,rollback_plan,rollback_attribute_removals,created_inventory,mutation_performed,normalize_environment,digest
 from keycloak_execution_store import EvidenceStore,EvidenceStoreError,redact_secret_material
 from keycloak_recovery_controller import RecoveryController
 from keycloak_observability import normalize_events,metrics as event_metrics,status as observability_status,ObservabilityError
@@ -15,6 +15,8 @@ from keycloak_environment_promotion import POLICY as PROMOTION_POLICY,promotion_
 HOST="127.0.0.1"
 PORT=8785
 MUTATION_ENVIRONMENTS={"production","staging","test-syn"}
+IN_FLIGHT_STATUSES={"IN_PROGRESS","APPLIED_PENDING_READBACK"}
+READBACK_FAILURE_STATUSES={"READBACK_MISMATCH","READBACK_UNAVAILABLE"}
 
 def _flag(name:str)->bool: return os.environ.get(name,"").strip().lower()=="true"
 
@@ -26,8 +28,7 @@ class Service:
 
     def desired(self): return compile_identity()
     def environment(self):
-        env=normalize_environment(os.environ.get("KEYCLOAK_ENVIRONMENT"))
-        return "test-syn" if env=="testsyn" else (env or "unknown")
+        return normalize_environment(os.environ.get("KEYCLOAK_ENVIRONMENT")) or "unknown"
     def _api(self):
         base=os.environ.get("KEYCLOAK_ADMIN_BASE_URL",""); token=os.environ.get("KEYCLOAK_ADMIN_BEARER","")
         if not base or not token: raise KeycloakAdminError("admin_not_configured","admin readback is not configured")
@@ -82,7 +83,7 @@ class Service:
             for row in self.store.list("executions"):
                 old=row["payload"]
                 if old.get("idempotencyKey")!=idempotency_key or old.get("mode")!="APPLY": continue
-                if old.get("status")=="IN_PROGRESS": raise KeycloakAdminError("apply_in_progress","an apply with this idempotency key has not finalized; inspect its evidence before retrying",409)
+                if old.get("status") in IN_FLIGHT_STATUSES: raise KeycloakAdminError("apply_in_progress","an apply with this idempotency key has not finalized; inspect its evidence before retrying",409)
                 return old
             desired=self.desired(); env=self._mutation_environment(desired); api=self._api()
             pre=self.live(); p=plan(desired,pre,environment=env)
@@ -90,14 +91,24 @@ class Service:
             record={"executionId":execution_id,"idempotencyKey":idempotency_key,"mode":"APPLY","environment":env,"status":"IN_PROGRESS","mutationPerformed":False,"desiredStateDigest":p["desiredSha256"],"preStateDigest":p["liveSha256"],"plan":p,"actionJournal":[],"preState":pre_state,"preStateRedactedPaths":redacted,"rollbackStatus":"NOT_RUN"}
             # Evidence is durable before the first mutation; if it cannot be written nothing is applied.
             self.store.put("executions",execution_id,record)
-            outcome=apply_plan(p,desired,pre,api,enabled=True,allow_delete=_flag("KEYCLOAK_DELETE_ENABLED"),environment=env)
+            try: outcome=apply_plan(p,desired,pre,api,enabled=True,allow_delete=_flag("KEYCLOAK_DELETE_ENABLED"),environment=env)
+            except Exception as exc:
+                record.update({"status":"FAILED","error":str(exc)}); self.store.put("executions",execution_id,record,replace=True); raise
             journal=outcome.get("journal",[])
+            # The attributes this apply introduced are evidence: a later rollback must not
+            # infer them from a desired state that may have changed since.
+            record.update({"actionJournal":journal,"mutationPerformed":mutation_performed(journal),"attributeAdditions":rollback_attribute_removals(pre,desired,journal),"error":outcome.get("error"),"readback":None,"resultDigest":p["liveSha256"]})
             if outcome.get("status")=="REJECTED":
-                status="REJECTED"; readback=None; result_digest=p["liveSha256"]
+                record["status"]="REJECTED"
             else:
-                post=self.live(); readback=verify_readback(desired,post); result_digest=digest(post)
-                status="COMPLETED" if outcome.get("applied") and readback["equal"] else ("READBACK_MISMATCH" if outcome.get("applied") else "PARTIAL_FAILURE")
-            record.update({"status":status,"mutationPerformed":mutation_performed(journal),"resultDigest":result_digest,"actionJournal":journal,"readback":readback,"error":outcome.get("error")})
+                # The journal is durable before readback, so a readback failure can never hide what was applied.
+                record["status"]="APPLIED_PENDING_READBACK"; self.store.put("executions",execution_id,record,replace=True)
+                try: post=self.live(); readback=verify_readback(desired,post); result_digest=digest(post)
+                except KeycloakAdminError as exc:
+                    record.update({"status":"READBACK_UNAVAILABLE","error":exc.code})
+                else:
+                    status="COMPLETED" if outcome.get("applied") and readback["equal"] else ("READBACK_MISMATCH" if outcome.get("applied") else "PARTIAL_FAILURE")
+                    record.update({"status":status,"resultDigest":result_digest,"readback":readback})
             self.store.put("executions",execution_id,record,replace=True); return record
 
     def rollback(self,execution_id):
@@ -105,16 +116,32 @@ class Service:
         with self._lock:
             original=self.execution(execution_id)
             if original.get("mode")!="APPLY" or not original.get("preState"): raise KeycloakAdminError("rollback_not_available","rollback evidence is not available",409)
+            if original.get("rollbackStatus")=="ROLLED_BACK": raise KeycloakAdminError("rollback_already_applied","this execution was already rolled back",409)
+            if original.get("status")=="IN_PROGRESS": raise KeycloakAdminError("rollback_not_available","the apply never journaled its actions; inspect live state manually",409)
             desired=self.desired(); env=self._mutation_environment(desired)
             if normalize_environment(original.get("environment"))!=env: raise KeycloakAdminError("environment_mismatch","rollback must run in the environment the apply targeted",409)
-            api=self._api(); current=self.live(); pre=original["preState"]
-            p=rollback_plan(pre,current,created_inventory=created_inventory(original.get("actionJournal")),environment=env)
-            outcome=apply_plan(p,pre,current,api,enabled=True,allow_delete=True,environment=env)
-            after=self.live(); check=verify_readback(pre,after); journal=outcome.get("journal",[])
-            status="COMPLETED" if outcome.get("applied") and check["equal"] else "ROLLBACK_FAILED"
-            record={"executionId":str(uuid.uuid4()),"mode":"ROLLBACK","sourceExecutionId":execution_id,"environment":env,"status":status,"mutationPerformed":mutation_performed(journal),"actionJournal":journal,"readback":check,"error":outcome.get("error")}
-            self.store.put("rollbacks",record["executionId"],record)
-            original["rollbackStatus"]="ROLLED_BACK" if status=="COMPLETED" else "ROLLBACK_FAILED"; original["rollbackExecutionId"]=record["executionId"]
+            api=self._api(); current=self.live(); pre=original["preState"]; journal_before=original.get("actionJournal")
+            removals=original.get("attributeAdditions")
+            if removals is None: removals=rollback_attribute_removals(pre,desired,journal_before)
+            p=rollback_plan(pre,current,created_inventory=created_inventory(journal_before),attribute_removals=removals,environment=env)
+            rollback_id=str(uuid.uuid4())
+            record={"executionId":rollback_id,"mode":"ROLLBACK","sourceExecutionId":execution_id,"environment":env,"status":"IN_PROGRESS","mutationPerformed":False,"targetStateDigest":p["desiredSha256"],"preStateDigest":p["liveSha256"],"plan":p,"attributeRemovals":removals,"actionJournal":[],"readback":None,"error":None}
+            # The rollback plan is durable before the first mutation, exactly like an apply.
+            self.store.put("rollbacks",rollback_id,record)
+            try: outcome=apply_plan(p,pre,current,api,enabled=True,allow_delete=True,environment=env,attribute_removals=removals)
+            except Exception as exc:
+                record.update({"status":"FAILED","error":str(exc)}); self.store.put("rollbacks",rollback_id,record,replace=True); raise
+            journal=outcome.get("journal",[])
+            record.update({"status":"APPLIED_PENDING_READBACK","actionJournal":journal,"mutationPerformed":mutation_performed(journal),"error":outcome.get("error")})
+            self.store.put("rollbacks",rollback_id,record,replace=True)
+            try: after=self.live(); check=verify_readback(pre,after)
+            except KeycloakAdminError as exc:
+                record.update({"status":"READBACK_UNAVAILABLE","error":exc.code})
+            else:
+                record.update({"status":"COMPLETED" if outcome.get("applied") and check["equal"] else "ROLLBACK_FAILED","readback":check})
+            self.store.put("rollbacks",rollback_id,record,replace=True)
+            # Only a read-back restore counts as rolled back; anything else leaves the apply eligible for another attempt.
+            original["rollbackStatus"]="ROLLED_BACK" if record["status"]=="COMPLETED" else "ROLLBACK_FAILED"; original["rollbackExecutionId"]=rollback_id
             self.store.put("executions",execution_id,original,replace=True)
             return record
 
@@ -126,6 +153,10 @@ class Service:
         try: return self.store.get("executions",execution_id)
         except EvidenceStoreError as exc:
             raise KeycloakAdminError("execution_not_found","reconciliation execution not found",404) from exc
+    def rollback_evidence(self,rollback_id):
+        try: return self.store.get("rollbacks",rollback_id)
+        except EvidenceStoreError as exc:
+            raise KeycloakAdminError("rollback_not_found","rollback execution not found",404) from exc
 
     def recovery(self):
         return RecoveryController(os.environ.get("KEYCLOAK_BACKUP_DIR","/var/backups/keycloak"),os.environ.get("KEYCLOAK_RESTORE_EVIDENCE_DIR","/var/lib/keycloak/recovery-evidence"))
@@ -136,8 +167,12 @@ class Service:
     def events(self,limit=100):
         api=self._api(); raw=api.events(max_results=limit)
         return normalize_events([{"event_id":e.get("id"),"timestamp":e.get("time"),"event_type":e.get("type"),"outcome":"ERROR" if str(e.get("type","")).endswith("_ERROR") else "SUCCESS","realm":"codestra","client_id":e.get("clientId"),"subject_ref":e.get("userId")} for e in raw],limit=limit)
+    def readback_failures(self):
+        # Applies whose readback mismatched or never ran are durable evidence, so the count is exact.
+        return sum(1 for row in self.store.list("executions") if row["payload"].get("mode")=="APPLY" and row["payload"].get("status") in READBACK_FAILURE_STATUSES)
     def metrics(self,limit=100):
-        events=self.events(limit); st=self.observability_status(); return event_metrics(events,configuration_drift=st["configurationDrift"])
+        events=self.events(limit); st=self.observability_status()
+        return event_metrics(events,configuration_drift=st["configurationDrift"],readback_failures=self.readback_failures())
 
     def promotion(self,body):
         result=promotion_plan(self.desired(),body); self.store.put("promotions",result["promotionId"],result); return result
@@ -190,7 +225,9 @@ class Handler(BaseHTTPRequestHandler):
         except KeycloakAdminError as exc:
             status=exc.status if exc.status and 400 <= exc.status < 600 else 503
             return self.send_json(status,{"ok":False,"error":{"code":exc.code,"message":str(exc)}},rid)
-        except Exception:
+        except Exception as exc:
+            # The response stays generic; the operator log carries the class and message keyed by correlation id.
+            sys.stderr.write(f"keycloak-control-api correlation_id={rid.replace(chr(13),' ').replace(chr(10),' ')} error={type(exc).__name__}: {exc}\n")
             return self.send_json(500,{"ok":False,"error":{"code":"internal_error","message":"control operation failed"}},rid)
         self.send_json(200,{"ok":True,**result},rid)
 
@@ -204,9 +241,11 @@ class Handler(BaseHTTPRequestHandler):
         if p=="/platform/v1/keycloak/observability/status": return self.runfn(lambda:{"observability":self.service.observability_status()})
         if p=="/platform/v1/keycloak/observability/events":
             return self.runfn(lambda:{"events":self.service.events(self.bounded_int(q,"limit",100,1,500))})
-        if p=="/platform/v1/keycloak/observability/metrics": return self.runfn(lambda:{"metrics":self.service.metrics()})
+        if p=="/platform/v1/keycloak/observability/metrics": return self.runfn(lambda:{"metrics":self.service.metrics(self.bounded_int(q,"limit",100,1,500))})
         if p=="/platform/v1/keycloak/promotion/policy": return self.runfn(lambda:{"policy":PROMOTION_POLICY})
         if p.startswith("/platform/v1/keycloak/promotion/plans/"): return self.runfn(lambda:{"promotion":self.service.promotion_get(p.rsplit("/",1)[-1])})
+        if p.startswith("/platform/v1/keycloak/reconcile/rollbacks/"):
+            return self.runfn(lambda:{"evidence":self.service.rollback_evidence(p.rsplit("/",1)[-1])})
         if p.startswith("/platform/v1/keycloak/reconcile/executions/"):
             evidence=p.endswith("/evidence"); eid=p.split("/reconcile/executions/",1)[1].split("/",1)[0]
             return self.runfn(lambda:{"evidence":self.service.evidence(eid)} if evidence else {"execution":self.service.execution(eid)})

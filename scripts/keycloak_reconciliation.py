@@ -23,7 +23,9 @@ class Action:
 def digest(value:Any)->str: return hashlib.sha256(canonical(value).encode()).hexdigest()
 def projection(value:dict[str,Any],fields)->dict[str,Any]: return {k:value.get(k) for k in fields}
 def _index(rows:list[dict[str,Any]],key:str)->dict[str,dict[str,Any]]: return {str(r.get(key)):r for r in rows if r.get(key)}
-def normalize_environment(value:Any)->str: return str(value or "").strip().lower().replace("_","-")
+def normalize_environment(value:Any)->str:
+    env=str(value or "").strip().lower().replace("_","-")
+    return "test-syn" if env=="testsyn" else env
 
 def normalize_state(state:dict[str,Any])->dict[str,Any]:
     realm=projection(state.get("realm") or {},REALM_FIELDS)
@@ -45,6 +47,9 @@ def managed_fields_match(desired_row:dict[str,Any],live_row:dict[str,Any],fields
     """
     for field in fields:
         want=desired_row.get(field); have=live_row.get(field)
+        # A field the desired document does not declare is not managed; Keycloak always
+        # serialises it, so comparing it (or sending None back) could never converge.
+        if want is None: continue
         if field=="attributes":
             want=want or {}; have=have or {}
             if canonical({k:have.get(k) for k in want})!=canonical(want): return False
@@ -122,7 +127,7 @@ def validate_plan(plan_doc:dict[str,Any],desired:dict[str,Any],live:dict[str,Any
             if kind!="UPDATE" or rid not in maps["requiredActions"]: raise RuntimeError(f"unsupported_required_action:{kind}")
         else: raise RuntimeError(f"unsupported_resource:{rt}")
 
-def apply_plan(plan_doc:dict[str,Any],desired:dict[str,Any],live:dict[str,Any],api,*,enabled:bool=False,allow_delete:bool=False,environment:str|None=None)->dict[str,Any]:
+def apply_plan(plan_doc:dict[str,Any],desired:dict[str,Any],live:dict[str,Any],api,*,enabled:bool=False,allow_delete:bool=False,environment:str|None=None,attribute_removals:dict[str,list[str]]|None=None)->dict[str,Any]:
     if not enabled: raise RuntimeError("apply_disabled")
     env=normalize_environment(environment)
     if not env or env=="unknown": raise RuntimeError("environment_unknown")
@@ -147,9 +152,12 @@ def apply_plan(plan_doc:dict[str,Any],desired:dict[str,Any],live:dict[str,Any],a
                 elif kind=="UPDATE":
                     internal=str((cur or {}).get("id") or "")
                     if not internal: raise RuntimeError(f"missing_internal_id:{rid}")
-                    merged=dict(cur); merged.update(projection(d,CLIENT_FIELDS))
-                    # Server-populated attributes that desired state does not declare are preserved.
-                    merged["attributes"]={**(cur.get("attributes") or {}),**(d.get("attributes") or {})}
+                    merged=dict(cur); merged.update({k:v for k,v in projection(d,CLIENT_FIELDS).items() if v is not None})
+                    # Server-populated attributes that desired state does not declare are preserved;
+                    # a rollback names the attributes its apply added so they can be removed again.
+                    attributes={**(cur.get("attributes") or {}),**(d.get("attributes") or {})}
+                    for key in (attribute_removals or {}).get(rid,[]): attributes.pop(key,None)
+                    merged["attributes"]=attributes
                     api.update_client(internal,merged)
                 elif kind=="DELETE":
                     internal=str((cur or {}).get("id") or "")
@@ -208,8 +216,27 @@ def created_inventory(journal:list[dict[str,Any]]|None)->dict[str,list[str]]:
             out[COLLECTION_KEYS[str(entry["resourceType"])]].append(str(entry.get("resourceId")))
     return out
 
-def rollback_plan(pre_state:dict[str,Any],current_state:dict[str,Any],*,created_inventory:dict[str,list[str]]|None=None,environment:str="unknown")->dict[str,Any]:
+def rollback_attribute_removals(pre_state:dict[str,Any],desired:dict[str,Any],journal:list[dict[str,Any]]|None)->dict[str,list[str]]:
+    # Attributes the apply introduced on an updated client are absent from the pre-state
+    # and present in the desired document; restoring the pre-state must drop them.
+    pre=_rows(pre_state,"clients"); want=_rows(desired,"clients"); out:dict[str,list[str]]={}
+    for entry in journal or []:
+        if entry.get("kind")!="UPDATE" or entry.get("resourceType")!="client": continue
+        rid=str(entry.get("resourceId")); before=(pre.get(rid) or {}).get("attributes") or {}; after=(want.get(rid) or {}).get("attributes") or {}
+        removals=sorted(k for k in after if k not in before)
+        if removals: out[rid]=removals
+    return out
+
+def rollback_plan(pre_state:dict[str,Any],current_state:dict[str,Any],*,created_inventory:dict[str,list[str]]|None=None,attribute_removals:dict[str,list[str]]|None=None,environment:str="unknown")->dict[str,Any]:
     # Only resources the original apply created may be deleted; anything that appeared
     # since is unmanaged and is preserved.
     inventory={k:[str(x) for x in v] for k,v in (created_inventory or {}).items()}
-    return plan(pre_state,current_state,managed_inventory=inventory,environment=environment)
+    payload=plan(pre_state,current_state,managed_inventory=inventory,environment=environment)
+    live=_rows(current_state,"clients")
+    for action in payload["actions"]:
+        # Pre-state comparison only sees declared attributes, so an attribute the apply
+        # added still needs an UPDATE to be removed.
+        rid=action["resource_id"]; extra=(attribute_removals or {}).get(rid,[])
+        if action["resource_type"]=="client" and action["kind"]=="KEEP" and action.get("managed",True) and any(k in ((live.get(rid) or {}).get("attributes") or {}) for k in extra):
+            action.update({"kind":"UPDATE","reason":"apply_added_attributes"})
+    payload.pop("planSha256",None); payload["planSha256"]=digest(payload); return payload

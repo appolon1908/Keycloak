@@ -120,10 +120,12 @@ class EvidenceStore:
         return body
 
     def list(self,kind:str)->list[dict[str,Any]]:
+        # Every retained record is returned, newest first: mutation evidence outlives the
+        # rotation window and idempotency decisions must see it.
         d=self.root/self._safe_id(kind)
         if not d.exists(): return []
         out=[]
-        for path in sorted(d.glob("*.json"),key=lambda x:x.stat().st_mtime,reverse=True)[:self.retention]:
+        for path in sorted(d.glob("*.json"),key=lambda x:x.stat().st_mtime,reverse=True):
             out.append(self.get(kind,path.stem))
         return out
 
