@@ -115,6 +115,11 @@ scripts/
 make validate
 ```
 
+`scripts/validate.sh` needs `jq`, Python 3.12 or newer with `PyYAML` and
+`pytest`, and uses `shellcheck` when installed. Hosted CI installs these
+explicitly; a self-hosted runner that runs the deploy workflow must provide
+them too.
+
 CI additionally validates Docker Compose, exercises the protected plan gate,
 and builds the pinned Keycloak image without publishing it.
 
