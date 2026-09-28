@@ -369,6 +369,75 @@
       "attributes": {
         "access.token.lifespan": "300",
         "oauth2.device.authorization.grant.enabled": "false",
+        "oidc.ciba.grant.enabled": "false",
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "https://crm.codestra.agency/##https://phone.codestra.agency/##https://dialer.codestra.agency/"
+      },
+      "baseUrl": "https://crm.codestra.agency/",
+      "bearerOnly": false,
+      "clientId": "codestra-agent-desktop",
+      "consentRequired": false,
+      "defaultClientScopes": [
+        "profile",
+        "email",
+        "roles"
+      ],
+      "description": "Browser client for the Middleware realtime agent desktop and webphone.",
+      "directAccessGrantsEnabled": false,
+      "enabled": true,
+      "frontchannelLogout": true,
+      "fullScopeAllowed": false,
+      "implicitFlowEnabled": false,
+      "name": "Codestra Agent Desktop",
+      "optionalClientScopes": [],
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "config": {
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "included.custom.audience": "codestra-agent-desktop"
+          },
+          "consentRequired": false,
+          "name": "audience-codestra-agent-desktop",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper"
+        },
+        {
+          "config": {
+            "access.token.claim": "true",
+            "claim.name": "tenant_ids",
+            "id.token.claim": "false",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "user.attribute": "tenant_ids",
+            "userinfo.token.claim": "false"
+          },
+          "consentRequired": false,
+          "name": "tenant-ids-from-user-attribute",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper"
+        }
+      ],
+      "publicClient": true,
+      "redirectUris": [
+        "https://crm.codestra.agency/codestra/realtime/callback",
+        "https://phone.codestra.agency/codestra/realtime/callback",
+        "https://dialer.codestra.agency/codestra/realtime/callback"
+      ],
+      "rootUrl": "https://crm.codestra.agency",
+      "serviceAccountsEnabled": false,
+      "standardFlowEnabled": true,
+      "webOrigins": [
+        "https://crm.codestra.agency",
+        "https://phone.codestra.agency",
+        "https://dialer.codestra.agency"
+      ]
+    },
+    {
+      "attributes": {
+        "access.token.lifespan": "300",
+        "oauth2.device.authorization.grant.enabled": "false",
         "oidc.ciba.grant.enabled": "false"
       },
       "authorizationServicesEnabled": false,
@@ -732,6 +801,48 @@
       "standardFlowEnabled": true,
       "webOrigins": [
         "https://klyrow.com"
+      ]
+    },
+    {
+      "attributes": {
+        "oauth2.device.authorization.grant.enabled": "false",
+        "oidc.ciba.grant.enabled": "false",
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "https://staging.klyrow.com/logged-out"
+      },
+      "baseUrl": "https://staging.klyrow.com/",
+      "bearerOnly": false,
+      "clientId": "klyrow-staging-portal",
+      "consentRequired": false,
+      "description": "Klyrow isolated staging browser portal using Authorization Code Flow with PKCE S256.",
+      "directAccessGrantsEnabled": false,
+      "enabled": true,
+      "frontchannelLogout": true,
+      "implicitFlowEnabled": false,
+      "name": "Klyrow Isolated Staging Portal",
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "config": {
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "included.custom.audience": "klyrow-api"
+          },
+          "consentRequired": false,
+          "name": "audience-klyrow-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper"
+        }
+      ],
+      "publicClient": true,
+      "redirectUris": [
+        "https://staging.klyrow.com/auth/callback"
+      ],
+      "rootUrl": "https://staging.klyrow.com",
+      "serviceAccountsEnabled": false,
+      "standardFlowEnabled": true,
+      "webOrigins": [
+        "https://staging.klyrow.com"
       ]
     },
     {
@@ -1504,6 +1615,75 @@
       },
       "authorizationServicesEnabled": false,
       "bearerOnly": false,
+      "clientId": "odoo-email",
+      "consentRequired": false,
+      "defaultClientScopes": [],
+      "description": "Confidential Odoo 19 workload identity for tenant-bound transactional email submission and read-back through Middleware only. Secrets and tenant values remain external to Git.",
+      "directAccessGrantsEnabled": false,
+      "enabled": true,
+      "frontchannelLogout": false,
+      "fullScopeAllowed": false,
+      "implicitFlowEnabled": false,
+      "name": "Codestra Odoo transactional email identity",
+      "optionalClientScopes": [],
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "config": {
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "included.custom.audience": "middleware-api"
+          },
+          "consentRequired": false,
+          "name": "audience-middleware-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper"
+        },
+        {
+          "config": {
+            "access.token.claim": "true",
+            "access.tokenResponse.claim": "false",
+            "claim.name": "scope",
+            "claim.value": "odoo.email.command.write odoo.email.status.read",
+            "id.token.claim": "false",
+            "jsonType.label": "String",
+            "userinfo.token.claim": "false"
+          },
+          "consentRequired": false,
+          "name": "reviewed-product-middleware-scopes",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-hardcoded-claim-mapper"
+        },
+        {
+          "config": {
+            "access.token.claim": "true",
+            "claim.name": "tenant_id",
+            "id.token.claim": "false",
+            "jsonType.label": "String",
+            "multivalued": "false",
+            "user.attribute": "tenant_id",
+            "userinfo.token.claim": "false"
+          },
+          "consentRequired": false,
+          "name": "tenant-id-from-service-account",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper"
+        }
+      ],
+      "publicClient": false,
+      "redirectUris": [],
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "webOrigins": []
+    },
+    {
+      "attributes": {
+        "access.token.lifespan": "300",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "oidc.ciba.grant.enabled": "false"
+      },
+      "authorizationServicesEnabled": false,
+      "bearerOnly": false,
       "clientId": "odoo-integration",
       "consentRequired": false,
       "defaultClientScopes": [],
@@ -1627,6 +1807,75 @@
           "name": "reviewed-service-scopes",
           "protocol": "openid-connect",
           "protocolMapper": "oidc-hardcoded-claim-mapper"
+        }
+      ],
+      "publicClient": false,
+      "redirectUris": [],
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "webOrigins": []
+    },
+    {
+      "attributes": {
+        "access.token.lifespan": "300",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "oidc.ciba.grant.enabled": "false"
+      },
+      "authorizationServicesEnabled": false,
+      "bearerOnly": false,
+      "clientId": "production-operator",
+      "consentRequired": false,
+      "defaultClientScopes": [],
+      "description": "Privileged tenant-bound workload identity for reviewed Middleware production-email policy operations only. It has no provider, workflow, or connector-command authority, and its secret remains outside Git.",
+      "directAccessGrantsEnabled": false,
+      "enabled": true,
+      "frontchannelLogout": false,
+      "fullScopeAllowed": false,
+      "implicitFlowEnabled": false,
+      "name": "Codestra production email policy operator",
+      "optionalClientScopes": [],
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "config": {
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "included.custom.audience": "middleware-api"
+          },
+          "consentRequired": false,
+          "name": "audience-middleware-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper"
+        },
+        {
+          "config": {
+            "access.token.claim": "true",
+            "access.tokenResponse.claim": "false",
+            "claim.name": "scope",
+            "claim.value": "email.production.read email.production.write",
+            "id.token.claim": "false",
+            "jsonType.label": "String",
+            "userinfo.token.claim": "false"
+          },
+          "consentRequired": false,
+          "name": "reviewed-product-middleware-scopes",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-hardcoded-claim-mapper"
+        },
+        {
+          "config": {
+            "access.token.claim": "true",
+            "claim.name": "tenant_id",
+            "id.token.claim": "false",
+            "jsonType.label": "String",
+            "multivalued": "false",
+            "user.attribute": "tenant_id",
+            "userinfo.token.claim": "false"
+          },
+          "consentRequired": false,
+          "name": "tenant-id-from-service-account",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper"
         }
       ],
       "publicClient": false,
@@ -2201,7 +2450,7 @@
       ]
     }
   ],
-  "sourceSha256": "88c00354c81e70782841d2a3bdbf2fc6fdf76f35e710ef55e8e3f00d4a5932ba",
+  "sourceSha256": "430cd6cc7754e75f2913784a528ddf880c3ab232b407bcd58f1a322cd07e2d7a",
   "stagedClients": [
     {
       "authorityGroup": "edge-integration-certification",
