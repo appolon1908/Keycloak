@@ -153,11 +153,12 @@ jq -e --slurpfile managed "$managed_policy" '
   and .environments == ["production", "staging", "test-syn"]
   and (.clients | type == "object")
   and all(.clients | to_entries[];
-        (($managed[0].clients | index(.key)) != null)
-        and (.value | type == "array" and length > 0)
-        and (.value == (.value | unique))
-        and (.value == (.value | sort))
-        and all(.value[]; . == "production" or . == "staging" or . == "test-syn"))
+        .key as $client_id | .value as $environments
+        | (($managed[0].clients | index($client_id)) != null)
+        and ($environments | type == "array" and length > 0)
+        and ($environments == ($environments | unique))
+        and ($environments == ($environments | sort))
+        and all($environments[]; . == "production" or . == "staging" or . == "test-syn"))
 ' "$environment_policy" >/dev/null ||
   fail "Environment-scoped client policy must name managed clients with sorted, known environments"
 
