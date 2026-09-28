@@ -101,6 +101,8 @@ scripts/
   export-client.sh            Existing/absent rollback evidence export
   reconcile-moneybee-oidc.sh  Read-only MoneyBee view of protected plan engine
   smoke-test.sh               Read-only discovery and redirect acceptance test
+  keycloak_identity_compiler.py  Compiles config/ into generated/keycloak-identity-authority.v1.json
+  keycloak_control_api.py     Loopback PAS-237 control plane (docs/operations/CONTROL_API.md)
 .github/workflows/
   validate.yml                Exact source-head and merge-result CI
   runtime-preflight.yml       Manual read-only server verification
@@ -115,6 +117,9 @@ make validate
 
 CI additionally validates Docker Compose, exercises the protected plan gate,
 and builds the pinned Keycloak image without publishing it.
+
+The PAS-237 control plane has its own focused suite and a fail-closed Postman
+collection; see `docs/operations/CONTROL_API.md`.
 
 ## PostgreSQL recovery evidence
 

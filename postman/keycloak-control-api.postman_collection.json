@@ -302,6 +302,388 @@
           }
         }
       ]
+    },
+    {
+      "name": "Compile Read Only",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/platform/v1/keycloak/compile",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "platform",
+            "v1",
+            "keycloak",
+            "compile"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200',()=>pm.response.to.have.status(200));",
+              "pm.test('compiled without drift',()=>{const b=pm.response.json();pm.expect(b.compiled).to.eql(true);pm.expect(b.generatedDrift).to.eql(false);});",
+              "pm.test('no secret material',()=>pm.expect(pm.response.text()).to.not.match(/\"(secret|clientSecret|password)\":\"[^\"]+\"/));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Drift Backend Unavailable",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/platform/v1/keycloak/drift",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "platform",
+            "v1",
+            "keycloak",
+            "drift"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('503 without admin backend',()=>pm.response.to.have.status(503));",
+              "pm.test('backend code',()=>pm.expect(pm.response.json().error.code).to.eql('admin_not_configured'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rollback Fail Closed",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"executionId\":\"missing\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/platform/v1/keycloak/reconcile/rollback",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "platform",
+            "v1",
+            "keycloak",
+            "reconcile",
+            "rollback"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('403',()=>pm.response.to.have.status(403));",
+              "pm.test('disabled before evidence lookup',()=>pm.expect(pm.response.json().error.code).to.eql('apply_disabled'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Evidence Missing",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/platform/v1/keycloak/reconcile/executions/missing/evidence",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "platform",
+            "v1",
+            "keycloak",
+            "reconcile",
+            "executions",
+            "missing",
+            "evidence"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('404',()=>pm.response.to.have.status(404));",
+              "pm.test('missing execution',()=>pm.expect(pm.response.json().error.code).to.eql('execution_not_found'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Recovery Backups",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/platform/v1/keycloak/recovery/backups",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "platform",
+            "v1",
+            "keycloak",
+            "recovery",
+            "backups"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200',()=>pm.response.to.have.status(200));",
+              "pm.test('array of backups',()=>pm.expect(pm.response.json().backups).to.be.an('array'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Recovery Restores Redacted",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/platform/v1/keycloak/recovery/restores",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "platform",
+            "v1",
+            "keycloak",
+            "recovery",
+            "restores"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200',()=>pm.response.to.have.status(200));",
+              "pm.test('array of restores',()=>pm.expect(pm.response.json().restores).to.be.an('array'));",
+              "pm.test('no secret material',()=>pm.expect(pm.response.text()).to.not.match(/\"(password|access_token|client_secret)\":\"[^\"]+\"/));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Observability Status Backend Unavailable",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/platform/v1/keycloak/observability/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "platform",
+            "v1",
+            "keycloak",
+            "observability",
+            "status"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('503 without admin backend',()=>pm.response.to.have.status(503));",
+              "pm.test('backend code',()=>pm.expect(pm.response.json().error.code).to.eql('admin_not_configured'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Metrics Invalid Limit",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/platform/v1/keycloak/observability/metrics?limit=0",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "platform",
+            "v1",
+            "keycloak",
+            "observability",
+            "metrics"
+          ],
+          "query": [
+            {
+              "key": "limit",
+              "value": "0"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('400',()=>pm.response.to.have.status(400));",
+              "pm.test('invalid query',()=>pm.expect(pm.response.json().error.code).to.eql('invalid_query'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Promotion Plan Blocks Missing Mapping",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"promotionId\":\"postman-blocked-plan\",\"sourceAuthorityGroup\":\"postman-missing-group\",\"targetEnvironment\":\"staging\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/platform/v1/keycloak/promotion/plan",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "platform",
+            "v1",
+            "keycloak",
+            "promotion",
+            "plan"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200',()=>pm.response.to.have.status(200));",
+              "pm.test('blocked',()=>{const p=pm.response.json().promotion;pm.expect(p.promotionStatus).to.eql('BLOCK');pm.expect(p.blockers).to.include('explicit_target_mapping_required');pm.expect(p.blockers).to.include('source_authority_group_not_found');pm.expect(p.packetSha256).to.match(/^[0-9a-f]{64}$/);});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Promotion Plan TEST_SYN Production Forbidden",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"promotionId\":\"postman-test-syn-production\",\"sourceAuthorityGroup\":\"TEST_SYN\",\"targetEnvironment\":\"production\",\"targetIssuer\":\"https://auth.codestra.co/realms/codestra\",\"targetMapping\":{\"test-syn-postman\":\"postman\"}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/platform/v1/keycloak/promotion/plan",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "platform",
+            "v1",
+            "keycloak",
+            "promotion",
+            "plan"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200',()=>pm.response.to.have.status(200));",
+              "pm.test('TEST_SYN never promotes to production',()=>{const p=pm.response.json().promotion;pm.expect(p.promotionStatus).to.eql('BLOCK');pm.expect(p.blockers).to.include('test_syn_production_forbidden');});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Unknown Route",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/platform/v1/keycloak/unknown",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "platform",
+            "v1",
+            "keycloak",
+            "unknown"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('404',()=>pm.response.to.have.status(404));",
+              "pm.test('not found',()=>pm.expect(pm.response.json().error.code).to.eql('not_found'));"
+            ]
+          }
+        }
+      ]
     }
   ]
 }
