@@ -5,6 +5,100 @@
         "display.on.consent.screen": "false",
         "include.in.token.scope": "true"
       },
+      "description": "Codestra CIP optional product scope (audit read) managed by protected Keycloak GitOps. Read the token tenant's audit trail. Read-only and separate from tenant and connector administration. Requested explicitly per short-lived token, issued only to holders of its mapped CIP realm roles, bound to the token tenant_id, and never a realm or client default.",
+      "name": "cip.audit.read",
+      "protocol": "openid-connect",
+      "protocolMappers": []
+    },
+    {
+      "attributes": {
+        "display.on.consent.screen": "false",
+        "include.in.token.scope": "true"
+      },
+      "description": "Codestra CIP optional product scope (connector administration) managed by protected Keycloak GitOps. Install, configure, enable and disable connectors for the token tenant and bind OpenBao credential references. Never reads secret values. Requested explicitly per short-lived token, issued only to holders of its mapped CIP realm roles, bound to the token tenant_id, and never a realm or client default.",
+      "name": "cip.connector.admin",
+      "protocol": "openid-connect",
+      "protocolMappers": []
+    },
+    {
+      "attributes": {
+        "display.on.consent.screen": "false",
+        "include.in.token.scope": "true"
+      },
+      "description": "Codestra CIP optional product scope (tenant administration) managed by protected Keycloak GitOps. Administer the token tenant's own CIP settings, projects and member role requests. Never cross-tenant, never realm or platform administration. Requested explicitly per short-lived token, issued only to holders of its mapped CIP realm roles, bound to the token tenant_id, and never a realm or client default.",
+      "name": "cip.tenant.admin",
+      "protocol": "openid-connect",
+      "protocolMappers": []
+    },
+    {
+      "attributes": {
+        "display.on.consent.screen": "false",
+        "include.in.token.scope": "true"
+      },
+      "description": "Codestra CIP optional product scope (usage read) managed by protected Keycloak GitOps. Read metering and usage for the token tenant (and its projects when narrowed). Read-only; no billing or quota mutation. Requested explicitly per short-lived token, issued only to holders of its mapped CIP realm roles, bound to the token tenant_id, and never a realm or client default.",
+      "name": "cip.usage.read",
+      "protocol": "openid-connect",
+      "protocolMappers": []
+    },
+    {
+      "attributes": {
+        "display.on.consent.screen": "false",
+        "include.in.token.scope": "false"
+      },
+      "description": "Codestra CIP human tenant context managed by protected Keycloak GitOps. Emits tenant_id and project_ids from the admin-only codestra_tenant_id / codestra_project_ids user-profile attributes and the amr MFA evidence. Default scope of CIP browser clients only; never a realm default, never on a service client, and not an authorization scope (excluded from the scope claim).",
+      "name": "cip.user.context",
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "config": {
+            "access.token.claim": "true",
+            "aggregate.attrs": "false",
+            "claim.name": "tenant_id",
+            "id.token.claim": "false",
+            "jsonType.label": "String",
+            "multivalued": "false",
+            "user.attribute": "codestra_tenant_id",
+            "userinfo.token.claim": "false"
+          },
+          "consentRequired": false,
+          "name": "tenant-id-from-admin-attribute",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper"
+        },
+        {
+          "config": {
+            "access.token.claim": "true",
+            "aggregate.attrs": "false",
+            "claim.name": "project_ids",
+            "id.token.claim": "false",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "user.attribute": "codestra_project_ids",
+            "userinfo.token.claim": "false"
+          },
+          "consentRequired": false,
+          "name": "project-ids-from-admin-attribute",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper"
+        },
+        {
+          "config": {
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "userinfo.token.claim": "false"
+          },
+          "consentRequired": false,
+          "name": "amr",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-amr-mapper"
+        }
+      ]
+    },
+    {
+      "attributes": {
+        "display.on.consent.screen": "false",
+        "include.in.token.scope": "true"
+      },
       "description": "Codestra optional monitoring scope managed by protected Keycloak GitOps. It is requested explicitly per short-lived service-account token.",
       "name": "health.read",
       "protocol": "openid-connect",
@@ -2278,6 +2372,328 @@
   "realmRoles": [
     {
       "attributes": {
+        "codestra.activation": [
+          "PREPARED_DISABLED"
+        ],
+        "codestra.actor.kind": [
+          "user"
+        ],
+        "codestra.cross_family_grant": [
+          "false"
+        ],
+        "codestra.default_role": [
+          "false"
+        ],
+        "codestra.grants.scopes": [
+          "cip.audit.read"
+        ],
+        "codestra.mfa.required": [
+          "true"
+        ],
+        "codestra.role.family": [
+          "cip-product"
+        ],
+        "codestra.tenant.bound": [
+          "true"
+        ]
+      },
+      "clientRole": false,
+      "composite": false,
+      "description": "Codestra CIP human user role: lets its holder obtain cip.audit.read for the holder's own tenant only. Non-composite, never a default role, never copied into the access token; prepared only and assigned by no planner.",
+      "name": "cip-audit-viewer"
+    },
+    {
+      "attributes": {
+        "codestra.activation": [
+          "PREPARED_DISABLED"
+        ],
+        "codestra.actor.kind": [
+          "user"
+        ],
+        "codestra.cross_family_grant": [
+          "false"
+        ],
+        "codestra.default_role": [
+          "false"
+        ],
+        "codestra.grants.scopes": [
+          "platform.command",
+          "platform.command.read"
+        ],
+        "codestra.mfa.required": [
+          "true"
+        ],
+        "codestra.role.family": [
+          "cip-product"
+        ],
+        "codestra.tenant.bound": [
+          "true"
+        ]
+      },
+      "clientRole": false,
+      "composite": false,
+      "description": "Codestra CIP human user role: lets its holder obtain platform.command, platform.command.read for the holder's own tenant only. Non-composite, never a default role, never copied into the access token; prepared only and assigned by no planner.",
+      "name": "cip-command-operator"
+    },
+    {
+      "attributes": {
+        "codestra.activation": [
+          "PREPARED_DISABLED"
+        ],
+        "codestra.actor.kind": [
+          "user"
+        ],
+        "codestra.cross_family_grant": [
+          "false"
+        ],
+        "codestra.default_role": [
+          "false"
+        ],
+        "codestra.grants.scopes": [
+          "platform.command.read"
+        ],
+        "codestra.mfa.required": [
+          "true"
+        ],
+        "codestra.role.family": [
+          "cip-product"
+        ],
+        "codestra.tenant.bound": [
+          "true"
+        ]
+      },
+      "clientRole": false,
+      "composite": false,
+      "description": "Codestra CIP human user role: lets its holder obtain platform.command.read for the holder's own tenant only. Non-composite, never a default role, never copied into the access token; prepared only and assigned by no planner.",
+      "name": "cip-command-viewer"
+    },
+    {
+      "attributes": {
+        "codestra.activation": [
+          "PREPARED_DISABLED"
+        ],
+        "codestra.actor.kind": [
+          "user"
+        ],
+        "codestra.cross_family_grant": [
+          "false"
+        ],
+        "codestra.default_role": [
+          "false"
+        ],
+        "codestra.grants.scopes": [
+          "cip.connector.admin"
+        ],
+        "codestra.mfa.required": [
+          "true"
+        ],
+        "codestra.role.family": [
+          "cip-product"
+        ],
+        "codestra.tenant.bound": [
+          "true"
+        ]
+      },
+      "clientRole": false,
+      "composite": false,
+      "description": "Codestra CIP human user role: lets its holder obtain cip.connector.admin for the holder's own tenant only. Non-composite, never a default role, never copied into the access token; prepared only and assigned by no planner.",
+      "name": "cip-connector-admin"
+    },
+    {
+      "attributes": {
+        "codestra.activation": [
+          "PREPARED_DISABLED"
+        ],
+        "codestra.actor.kind": [
+          "service"
+        ],
+        "codestra.cross_family_grant": [
+          "false"
+        ],
+        "codestra.default_role": [
+          "false"
+        ],
+        "codestra.grants.scopes": [
+          "cip.audit.read"
+        ],
+        "codestra.mfa.required": [
+          "false"
+        ],
+        "codestra.role.family": [
+          "cip-product"
+        ],
+        "codestra.tenant.bound": [
+          "true"
+        ]
+      },
+      "clientRole": false,
+      "composite": false,
+      "description": "Codestra CIP dedicated single-tenant CIP service account role: lets its holder obtain cip.audit.read for the holder's own tenant only. Non-composite, never a default role, never copied into the access token; prepared only and assigned by no planner.",
+      "name": "cip-svc-audit-reader"
+    },
+    {
+      "attributes": {
+        "codestra.activation": [
+          "PREPARED_DISABLED"
+        ],
+        "codestra.actor.kind": [
+          "service"
+        ],
+        "codestra.cross_family_grant": [
+          "false"
+        ],
+        "codestra.default_role": [
+          "false"
+        ],
+        "codestra.grants.scopes": [
+          "platform.command.read"
+        ],
+        "codestra.mfa.required": [
+          "false"
+        ],
+        "codestra.role.family": [
+          "cip-product"
+        ],
+        "codestra.tenant.bound": [
+          "true"
+        ]
+      },
+      "clientRole": false,
+      "composite": false,
+      "description": "Codestra CIP dedicated single-tenant CIP service account role: lets its holder obtain platform.command.read for the holder's own tenant only. Non-composite, never a default role, never copied into the access token; prepared only and assigned by no planner.",
+      "name": "cip-svc-command-reader"
+    },
+    {
+      "attributes": {
+        "codestra.activation": [
+          "PREPARED_DISABLED"
+        ],
+        "codestra.actor.kind": [
+          "service"
+        ],
+        "codestra.cross_family_grant": [
+          "false"
+        ],
+        "codestra.default_role": [
+          "false"
+        ],
+        "codestra.grants.scopes": [
+          "platform.command"
+        ],
+        "codestra.mfa.required": [
+          "false"
+        ],
+        "codestra.role.family": [
+          "cip-product"
+        ],
+        "codestra.tenant.bound": [
+          "true"
+        ]
+      },
+      "clientRole": false,
+      "composite": false,
+      "description": "Codestra CIP dedicated single-tenant CIP service account role: lets its holder obtain platform.command for the holder's own tenant only. Non-composite, never a default role, never copied into the access token; prepared only and assigned by no planner.",
+      "name": "cip-svc-command-submitter"
+    },
+    {
+      "attributes": {
+        "codestra.activation": [
+          "PREPARED_DISABLED"
+        ],
+        "codestra.actor.kind": [
+          "service"
+        ],
+        "codestra.cross_family_grant": [
+          "false"
+        ],
+        "codestra.default_role": [
+          "false"
+        ],
+        "codestra.grants.scopes": [
+          "cip.usage.read"
+        ],
+        "codestra.mfa.required": [
+          "false"
+        ],
+        "codestra.role.family": [
+          "cip-product"
+        ],
+        "codestra.tenant.bound": [
+          "true"
+        ]
+      },
+      "clientRole": false,
+      "composite": false,
+      "description": "Codestra CIP dedicated single-tenant CIP service account role: lets its holder obtain cip.usage.read for the holder's own tenant only. Non-composite, never a default role, never copied into the access token; prepared only and assigned by no planner.",
+      "name": "cip-svc-usage-reader"
+    },
+    {
+      "attributes": {
+        "codestra.activation": [
+          "PREPARED_DISABLED"
+        ],
+        "codestra.actor.kind": [
+          "user"
+        ],
+        "codestra.cross_family_grant": [
+          "false"
+        ],
+        "codestra.default_role": [
+          "false"
+        ],
+        "codestra.grants.scopes": [
+          "cip.tenant.admin",
+          "cip.usage.read"
+        ],
+        "codestra.mfa.required": [
+          "true"
+        ],
+        "codestra.role.family": [
+          "cip-product"
+        ],
+        "codestra.tenant.bound": [
+          "true"
+        ]
+      },
+      "clientRole": false,
+      "composite": false,
+      "description": "Codestra CIP human user role: lets its holder obtain cip.tenant.admin, cip.usage.read for the holder's own tenant only. Non-composite, never a default role, never copied into the access token; prepared only and assigned by no planner.",
+      "name": "cip-tenant-admin"
+    },
+    {
+      "attributes": {
+        "codestra.activation": [
+          "PREPARED_DISABLED"
+        ],
+        "codestra.actor.kind": [
+          "user"
+        ],
+        "codestra.cross_family_grant": [
+          "false"
+        ],
+        "codestra.default_role": [
+          "false"
+        ],
+        "codestra.grants.scopes": [
+          "cip.usage.read"
+        ],
+        "codestra.mfa.required": [
+          "true"
+        ],
+        "codestra.role.family": [
+          "cip-product"
+        ],
+        "codestra.tenant.bound": [
+          "true"
+        ]
+      },
+      "clientRole": false,
+      "composite": false,
+      "description": "Codestra CIP human user role: lets its holder obtain cip.usage.read for the holder's own tenant only. Non-composite, never a default role, never copied into the access token; prepared only and assigned by no planner.",
+      "name": "cip-usage-viewer"
+    },
+    {
+      "attributes": {
         "codestra.assignment.independent_approval": [
           "true"
         ],
@@ -2450,8 +2866,354 @@
       ]
     }
   ],
-  "sourceSha256": "430cd6cc7754e75f2913784a528ddf880c3ab232b407bcd58f1a322cd07e2d7a",
+  "sourceSha256": "4f0f553e55c8f8d002675a49f7524f66201fd1c57ec518c715e616f836e8f152",
   "stagedClients": [
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "client": {
+        "attributes": {
+          "access.token.lifespan": "300",
+          "oauth2.device.authorization.grant.enabled": "false",
+          "oidc.ciba.grant.enabled": "false",
+          "pkce.code.challenge.method": "S256",
+          "post.logout.redirect.uris": "http://localhost:5173/",
+          "standard.token.exchange.enabled": "false"
+        },
+        "authorizationServicesEnabled": false,
+        "bearerOnly": false,
+        "clientId": "test-syn-cip-portal",
+        "consentRequired": false,
+        "defaultClientScopes": [
+          "basic",
+          "cip.user.context"
+        ],
+        "description": "Synthetic staging browser client for the P1 product portal (Vite dev origin) and TEST_SYN human certification. Serves many tenants, so it carries no tenant mapper; tenant comes only from the admin-only user attribute. Staging-only desired state outside the protected managed-client policy.",
+        "directAccessGrantsEnabled": false,
+        "enabled": true,
+        "frontchannelLogout": true,
+        "fullScopeAllowed": false,
+        "implicitFlowEnabled": false,
+        "name": "Codestra CIP identity: test-syn-cip-portal",
+        "optionalClientScopes": [
+          "cip.audit.read",
+          "cip.connector.admin",
+          "cip.tenant.admin",
+          "cip.usage.read",
+          "platform.command",
+          "platform.command.read"
+        ],
+        "protocol": "openid-connect",
+        "protocolMappers": [
+          {
+            "config": {
+              "access.token.claim": "true",
+              "id.token.claim": "false",
+              "included.custom.audience": "middleware-api"
+            },
+            "consentRequired": false,
+            "name": "audience-middleware-api",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-audience-mapper"
+          },
+          {
+            "config": {
+              "access.token.claim": "true",
+              "access.tokenResponse.claim": "false",
+              "claim.name": "codestra_actor_kind",
+              "claim.value": "user",
+              "id.token.claim": "false",
+              "jsonType.label": "String",
+              "userinfo.token.claim": "false"
+            },
+            "consentRequired": false,
+            "name": "claim-codestra-actor-kind",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-hardcoded-claim-mapper"
+          }
+        ],
+        "publicClient": true,
+        "redirectUris": [
+          "http://localhost:5173/auth/callback"
+        ],
+        "serviceAccountsEnabled": false,
+        "standardFlowEnabled": true,
+        "webOrigins": [
+          "http://localhost:5173"
+        ]
+      },
+      "sourcePath": "config/desired-state/cip-tenant-identity/clients/test-syn-cip-portal.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "client": {
+        "attributes": {
+          "access.token.lifespan": "300",
+          "client_credentials.use_refresh_token": "false",
+          "oauth2.device.authorization.grant.enabled": "false",
+          "oidc.ciba.grant.enabled": "false",
+          "standard.token.exchange.enabled": "false"
+        },
+        "authorizationServicesEnabled": false,
+        "bearerOnly": false,
+        "clientId": "test-syn-cip-tenant-a-auditor",
+        "consentRequired": false,
+        "defaultClientScopes": [
+          "basic"
+        ],
+        "description": "Tenant A audit-export service account: reads the tenant A audit trail only. Staging-only desired state outside the protected managed-client policy.",
+        "directAccessGrantsEnabled": false,
+        "enabled": true,
+        "frontchannelLogout": false,
+        "fullScopeAllowed": false,
+        "implicitFlowEnabled": false,
+        "name": "Codestra CIP identity: test-syn-cip-tenant-a-auditor",
+        "optionalClientScopes": [
+          "cip.audit.read"
+        ],
+        "protocol": "openid-connect",
+        "protocolMappers": [
+          {
+            "config": {
+              "access.token.claim": "true",
+              "id.token.claim": "false",
+              "included.custom.audience": "middleware-api"
+            },
+            "consentRequired": false,
+            "name": "audience-middleware-api",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-audience-mapper"
+          },
+          {
+            "config": {
+              "access.token.claim": "true",
+              "access.tokenResponse.claim": "false",
+              "claim.name": "codestra_actor_kind",
+              "claim.value": "service",
+              "id.token.claim": "false",
+              "jsonType.label": "String",
+              "userinfo.token.claim": "false"
+            },
+            "consentRequired": false,
+            "name": "claim-codestra-actor-kind",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-hardcoded-claim-mapper"
+          },
+          {
+            "config": {
+              "access.token.claim": "true",
+              "access.tokenResponse.claim": "false",
+              "claim.name": "tenant_id",
+              "claim.value": "TEST_SYN_TENANT_A",
+              "id.token.claim": "false",
+              "jsonType.label": "String",
+              "userinfo.token.claim": "false"
+            },
+            "consentRequired": false,
+            "name": "claim-tenant-id",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-hardcoded-claim-mapper"
+          }
+        ],
+        "publicClient": false,
+        "redirectUris": [],
+        "serviceAccountsEnabled": true,
+        "standardFlowEnabled": false,
+        "webOrigins": []
+      },
+      "sourcePath": "config/desired-state/cip-tenant-identity/clients/test-syn-cip-tenant-a-auditor.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "client": {
+        "attributes": {
+          "access.token.lifespan": "300",
+          "client_credentials.use_refresh_token": "false",
+          "oauth2.device.authorization.grant.enabled": "false",
+          "oidc.ciba.grant.enabled": "false",
+          "standard.token.exchange.enabled": "false"
+        },
+        "authorizationServicesEnabled": false,
+        "bearerOnly": false,
+        "clientId": "test-syn-cip-tenant-a-automation",
+        "consentRequired": false,
+        "defaultClientScopes": [
+          "basic"
+        ],
+        "description": "Tenant A automation service account: submits and reads tenant A commands and reads tenant A usage. Staging-only desired state outside the protected managed-client policy.",
+        "directAccessGrantsEnabled": false,
+        "enabled": true,
+        "frontchannelLogout": false,
+        "fullScopeAllowed": false,
+        "implicitFlowEnabled": false,
+        "name": "Codestra CIP identity: test-syn-cip-tenant-a-automation",
+        "optionalClientScopes": [
+          "cip.usage.read",
+          "platform.command",
+          "platform.command.read"
+        ],
+        "protocol": "openid-connect",
+        "protocolMappers": [
+          {
+            "config": {
+              "access.token.claim": "true",
+              "id.token.claim": "false",
+              "included.custom.audience": "middleware-api"
+            },
+            "consentRequired": false,
+            "name": "audience-middleware-api",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-audience-mapper"
+          },
+          {
+            "config": {
+              "access.token.claim": "true",
+              "access.tokenResponse.claim": "false",
+              "claim.name": "codestra_actor_kind",
+              "claim.value": "service",
+              "id.token.claim": "false",
+              "jsonType.label": "String",
+              "userinfo.token.claim": "false"
+            },
+            "consentRequired": false,
+            "name": "claim-codestra-actor-kind",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-hardcoded-claim-mapper"
+          },
+          {
+            "config": {
+              "access.token.claim": "true",
+              "access.tokenResponse.claim": "false",
+              "claim.name": "tenant_id",
+              "claim.value": "TEST_SYN_TENANT_A",
+              "id.token.claim": "false",
+              "jsonType.label": "String",
+              "userinfo.token.claim": "false"
+            },
+            "consentRequired": false,
+            "name": "claim-tenant-id",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-hardcoded-claim-mapper"
+          },
+          {
+            "config": {
+              "access.token.claim": "true",
+              "access.tokenResponse.claim": "false",
+              "claim.name": "project_ids",
+              "claim.value": "[\"TEST_SYN_PROJECT_A1\"]",
+              "id.token.claim": "false",
+              "jsonType.label": "JSON",
+              "userinfo.token.claim": "false"
+            },
+            "consentRequired": false,
+            "name": "claim-project-ids",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-hardcoded-claim-mapper"
+          }
+        ],
+        "publicClient": false,
+        "redirectUris": [],
+        "serviceAccountsEnabled": true,
+        "standardFlowEnabled": false,
+        "webOrigins": []
+      },
+      "sourcePath": "config/desired-state/cip-tenant-identity/clients/test-syn-cip-tenant-a-automation.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "client": {
+        "attributes": {
+          "access.token.lifespan": "300",
+          "client_credentials.use_refresh_token": "false",
+          "oauth2.device.authorization.grant.enabled": "false",
+          "oidc.ciba.grant.enabled": "false",
+          "standard.token.exchange.enabled": "false"
+        },
+        "authorizationServicesEnabled": false,
+        "bearerOnly": false,
+        "clientId": "test-syn-cip-tenant-b-automation",
+        "consentRequired": false,
+        "defaultClientScopes": [
+          "basic"
+        ],
+        "description": "Tenant B twin of the tenant A automation account. Exists only to prove cross-tenant isolation. Staging-only desired state outside the protected managed-client policy.",
+        "directAccessGrantsEnabled": false,
+        "enabled": true,
+        "frontchannelLogout": false,
+        "fullScopeAllowed": false,
+        "implicitFlowEnabled": false,
+        "name": "Codestra CIP identity: test-syn-cip-tenant-b-automation",
+        "optionalClientScopes": [
+          "cip.usage.read",
+          "platform.command",
+          "platform.command.read"
+        ],
+        "protocol": "openid-connect",
+        "protocolMappers": [
+          {
+            "config": {
+              "access.token.claim": "true",
+              "id.token.claim": "false",
+              "included.custom.audience": "middleware-api"
+            },
+            "consentRequired": false,
+            "name": "audience-middleware-api",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-audience-mapper"
+          },
+          {
+            "config": {
+              "access.token.claim": "true",
+              "access.tokenResponse.claim": "false",
+              "claim.name": "codestra_actor_kind",
+              "claim.value": "service",
+              "id.token.claim": "false",
+              "jsonType.label": "String",
+              "userinfo.token.claim": "false"
+            },
+            "consentRequired": false,
+            "name": "claim-codestra-actor-kind",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-hardcoded-claim-mapper"
+          },
+          {
+            "config": {
+              "access.token.claim": "true",
+              "access.tokenResponse.claim": "false",
+              "claim.name": "tenant_id",
+              "claim.value": "TEST_SYN_TENANT_B",
+              "id.token.claim": "false",
+              "jsonType.label": "String",
+              "userinfo.token.claim": "false"
+            },
+            "consentRequired": false,
+            "name": "claim-tenant-id",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-hardcoded-claim-mapper"
+          },
+          {
+            "config": {
+              "access.token.claim": "true",
+              "access.tokenResponse.claim": "false",
+              "claim.name": "project_ids",
+              "claim.value": "[\"TEST_SYN_PROJECT_B1\"]",
+              "id.token.claim": "false",
+              "jsonType.label": "JSON",
+              "userinfo.token.claim": "false"
+            },
+            "consentRequired": false,
+            "name": "claim-project-ids",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-hardcoded-claim-mapper"
+          }
+        ],
+        "publicClient": false,
+        "redirectUris": [],
+        "serviceAccountsEnabled": true,
+        "standardFlowEnabled": false,
+        "webOrigins": []
+      },
+      "sourcePath": "config/desired-state/cip-tenant-identity/clients/test-syn-cip-tenant-b-automation.json"
+    },
     {
       "authorityGroup": "edge-integration-certification",
       "client": {
