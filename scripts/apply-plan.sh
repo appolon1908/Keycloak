@@ -132,6 +132,9 @@ jq -e \
     and .reviewedActions == [
       $plan[0].clients[] | {clientId, action, beforeSha256, desiredSha256}
     ]
+    and .reviewedExclusions == [
+      $plan[0].excludedClients[] | {clientId, reason}
+    ]
     and .reviewedRealmPolicy == ($plan[0].realmPolicy | {
       resourceType, realm, action, beforeSha256, desiredSha256, smtpCredentialVersion
     })
@@ -146,6 +149,9 @@ jq -e \
     and .environment == $environment
     and .targetRealm == $target_realm
     and (.clients | type == "array")
+    and (.excludedClients | type == "array")
+    and (.excludedCount == (.excludedClients | length))
+    and all(.excludedClients[]; .reason == "environment_scoped")
     and (.realmPolicy.resourceType == "realm")
     and (.realmPolicy.realm == $target_realm)
     and (.realmPolicy.action == "noop" or .realmPolicy.action == "update")
@@ -168,11 +174,26 @@ jq -e \
   '.api == $expected_api[0]' \
   "$PLAN_FILE" >/dev/null || die "Plan API URLs do not match the canonical Codestra endpoints"
 
-mapfile -t policy_clients < <(jq -r '.clients[]' "$ROOT_DIR/config/policy/managed-clients.json" | sort)
+# Clients scoped away from this environment are the only ones a plan may exclude; every
+# other managed client must be present, so nothing can be silently dropped or smuggled in.
+environment_policy="$ROOT_DIR/config/policy/environment-scoped-clients.json"
+mapfile -t policy_clients < <(
+  jq -r --arg environment "$DEPLOY_ENVIRONMENT" --slurpfile scopes "$environment_policy" '
+    .clients[] | select((($scopes[0].clients[.] // [$environment]) | index($environment)) != null)
+  ' "$ROOT_DIR/config/policy/managed-clients.json" | sort
+)
+mapfile -t expected_excluded_clients < <(
+  jq -r --arg environment "$DEPLOY_ENVIRONMENT" --slurpfile scopes "$environment_policy" '
+    .clients[] | select((($scopes[0].clients[.] // [$environment]) | index($environment)) == null)
+  ' "$ROOT_DIR/config/policy/managed-clients.json" | sort
+)
 mapfile -t creatable_clients < <(jq -r '.clients[]' "$ROOT_DIR/config/policy/creatable-clients.json" | sort)
 mapfile -t plan_clients < <(jq -r '.clients[].clientId' "$PLAN_FILE" | sort)
+mapfile -t plan_excluded_clients < <(jq -r '.excludedClients[].clientId' "$PLAN_FILE" | sort)
 [[ "${policy_clients[*]}" == "${plan_clients[*]}" ]] ||
-  die "Plan client set does not match the reviewed managed-client policy"
+  die "Plan client set does not match the reviewed managed-client policy for ${DEPLOY_ENVIRONMENT}"
+[[ "${expected_excluded_clients[*]}" == "${plan_excluded_clients[*]}" ]] ||
+  die "Plan exclusions do not match the environment-scoped client policy for ${DEPLOY_ENVIRONMENT}"
 
 declare -A creatable_client_set=()
 for client_id in "${creatable_clients[@]}"; do

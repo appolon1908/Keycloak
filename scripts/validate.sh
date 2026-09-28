@@ -24,7 +24,7 @@ else
 fi
 python3 -m unittest discover -s "$ROOT_DIR/tests" -p 'test_password_reset_smtp_transport.py' -v
 python3 "$ROOT_DIR/scripts/keycloak_identity_compiler.py" --check
-python3 -m pytest -q "$ROOT_DIR/tests/test_pas237_keycloak_control_plane.py" "$ROOT_DIR/tests/test_keycloak_core_build.py"
+python3 -m pytest -q "$ROOT_DIR/tests/test_pas237_keycloak_control_plane.py" "$ROOT_DIR/tests/test_keycloak_core_build.py" "$ROOT_DIR/tests/test_keycloak_environment_scope_and_client_roles.py" "$ROOT_DIR/tests/test_agent_desktop_identity.py"
 python3 "$ROOT_DIR/scripts/validate-authority-controls.py"
 python3 "$ROOT_DIR/scripts/validate-kyyow-identity.py"
 python3 -m unittest discover -s "$ROOT_DIR/tests" -p 'test_kyyow_identity.py' -v
@@ -143,6 +143,23 @@ jq -e --slurpfile managed "$managed_policy" '
   and .clients == $managed[0].clients
 ' "$creatable_policy" >/dev/null ||
   fail "Creatable-client policy must exactly match managed-client policy"
+
+# Environment scoping keeps a managed client out of every environment it does not name;
+# plan.sh, apply-plan.sh and the control API all read this single policy.
+environment_policy="$CONFIG_ROOT/policy/environment-scoped-clients.json"
+[[ -f "$environment_policy" ]] || fail "Environment-scoped client policy is missing"
+jq -e --slurpfile managed "$managed_policy" '
+  .schema == "codestra.keycloak.environment-scoped-clients.v1"
+  and .environments == ["production", "staging", "test-syn"]
+  and (.clients | type == "object")
+  and all(.clients | to_entries[];
+        (($managed[0].clients | index(.key)) != null)
+        and (.value | type == "array" and length > 0)
+        and (.value == (.value | unique))
+        and (.value == (.value | sort))
+        and all(.value[]; . == "production" or . == "staging" or . == "test-syn"))
+' "$environment_policy" >/dev/null ||
+  fail "Environment-scoped client policy must name managed clients with sorted, known environments"
 
 mapfile -t declared_client_ids < <(jq -r '.clients[]' "$managed_policy" | sort)
 mapfile -t configured_client_ids < <(
@@ -263,6 +280,8 @@ for file in "$CONFIG_ROOT"/clients/*.json; do
         and .protocolMappers[0].config["id.token.claim"] == "false"
       ' "$file" >/dev/null ||
         fail "Klyrow staging portal must use the isolated staging host, PKCE S256, and klyrow-api audience"
+      jq -e '.clients["klyrow-staging-portal"] == ["staging"]' "$environment_policy" >/dev/null ||
+        fail "Klyrow staging portal must be scoped to the staging environment only"
       ;;
     odoo-web)
       jq -e '
@@ -306,6 +325,16 @@ for file in "$CONFIG_ROOT"/clients/*.json; do
       ' "$file" >/dev/null || fail "n8n editor gateway must be confidential Authorization Code + PKCE only"
       ;;
   esac
+
+  # A client whose every redirect URI lives on a staging host can never be planned into
+  # production, whatever the rest of its desired state says.
+  if jq -e '(.redirectUris | length > 0) and all(.redirectUris[]; test("^https://[^/]*staging[^/]*/"))' "$file" >/dev/null; then
+    jq -e --arg client_id "$client_id" '
+      (.clients[$client_id] | type == "array")
+      and ((.clients[$client_id] | index("production")) == null)
+    ' "$environment_policy" >/dev/null ||
+      fail "Staging-only client must be excluded from production by environment-scoped-clients.json: $client_id"
+  fi
 
   client_allowed_attributes="$allowed_attribute_fields"
   if [[ "$client_id" == n8n-editor-gateway ]]; then

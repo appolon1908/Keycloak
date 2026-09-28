@@ -69,7 +69,9 @@
           "script": {
             "exec": [
               "pm.test('200',()=>pm.response.to.have.status(200));",
-              "pm.test('authority schema',()=>pm.expect(pm.response.json().desired.schema).to.eql('codestra.keycloak.identity-authority.v1'));"
+              "pm.test('authority schema',()=>pm.expect(pm.response.json().desired.schema).to.eql('codestra.keycloak.identity-authority.v1'));",
+              "pm.test('staging portal scoped to staging',()=>pm.expect(pm.response.json().desired.environmentScopes['klyrow-staging-portal']).to.eql(['staging']));",
+              "pm.test('agent desktop roles compiled',()=>{const d=pm.response.json().desired;const desk=d.clientRoles.find(x=>x.clientId==='codestra-agent-desktop');pm.expect(desk.roles.map(r=>r.name)).to.include('realtime.agent.connect');pm.expect(d.realmRoles.map(r=>r.name)).to.include('telephony.webphone.use');});"
             ]
           }
         }

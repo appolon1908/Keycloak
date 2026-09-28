@@ -5,7 +5,7 @@ from pathlib import Path
 from urllib.parse import parse_qs,urlsplit
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from keycloak_admin_api import KeycloakAdminAPI,KeycloakAdminError
-from keycloak_identity_compiler import OUT as GENERATED_AUTHORITY,compile_identity
+from keycloak_identity_compiler import OUT as GENERATED_AUTHORITY,compile_identity,scoped_for_environment
 from keycloak_reconciliation import plan,apply_plan,verify_readback,rollback_plan,rollback_attribute_removals,created_inventory,mutation_performed,normalize_environment,digest
 from keycloak_execution_store import EvidenceStore,EvidenceStoreError,redact_secret_material
 from keycloak_recovery_controller import RecoveryController
@@ -36,14 +36,26 @@ class Service:
     def live(self):
         api=self._api()
         clients=api.clients()
-        mappings=[]
-        desired_ids={x.get("clientId") for x in self.desired().get("scopeMappings",[])}
+        mappings=[]; client_roles=[]
+        desired=self.desired()
+        desired_ids={x.get("clientId") for x in desired.get("scopeMappings",[])}
+        role_clients={str(x.get("clientId")) for x in desired.get("clientRoles",[])}
         for client in clients:
-            if client.get("clientId") not in desired_ids or not client.get("id"): continue
-            roles=api.client_realm_role_mappings(str(client["id"]))
-            mappings.append({"clientId":client["clientId"],"fullScopeAllowed":bool(client.get("fullScopeAllowed",False)),"realmRoles":sorted(r.get("name") for r in roles if r.get("name")),"crossFamilyRolesAllowed":False})
-        return {"realm":api.realm_state(),"clients":clients,"clientScopes":api.client_scopes(),"realmRoles":api.realm_roles(),"scopeMappings":mappings,"requiredActions":api.required_actions()}
-    def drift(self): return plan(self.desired(),self.live(),environment=self.environment())
+            if not client.get("id"): continue
+            if client.get("clientId") in desired_ids:
+                roles=api.client_realm_role_mappings(str(client["id"]))
+                mappings.append({"clientId":client["clientId"],"fullScopeAllowed":bool(client.get("fullScopeAllowed",False)),"realmRoles":sorted(r.get("name") for r in roles if r.get("name")),"crossFamilyRolesAllowed":False})
+            # Client roles are read only for clients that declare them; the roles of every
+            # other client stay unmanaged and never enter a plan.
+            if client.get("clientId") in role_clients:
+                for role in api.client_roles(str(client["id"])): client_roles.append({"clientId":client["clientId"],**role})
+        return {"realm":api.realm_state(),"clients":clients,"clientScopes":api.client_scopes(),"realmRoles":api.realm_roles(),"clientRoles":client_roles,"scopeMappings":mappings,"requiredActions":api.required_actions()}
+    def scoped_desired(self,environment=None):
+        # Only the desired state that may live in this environment is planned; a scoped
+        # client (klyrow-staging-portal) never reaches a production or TEST_SYN plan.
+        return scoped_for_environment(self.desired(),environment if environment is not None else self.environment())
+    def drift(self):
+        env=self.environment(); return plan(self.scoped_desired(env),self.live(),environment=env)
     def compile(self):
         # Compilation over HTTP is read-only: it reports drift against the checked-in
         # authority but never rewrites repository files.
@@ -51,7 +63,8 @@ class Service:
         drift=(not GENERATED_AUTHORITY.exists()) or GENERATED_AUTHORITY.read_text(encoding="utf-8")!=text
         return {"compiled":True,"generatedDrift":drift,"identity":model}
     def validate(self):
-        d=compile_identity(); return {"valid":True,"clients":len(d["clients"]),"scopes":len(d["clientScopes"])}
+        d=compile_identity()
+        return {"valid":True,"clients":len(d["clients"]),"scopes":len(d["clientScopes"]),"clientRoles":sum(len(e["roles"]) for e in d.get("clientRoles",[])),"environmentScopedClients":sorted(d.get("environmentScopes",{}))}
 
     def dry_run(self,idempotency_key=None):
         result=self.drift(); key=idempotency_key or result["planSha256"]
@@ -86,6 +99,7 @@ class Service:
                 if old.get("status") in IN_FLIGHT_STATUSES: raise KeycloakAdminError("apply_in_progress","an apply with this idempotency key has not finalized; inspect its evidence before retrying",409)
                 return old
             desired=self.desired(); env=self._mutation_environment(desired); api=self._api()
+            desired=scoped_for_environment(desired,env)
             pre=self.live(); p=plan(desired,pre,environment=env)
             execution_id=str(uuid.uuid4()); pre_state,redacted=redact_secret_material(pre)
             record={"executionId":execution_id,"idempotencyKey":idempotency_key,"mode":"APPLY","environment":env,"status":"IN_PROGRESS","mutationPerformed":False,"desiredStateDigest":p["desiredSha256"],"preStateDigest":p["liveSha256"],"plan":p,"actionJournal":[],"preState":pre_state,"preStateRedactedPaths":redacted,"rollbackStatus":"NOT_RUN"}
@@ -118,7 +132,7 @@ class Service:
             if original.get("mode")!="APPLY" or not original.get("preState"): raise KeycloakAdminError("rollback_not_available","rollback evidence is not available",409)
             if original.get("rollbackStatus")=="ROLLED_BACK": raise KeycloakAdminError("rollback_already_applied","this execution was already rolled back",409)
             if original.get("status")=="IN_PROGRESS": raise KeycloakAdminError("rollback_not_available","the apply never journaled its actions; inspect live state manually",409)
-            desired=self.desired(); env=self._mutation_environment(desired)
+            desired=self.desired(); env=self._mutation_environment(desired); desired=scoped_for_environment(desired,env)
             if normalize_environment(original.get("environment"))!=env: raise KeycloakAdminError("environment_mismatch","rollback must run in the environment the apply targeted",409)
             api=self._api(); current=self.live(); pre=original["preState"]; journal_before=original.get("actionJournal")
             removals=original.get("attributeAdditions")
@@ -163,7 +177,7 @@ class Service:
     def recovery_validate(self):
         result=self.recovery().validate(); rid=str(uuid.uuid4()); self.store.put("recovery",rid,result); return {"validationId":rid,**result}
 
-    def observability_status(self): return observability_status(self.desired(),self.live())
+    def observability_status(self): return observability_status(self.scoped_desired(),self.live())
     def events(self,limit=100):
         api=self._api(); raw=api.events(max_results=limit)
         return normalize_events([{"event_id":e.get("id"),"timestamp":e.get("time"),"event_type":e.get("type"),"outcome":"ERROR" if str(e.get("type","")).endswith("_ERROR") else "SUCCESS","realm":"codestra","client_id":e.get("clientId"),"subject_ref":e.get("userId")} for e in raw],limit=limit)

@@ -1,4 +1,31 @@
 {
+  "clientRoles": [
+    {
+      "clientId": "codestra-agent-desktop",
+      "roles": [
+        {
+          "attributes": {
+            "codestra.actor.kind": [
+              "user"
+            ],
+            "codestra.consumer": [
+              "middleware-websocket-gateway"
+            ],
+            "codestra.default_role": [
+              "false"
+            ],
+            "codestra.role.family": [
+              "agent-desktop"
+            ]
+          },
+          "clientRole": true,
+          "composite": false,
+          "description": "Connect an authenticated agent desktop to the Middleware realtime gateway.",
+          "name": "realtime.agent.connect"
+        }
+      ]
+    }
+  ],
   "clientScopes": [
     {
       "attributes": {
@@ -2360,6 +2387,11 @@
       "productionPromotion": false
     }
   },
+  "environmentScopes": {
+    "klyrow-staging-portal": [
+      "staging"
+    ]
+  },
   "realm": {
     "accessTokenLifespan": 300,
     "bruteForceProtected": true,
@@ -2832,6 +2864,29 @@
       "composite": false,
       "description": "Restricted operational access to approved OpenBao paths only.",
       "name": "secrets-operator"
+    },
+    {
+      "attributes": {
+        "codestra.actor.kind": [
+          "user"
+        ],
+        "codestra.consumer": [
+          "middleware-websocket-gateway"
+        ],
+        "codestra.cross_family_grant": [
+          "false"
+        ],
+        "codestra.default_role": [
+          "false"
+        ],
+        "codestra.role.family": [
+          "agent-desktop"
+        ]
+      },
+      "clientRole": false,
+      "composite": false,
+      "description": "Codestra agent desktop: lets an authenticated human agent use the browser webphone and connect to the Middleware realtime gateway. Required by config/contracts/agent-desktop-realtime-client.json together with the codestra-agent-desktop client role realtime.agent.connect. Non-composite, never a default role, assigned per agent by identity administration and never by a planner.",
+      "name": "telephony.webphone.use"
     }
   ],
   "schema": "codestra.keycloak.identity-authority.v1",
@@ -2866,7 +2921,7 @@
       ]
     }
   ],
-  "sourceSha256": "4f0f553e55c8f8d002675a49f7524f66201fd1c57ec518c715e616f836e8f152",
+  "sourceSha256": "2e825a4b1e55c108a65097f28e4b12b8a1477d0f1d9147021a1af86398f45725",
   "stagedClients": [
     {
       "authorityGroup": "cip-tenant-identity",

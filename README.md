@@ -40,7 +40,11 @@ The protected managed-client boundary is explicit in
 `klyrow-portal`, and the three MoneyBee browser clients. Creation is separately
 allowlisted in `config/policy/creatable-clients.json`; `klyrow-portal` is
 creatable only through the reviewed plan/apply gate with disable-first and
-separate-reviewed-delete rollback metadata.
+separate-reviewed-delete rollback metadata. A managed client that may exist in
+only some environments is listed in
+`config/policy/environment-scoped-clients.json`; `klyrow-staging-portal` is
+scoped to `staging`, so a production plan records it as excluded instead of
+creating it (see `docs/GITOPS.md`).
 
 MoneyBee uses three public PKCE clients:
 

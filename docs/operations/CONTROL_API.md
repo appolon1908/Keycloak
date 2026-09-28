@@ -20,6 +20,11 @@ GitHub `check`/`apply` workflow; it is the programmatic surface behind it.
   so the bearer never leaves the configured host.
 - Secret material is redacted before evidence is written and the store
   rejects any record that still carries a secret-bearing value.
+- Environment scoping from `config/policy/environment-scoped-clients.json` is
+  applied to every plan, drift, apply, rollback and observability read: a
+  client scoped to other environments is excluded from the desired state, and
+  a live copy of it is left unmanaged. An unknown environment excludes every
+  scoped client.
 
 ## Environment
 
@@ -42,9 +47,9 @@ All routes live under `/platform/v1/keycloak`. Responses are JSON with
 | Method | Route | Behaviour |
 |---|---|---|
 | GET | `/health` | Service status, `applyEnabled`, normalized environment |
-| GET | `/desired-state` | Compiled identity authority |
+| GET | `/desired-state` | Compiled identity authority, including `clientRoles` and `environmentScopes` |
 | POST | `/compile` | Read-only compile; reports `generatedDrift` against `generated/` |
-| POST | `/validate` | Compiles and counts clients and scopes |
+| POST | `/validate` | Compiles and counts clients, scopes, client roles and environment-scoped clients |
 | GET | `/drift` | Reconciliation plan against the live realm |
 | POST | `/reconcile/dry-run` | Persists a `DRY_RUN` execution with the plan |
 | POST | `/reconcile/apply` | Requires `X-Idempotency-Key`; live apply with evidence |
@@ -60,6 +65,27 @@ All routes live under `/platform/v1/keycloak`. Responses are JSON with
 | GET | `/promotion/policy` | Promotion policy constants |
 | POST | `/promotion/plan` | Deterministic promotion packet; TEST_SYN can never reach production |
 | GET | `/promotion/plans/{id}` | Stored promotion packet |
+
+## Managed resources
+
+A plan orders its actions by resource type: `realm`, `client_scope`,
+`realm_role`, `client`, `client_role`, `scope_mapping`, `required_action`.
+
+Client roles are declared once per client under
+`config/desired-state/<group>/client-roles/<clientId>.json` and compiled into
+`clientRoles`; the client must be compiled in the same authority. A role's plan
+id is `<clientId>:<roleName>`. Its client is resolved by `clientId` at apply
+time, so a role can be created in the same plan as its client. Live roles that
+desired state does not declare are unmanaged and kept. A rollback deletes only
+roles the apply created, and never separately from a client that the same plan
+deletes (`deleted_with_client`).
+
+The compiler fails closed when a checked-in contract under `config/contracts/`
+requires a realm role or client role that is not compiled
+(`contract_realm_role_unprovisioned`, `contract_client_role_unprovisioned`).
+The agent desktop contract therefore provisions `telephony.webphone.use` and
+`codestra-agent-desktop:realtime.agent.connect` from
+`config/desired-state/agent-desktop-identity/`.
 
 ## Apply evidence and statuses
 

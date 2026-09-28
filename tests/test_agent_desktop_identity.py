@@ -10,3 +10,10 @@ def test_roles():
  c=load('config/contracts/agent-desktop-realtime-client.json'); r=load('config/contracts/agent-desktop-client-roles.json'); assert c['requiredClientRoles']['codestra-agent-desktop']==[r['roles'][0]['name']]; assert 'telephony.webphone.use' in c['requiredRealmRoles']
 def test_registration():
  for p in ('config/policy/managed-clients.json','config/policy/creatable-clients.json'): assert 'codestra-agent-desktop' in load(p)['clients']
+def test_roles_are_provisioned_by_the_compiler():
+ import sys; sys.path.insert(0,str(ROOT/'scripts'))
+ from keycloak_identity_compiler import compile_identity
+ m=compile_identity(); c=load('config/contracts/agent-desktop-realtime-client.json')
+ assert set(c['requiredRealmRoles'])<={r['name'] for r in m['realmRoles']}
+ roles={e['clientId']:{r['name'] for r in e['roles']} for e in m['clientRoles']}
+ for cid,names in c['requiredClientRoles'].items(): assert set(names)<=roles[cid]

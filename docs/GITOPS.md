@@ -47,6 +47,34 @@ action, and disable-first/separate-reviewed-delete rollback metadata. Apply then
 rechecks all reviewed create targets are still absent immediately before the
 first mutation. Any race invalidates the whole plan before writes begin.
 
+## Environment-scoped clients
+
+`config/policy/environment-scoped-clients.json` is the third client policy. It
+names the managed clients that may exist only in the environments it lists;
+every other managed client is allowed everywhere. Today `klyrow-staging-portal`
+is scoped to `staging`, so the staging application can never obtain
+production-issued tokens.
+
+- `scripts/plan.sh` skips a scoped client outside its environments and records
+  it under `excludedClients` with reason `environment_scoped` and the allowed
+  environments; `excludedCount` is part of the plan.
+- `scripts/review-plan.sh` copies the exclusions into `reviewedExclusions`, so
+  the independent reviewer approves exactly what was left out.
+- `scripts/apply-plan.sh` recomputes the expected client set for
+  `DEPLOY_ENVIRONMENT` from the managed and environment-scope policies and
+  refuses a plan whose client set or exclusions differ, before authentication
+  or any write. A plan may not exclude a client the policy allows, and it may
+  not include one the policy excludes.
+- The control API applies the same policy through `KEYCLOAK_ENVIRONMENT`; see
+  `docs/operations/CONTROL_API.md`.
+
+A live copy of a scoped client found in another environment is unmanaged
+there: it is never updated or deleted by the plan. `scripts/validate.sh`
+requires the policy to name only managed clients with sorted, known
+environments, pins `klyrow-staging-portal` to `["staging"]`, and refuses any
+client whose every redirect URI lives on a staging host unless the policy
+excludes it from production.
+
 For every update, apply also re-fetches that specific client immediately before
 its `PUT` and recomputes the reviewed managed-shape hash. A managed-field change
 aborts the operation. A concurrent unmanaged-field change is retained because
