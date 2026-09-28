@@ -71,7 +71,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --yes jq shellcheck
-          python3 -m pip install PyYAML==6.0.3
+          python3 -m pip install PyYAML==6.0.3 pytest==9.1.1
 
       - name: Validate configuration and unit tests before publication
         run: |

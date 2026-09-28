@@ -1,4 +1,5 @@
 {
+  "schema": "keycloak.bootstrap-closure.v1",
   "files": [
     {
       "path": ".github/workflows/keycloak-release-trust-root.yml",
@@ -10,7 +11,7 @@
     },
     {
       "path": ".github/workflows/validate.yml",
-      "sha256": "c208c34950199693bfbbc9db85dc091abd3bdbaedf0b2544ff8b7da4fa63ad70"
+      "sha256": "1540a1629653a8130fd330bf1796e4c69d39b8e2f846c7cf11dfc9e01a2445ab"
     },
     {
       "path": "contracts/kyyow-saas-identity-v1.json",
@@ -46,13 +47,12 @@
     },
     {
       "path": "scripts/validate.sh",
-      "sha256": "d202e935bb0a06fe45277457e8e9e09d905418c9dcbd536e89558a3b7553fdf1"
+      "sha256": "3cff920c2b73f03ead0c6776161da94c63bfe55515c102e240825b2c9bae59eb"
     },
     {
       "path": "tests/test_kyyow_identity.py",
       "sha256": "f1133e8b04226a854b3484ded27149995d54dfceb8b1ff9dfbf062a9140d33e6"
     }
   ],
-  "manifest_sha256": "134327e5cf73b6b6b736d234bdad14950cd985fb022d4c476af06593521da9d2",
-  "schema": "keycloak.bootstrap-closure.v1"
+  "manifest_sha256": "1fc7c58802d6f8b678bb15719642f4bf768ce5fb6c66b586b0e691490dd360fb"
 }

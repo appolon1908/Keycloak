@@ -122,6 +122,12 @@ jobs:
               ;;
           esac
 
+      - name: Install validation tools
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes jq shellcheck python3-yaml python3-pytest
+
       - name: Validate reviewed repository state
         run: ./scripts/validate.sh
 

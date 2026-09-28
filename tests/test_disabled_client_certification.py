@@ -4,6 +4,7 @@ import io
 import json
 from pathlib import Path
 import subprocess
+import sys
 import unittest
 from unittest.mock import patch
 from urllib.error import HTTPError, URLError
@@ -135,7 +136,7 @@ class DisabledClientCertificationTests(unittest.TestCase):
                 self.certify()
 
     def test_caller_evidence_does_not_replace_credentials(self):
-        result = subprocess.run(["python3", str(ROOT / "scripts/certify_disabled_client.py")],
+        result = subprocess.run([sys.executable, str(ROOT / "scripts/certify_disabled_client.py")],
                                 env={"DEPLOY_ENVIRONMENT": "staging",
                                      "DISABLED_CLIENT_EVIDENCE_FILE": "/forged/evidence.json"},
                                 text=True, capture_output=True)

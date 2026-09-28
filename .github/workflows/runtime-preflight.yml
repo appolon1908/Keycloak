@@ -40,6 +40,11 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
           ref: ${{ github.sha }}
+      - name: Install validation tools
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes jq shellcheck python3-yaml python3-pytest
       - name: Require reviewed main and exact confirmation
         env:
           CONFIRM_SHA: ${{ inputs.confirm_sha }}

@@ -14,6 +14,7 @@ for command_name in jq python3; do
   command -v "$command_name" >/dev/null 2>&1 || fail "$command_name is required"
 done
 python3 -c 'import yaml' >/dev/null 2>&1 || fail "PyYAML is required"
+python3 -c 'import pytest' >/dev/null 2>&1 || fail "pytest is required"
 [[ -d "$CONFIG_ROOT" ]] || fail "Configuration root does not exist: $CONFIG_ROOT"
 
 if [[ -n "${RUNTIME_COMPOSE_FILE:-}" ]]; then
