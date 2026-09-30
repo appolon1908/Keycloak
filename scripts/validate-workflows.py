@@ -397,7 +397,7 @@ def validate_release_contract() -> None:
 
     expected_scalars = {
         "schema_version": "codestra.production-orchestrator-contract.v1",
-        "repository": "appolon1908-hue/Keycloak",
+        "repository": "appolon1908/Keycloak",
         "repository_id": 1347523366,
         "default_branch": "main",
         "role": "identity",
