@@ -1,0 +1,33 @@
+{
+  "schema": "codestra.keycloak.required-actions.v1",
+  "policy": "config/security/realm-security-policy.json",
+  "requiredActions": [
+    {
+      "alias": "CONFIGURE_TOTP",
+      "policyKey": "configureTotp",
+      "enabled": true,
+      "defaultAction": false
+    },
+    {
+      "alias": "UPDATE_PASSWORD",
+      "policyKey": "updatePassword",
+      "enabled": true,
+      "defaultAction": false
+    },
+    {
+      "alias": "moneybee-verify-email-otp",
+      "policyKey": "moneybeeEmailOtp",
+      "enabled": true,
+      "defaultAction": false
+    },
+    {
+      "alias": "webauthn-register",
+      "policyKey": "webauthnRegistrationForPrivilegedUsers",
+      "enabled": true,
+      "defaultAction": false
+    }
+  ],
+  "realmSettings": {
+    "verifyEmail": "verifyEmail"
+  }
+}

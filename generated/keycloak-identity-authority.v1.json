@@ -2889,6 +2889,28 @@
       "name": "telephony.webphone.use"
     }
   ],
+  "requiredActions": [
+    {
+      "alias": "CONFIGURE_TOTP",
+      "defaultAction": false,
+      "enabled": true
+    },
+    {
+      "alias": "UPDATE_PASSWORD",
+      "defaultAction": false,
+      "enabled": true
+    },
+    {
+      "alias": "moneybee-verify-email-otp",
+      "defaultAction": false,
+      "enabled": true
+    },
+    {
+      "alias": "webauthn-register",
+      "defaultAction": false,
+      "enabled": true
+    }
+  ],
   "schema": "codestra.keycloak.identity-authority.v1",
   "scopeMappings": [
     {
@@ -2929,7 +2951,8 @@
       ]
     }
   ],
-  "sourceSha256": "79ac07c93170fc2c1e7063704350c6fa82ffd502fa164edf37529a3673f01b55",
+  "serviceAccountRoles": [],
+  "sourceSha256": "b304d8d38c062ab16ac525a4bddd007ccb4a2f3ea32009c273702e04730e082f",
   "stagedClients": [
     {
       "authorityGroup": "cip-tenant-identity",
@@ -4336,6 +4359,64 @@
         "webOrigins": []
       },
       "sourcePath": "config/desired-state/openbao-workload-identity/clients/tempo-runtime.json"
+    }
+  ],
+  "userProfileAttributes": [
+    {
+      "annotations": {
+        "codestra.claim": "tenant_id"
+      },
+      "displayName": "Codestra tenant",
+      "multivalued": false,
+      "name": "tenant_id",
+      "permissions": {
+        "edit": [
+          "admin"
+        ],
+        "view": [
+          "admin"
+        ]
+      },
+      "validations": {
+        "length": {
+          "max": 128,
+          "min": 1
+        },
+        "pattern": {
+          "error-message": "codestraInvalidTenantIdentifier",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        }
+      }
+    },
+    {
+      "annotations": {
+        "codestra.claim": "tenant_ids"
+      },
+      "displayName": "Codestra tenants",
+      "multivalued": true,
+      "name": "tenant_ids",
+      "permissions": {
+        "edit": [
+          "admin"
+        ],
+        "view": [
+          "admin"
+        ]
+      },
+      "validations": {
+        "length": {
+          "max": 128,
+          "min": 1
+        },
+        "multivalued": {
+          "max": "64",
+          "min": "0"
+        },
+        "pattern": {
+          "error-message": "codestraInvalidTenantIdentifier",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        }
+      }
     }
   ]
 }

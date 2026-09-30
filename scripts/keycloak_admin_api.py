@@ -67,6 +67,16 @@ class KeycloakAdminAPI:
     def update_client_role(self,client_internal_id:str,name:str,payload:dict[str,Any])->None: self.request("PUT",f"/clients/{urllib.parse.quote(client_internal_id)}/roles/{urllib.parse.quote(name)}",payload,{204})
     def delete_client_role(self,client_internal_id:str,name:str)->None: self.request("DELETE",f"/clients/{urllib.parse.quote(client_internal_id)}/roles/{urllib.parse.quote(name)}",expected={204})
     def update_required_action(self,alias:str,payload:dict[str,Any])->None: self.request("PUT",f"/authentication/required-actions/{urllib.parse.quote(alias)}",payload,{204})
+    def service_account_user(self,client_internal_id:str)->dict[str,Any]|None:
+        return self.request("GET",f"/clients/{urllib.parse.quote(client_internal_id)}/service-account-user")
+    def user_realm_role_mappings(self,user_id:str)->list[dict[str,Any]]:
+        return self.request("GET",f"/users/{urllib.parse.quote(user_id)}/role-mappings/realm") or []
+    def add_user_realm_role_mappings(self,user_id:str,roles:list[dict[str,Any]])->None:
+        self.request("POST",f"/users/{urllib.parse.quote(user_id)}/role-mappings/realm",roles,{204})
+    def delete_user_realm_role_mappings(self,user_id:str,roles:list[dict[str,Any]])->None:
+        self.request("DELETE",f"/users/{urllib.parse.quote(user_id)}/role-mappings/realm",roles,{204})
+    def user_profile(self)->dict[str,Any]: return self.request("GET","/users/profile") or {}
+    def update_user_profile(self,config:dict[str,Any])->None: self.request("PUT","/users/profile",config,{200})
     def events(self,*,first:int=0,max_results:int=100)->list[dict[str,Any]]:
         max_results=max(1,min(int(max_results),500))
         return self.request("GET",f"/events?first={max(0,int(first))}&max={max_results}") or []

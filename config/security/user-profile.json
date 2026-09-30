@@ -1,0 +1,62 @@
+{
+  "schema": "codestra.keycloak.user-profile-attributes.v1",
+  "merge": "declared attributes only; other realm user-profile attributes, groups and the unmanaged-attribute policy are left unchanged",
+  "attributes": [
+    {
+      "name": "tenant_id",
+      "displayName": "Codestra tenant",
+      "multivalued": false,
+      "permissions": {
+        "view": [
+          "admin"
+        ],
+        "edit": [
+          "admin"
+        ]
+      },
+      "validations": {
+        "pattern": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+          "error-message": "codestraInvalidTenantIdentifier"
+        },
+        "length": {
+          "min": 1,
+          "max": 128
+        }
+      },
+      "annotations": {
+        "codestra.claim": "tenant_id"
+      }
+    },
+    {
+      "name": "tenant_ids",
+      "displayName": "Codestra tenants",
+      "multivalued": true,
+      "permissions": {
+        "view": [
+          "admin"
+        ],
+        "edit": [
+          "admin"
+        ]
+      },
+      "validations": {
+        "pattern": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+          "error-message": "codestraInvalidTenantIdentifier"
+        },
+        "length": {
+          "min": 1,
+          "max": 128
+        },
+        "multivalued": {
+          "min": "0",
+          "max": "64"
+        }
+      },
+      "annotations": {
+        "codestra.claim": "tenant_ids"
+      }
+    }
+  ]
+}

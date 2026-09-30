@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,17 @@ ENVIRONMENT_SCOPES_SCHEMA = "codestra.keycloak.environment-scoped-clients.v1"
 # scope policy is allowed everywhere; a scoped client is planned only where listed.
 ENVIRONMENTS = ("production", "staging", "test-syn")
 SECRET_CONFIG_KEYS = {"secret", "client_secret", "password", "credential"}
+SECURITY = ROOT / "config" / "security"
+REALM_SECURITY_POLICY = SECURITY / "realm-security-policy.json"
+REQUIRED_ACTIONS = SECURITY / "required-actions.json"
+USER_PROFILE = SECURITY / "user-profile.json"
+REQUIRED_ACTIONS_SCHEMA = "codestra.keycloak.required-actions.v1"
+USER_PROFILE_SCHEMA = "codestra.keycloak.user-profile-attributes.v1"
+REQUIRED_ACTION_FIELDS = {"alias", "policyKey", "enabled", "defaultAction"}
+PROFILE_ATTRIBUTE_FIELDS = {"name", "displayName", "multivalued", "permissions", "validations", "annotations"}
+# Keycloak's own profile attributes belong to the realm configuration, not to this declaration.
+BUILT_IN_PROFILE_ATTRIBUTES = {"username", "email", "firstName", "lastName"}
+ATTRIBUTE_MAPPERS = {"oidc-usermodel-attribute-mapper", "saml-user-attribute-mapper"}
 
 
 class IdentityModelError(ValueError):
@@ -255,6 +267,194 @@ def _validate_contract_roles(
                     )
 
 
+def _required_actions(realm_model: dict[str, Any]) -> list[dict[str, Any]]:
+    """Compile required actions from the realm security policy, one switch at a time.
+
+    Each policy switch is either a required-action provider with the same enabled
+    state or a managed realm setting with the same value, so the policy and the
+    reconciled realm cannot disagree without failing here.
+    """
+    document = load_json(REQUIRED_ACTIONS)
+    if document.get("schema") != REQUIRED_ACTIONS_SCHEMA:
+        raise IdentityModelError("required_actions_schema_invalid")
+    policy = load_json(REALM_SECURITY_POLICY).get("requiredActions")
+    if not isinstance(policy, dict) or not policy or not all(isinstance(v, bool) for v in policy.values()):
+        raise IdentityModelError("required_actions_policy_invalid")
+    covered: set[str] = set()
+    output: list[dict[str, Any]] = []
+    for entry in document.get("requiredActions") or []:
+        if not isinstance(entry, dict) or set(entry) != REQUIRED_ACTION_FIELDS:
+            raise IdentityModelError("required_action_fields_invalid")
+        alias = entry["alias"]
+        key = entry["policyKey"]
+        if not isinstance(alias, str) or not alias.strip():
+            raise IdentityModelError("required_action_missing_alias")
+        if any(row["alias"] == alias for row in output):
+            raise IdentityModelError(f"duplicate_required_action:{alias}")
+        if key not in policy:
+            raise IdentityModelError(f"required_action_policy_key_unknown:{alias}:{key}")
+        if key in covered:
+            raise IdentityModelError(f"required_action_policy_key_duplicate:{key}")
+        enabled = entry["enabled"]
+        default_action = entry["defaultAction"]
+        if not isinstance(enabled, bool) or not isinstance(default_action, bool):
+            raise IdentityModelError(f"required_action_flags_invalid:{alias}")
+        if enabled is not policy[key]:
+            raise IdentityModelError(f"required_action_policy_mismatch:{alias}")
+        if default_action and not enabled:
+            raise IdentityModelError(f"required_action_default_disabled:{alias}")
+        covered.add(key)
+        output.append({"alias": alias, "enabled": enabled, "defaultAction": default_action})
+    settings = document.get("realmSettings")
+    if not isinstance(settings, dict):
+        raise IdentityModelError("required_actions_realm_settings_invalid")
+    for key, field in settings.items():
+        if key not in policy:
+            raise IdentityModelError(f"required_action_policy_key_unknown:realm:{key}")
+        if key in covered:
+            raise IdentityModelError(f"required_action_policy_key_duplicate:{key}")
+        if field not in realm_model or realm_model.get(field) is not policy[key]:
+            raise IdentityModelError(f"required_action_realm_setting_mismatch:{key}")
+        covered.add(key)
+    uncovered = sorted(set(policy) - covered)
+    if uncovered:
+        raise IdentityModelError(f"required_action_policy_uncovered:{','.join(uncovered)}")
+    return sorted(output, key=lambda row: row["alias"])
+
+
+def validate_service_account_roles(
+    entries: list[dict[str, Any]],
+    roles_by_name: dict[str, dict[str, Any]],
+    protected_by_id: dict[str, dict[str, Any]],
+    scope_mapping_roles: dict[str, set[str]],
+) -> None:
+    """A service account may hold only active service roles of one family that reach its token."""
+    for entry in entries:
+        client_id = str(entry.get("clientId") or "")
+        if set(entry) != {"clientId", "realmRoles"}:
+            raise IdentityModelError(f"service_account_roles_fields_invalid:{client_id}")
+        client = protected_by_id.get(client_id)
+        if client is None:
+            raise IdentityModelError(f"service_account_roles_client_not_protected:{client_id}")
+        if client.get("serviceAccountsEnabled") is not True:
+            raise IdentityModelError(f"service_account_roles_client_not_service:{client_id}")
+        names = entry.get("realmRoles")
+        if (
+            not isinstance(names, list)
+            or not names
+            or not all(isinstance(name, str) and name for name in names)
+            or len(set(names)) != len(names)
+        ):
+            raise IdentityModelError(f"service_account_roles_invalid:{client_id}")
+        unknown = sorted(name for name in names if name not in roles_by_name)
+        if unknown:
+            raise IdentityModelError(f"service_account_role_unknown:{client_id}:{','.join(unknown)}")
+        for name in names:
+            attributes = roles_by_name[name].get("attributes") or {}
+            # A human role on a machine identity is exactly the leakage the model forbids.
+            if attributes.get("codestra.actor.kind") != ["service"]:
+                raise IdentityModelError(f"service_account_role_not_service:{client_id}:{name}")
+            if "PREPARED_DISABLED" in (attributes.get("codestra.activation") or []):
+                raise IdentityModelError(f"service_account_role_not_active:{client_id}:{name}")
+        families = {
+            tuple((roles_by_name[name].get("attributes") or {}).get("codestra.role.family") or [])
+            for name in names
+        }
+        if len(families) > 1:
+            raise IdentityModelError(f"service_account_roles_cross_family:{client_id}")
+        # Service clients never have full scope, so a role outside the client's role
+        # scope mapping would be granted without ever reaching its access token.
+        mapped = scope_mapping_roles.get(client_id, set())
+        for name in names:
+            if name not in mapped:
+                raise IdentityModelError(f"service_account_role_not_in_token_scope:{client_id}:{name}")
+
+
+def _admin_edit_only(attribute: Any) -> bool:
+    permissions = attribute.get("permissions") if isinstance(attribute, dict) else None
+    return (
+        isinstance(permissions, dict)
+        and permissions.get("edit") == ["admin"]
+        and isinstance(permissions.get("view"), list)
+        and set(permissions["view"]) <= {"admin", "user"}
+    )
+
+
+def _contains_secret(value: Any) -> bool:
+    if isinstance(value, dict):
+        return any(
+            (str(key).lower() in SECRET_CONFIG_KEYS and bool(item)) or _contains_secret(item)
+            for key, item in value.items()
+        )
+    if isinstance(value, list):
+        return any(_contains_secret(item) for item in value)
+    return False
+
+
+def _token_attribute_owners(documents: list[tuple[str, dict[str, Any]]]) -> dict[str, set[str]]:
+    """Map each user attribute that a protocol mapper copies into a token to its owners."""
+    owners: dict[str, set[str]] = {}
+    for label, document in documents:
+        for mapper in document.get("protocolMappers") or []:
+            if mapper.get("protocolMapper") not in ATTRIBUTE_MAPPERS:
+                continue
+            attribute = str((mapper.get("config") or {}).get("user.attribute") or "")
+            if attribute:
+                owners.setdefault(attribute, set()).add(label)
+    return owners
+
+
+def _user_profile_attributes(token_owners: dict[str, set[str]]) -> list[dict[str, Any]]:
+    """Declared user-profile attributes, and the rule that token claims are admin-edited.
+
+    A claim copied from a user attribute is only as trustworthy as the attribute:
+    if the user could edit it, the user could choose the claim. Every such
+    attribute must therefore be declared, here or by the family that owns it,
+    with edit rights for administrators only.
+    """
+    document = load_json(USER_PROFILE)
+    if document.get("schema") != USER_PROFILE_SCHEMA:
+        raise IdentityModelError("user_profile_schema_invalid")
+    family: dict[str, dict[str, Any]] = {}
+    for _path, fragment in _nested_documents("user-profile"):
+        for attribute in fragment.get("attributes") or []:
+            if isinstance(attribute, dict) and attribute.get("name"):
+                family[str(attribute["name"])] = attribute
+    output: list[dict[str, Any]] = []
+    for attribute in document.get("attributes") or []:
+        name = attribute.get("name") if isinstance(attribute, dict) else None
+        if (
+            not isinstance(attribute, dict)
+            or not set(attribute) <= PROFILE_ATTRIBUTE_FIELDS
+            or not {"name", "permissions"} <= set(attribute)
+        ):
+            raise IdentityModelError(f"user_profile_attribute_fields_invalid:{name}")
+        if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9_.-]{1,64}", name):
+            raise IdentityModelError(f"user_profile_attribute_name_invalid:{name}")
+        if any(row["name"] == name for row in output):
+            raise IdentityModelError(f"duplicate_user_profile_attribute:{name}")
+        if name in BUILT_IN_PROFILE_ATTRIBUTES:
+            raise IdentityModelError(f"user_profile_attribute_built_in:{name}")
+        # A family reconciler owns its own attributes; declaring them here as well
+        # would make two reconcilers write the same attribute.
+        if name in family:
+            raise IdentityModelError(f"user_profile_attribute_family_owned:{name}")
+        if not _admin_edit_only(attribute):
+            raise IdentityModelError(f"user_profile_attribute_user_editable:{name}")
+        if _contains_secret(attribute):
+            raise IdentityModelError(f"user_profile_attribute_secret:{name}")
+        output.append(attribute)
+    admin_only = {row["name"] for row in output} | {
+        name for name, attribute in family.items() if _admin_edit_only(attribute)
+    }
+    for attribute, owners in sorted(token_owners.items()):
+        if attribute not in admin_only:
+            raise IdentityModelError(
+                f"token_claim_attribute_not_admin_only:{sorted(owners)[0]}:{attribute}"
+            )
+    return sorted(output, key=lambda row: row["name"])
+
+
 def _unique_by_path(
     documents: list[tuple[Path, dict[str, Any]]],
     key: str,
@@ -316,6 +516,7 @@ def compile_identity() -> dict[str, Any]:
     role_docs = _nested_documents("realm-roles")
     client_role_docs = _nested_documents("client-roles")
     scope_mapping_docs = _nested_documents("scope-mappings")
+    service_account_role_docs = _nested_documents("service-account-roles")
 
     if realm.get("realm") != "codestra" or realm.get("enabled") is not True:
         raise IdentityModelError("realm_invalid")
@@ -332,6 +533,7 @@ def compile_identity() -> dict[str, Any]:
     for scope in scopes:
         validate_mappers(f"scope:{scope['name']}", scope.get("protocolMappers"))
     scope_mappings = _unique_by(scope_mapping_docs, "clientId", "scope_mapping")
+    service_account_roles = _unique_by(service_account_role_docs, "clientId", "service_account_roles")
     environment_scopes = _environment_scopes(protected_ids)
 
     staged_with_provenance = []
@@ -367,24 +569,44 @@ def compile_identity() -> dict[str, Any]:
         clients_by_id,
         {str(m["clientId"]): set(m.get("realmRoles") or []) for m in scope_mappings},
     )
+    validate_service_account_roles(
+        service_account_roles,
+        {role["name"]: role for role in roles},
+        {client["clientId"]: client for client in protected_clients},
+        {str(m["clientId"]): set(m.get("realmRoles") or []) for m in scope_mappings},
+    )
+    token_owners = _token_attribute_owners(
+        [(f"client:{client['clientId']}", client) for client in protected_clients]
+        + [(f"client:{item['client']['clientId']}", item["client"]) for item in staged_with_provenance]
+        + [(f"scope:{scope['name']}", scope) for scope in scopes]
+    )
+    user_profile_attributes = _user_profile_attributes(token_owners)
+    realm_model = {
+        "realm": realm["realm"],
+        "enabled": realm["enabled"],
+        "sslRequired": realm.get("sslRequired"),
+        "verifyEmail": realm.get("verifyEmail"),
+        "resetPasswordAllowed": realm.get("resetPasswordAllowed"),
+        "bruteForceProtected": realm.get("bruteForceProtected"),
+        "accessTokenLifespan": realm.get("accessTokenLifespan"),
+    }
+    required_actions = _required_actions(realm_model)
 
     model: dict[str, Any] = {
         "schema": "codestra.keycloak.identity-authority.v1",
-        "realm": {
-            "realm": realm["realm"],
-            "enabled": realm["enabled"],
-            "sslRequired": realm.get("sslRequired"),
-            "verifyEmail": realm.get("verifyEmail"),
-            "resetPasswordAllowed": realm.get("resetPasswordAllowed"),
-            "bruteForceProtected": realm.get("bruteForceProtected"),
-            "accessTokenLifespan": realm.get("accessTokenLifespan"),
-        },
+        "realm": realm_model,
         "clients": protected_clients,
         "stagedClients": staged_with_provenance,
         "clientScopes": scopes,
         "realmRoles": roles,
         "clientRoles": client_roles,
         "scopeMappings": scope_mappings,
+        "serviceAccountRoles": [
+            {"clientId": entry["clientId"], "realmRoles": sorted(entry["realmRoles"])}
+            for entry in service_account_roles
+        ],
+        "requiredActions": required_actions,
+        "userProfileAttributes": user_profile_attributes,
         "environmentScopes": environment_scopes,
         "environmentBoundaries": {
             "production": {"issuer": "https://auth.codestra.co/realms/codestra"},
@@ -416,6 +638,9 @@ def scoped_for_environment(model: dict[str, Any], environment: Any) -> dict[str,
     ]
     scoped["scopeMappings"] = [
         m for m in model.get("scopeMappings", []) if m.get("clientId") not in excluded
+    ]
+    scoped["serviceAccountRoles"] = [
+        m for m in model.get("serviceAccountRoles", []) if m.get("clientId") not in excluded
     ]
     scoped["excludedClients"] = sorted(excluded)
     return scoped
@@ -452,6 +677,9 @@ def main() -> int:
                 "roles": len(model["realmRoles"]),
                 "clientRoles": sum(len(entry["roles"]) for entry in model["clientRoles"]),
                 "environmentScopedClients": len(model["environmentScopes"]),
+                "requiredActions": len(model["requiredActions"]),
+                "serviceAccountRoles": len(model["serviceAccountRoles"]),
+                "userProfileAttributes": len(model["userProfileAttributes"]),
                 "sha256": model["sourceSha256"],
             },
             sort_keys=True,

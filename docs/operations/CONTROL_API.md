@@ -68,8 +68,9 @@ All routes live under `/platform/v1/keycloak`. Responses are JSON with
 
 ## Managed resources
 
-A plan orders its actions by resource type: `realm`, `client_scope`,
-`realm_role`, `client`, `client_role`, `scope_mapping`, `required_action`.
+A plan orders its actions by resource type: `realm`, `user_profile_attribute`,
+`client_scope`, `realm_role`, `client`, `client_role`, `scope_mapping`,
+`service_account_roles`, `required_action`.
 Each action is `CREATE`, `UPDATE`, `DELETE`, `KEEP` or `ERROR`.
 
 `ERROR` marks a managed resource the plan cannot reconcile. Its `reason`
@@ -77,7 +78,11 @@ names the cause: `missing_internal_id:<id>` for a live client or client scope
 without a Keycloak id, `client_role_client_missing:<clientId>:<role>` for a
 role whose client is neither desired nor live, and
 `scope_mapping_role_missing:<roles>` for a scope mapping naming a realm role
-that is neither desired nor live. Drift and dry-run show these actions; an
+that is neither desired nor live, `required_action_not_registered:<alias>` for a
+declared required action the server does not list,
+`service_account_role_missing:<roles>` for a service-account grant naming a realm
+role that is neither desired nor live, and `service_account_client_missing:<clientId>`
+for a grant whose client is neither desired nor live. Drift and dry-run show these actions; an
 apply whose plan carries one is `REJECTED` with that reason before any write,
 and readback and observability count it as unconverged.
 
@@ -106,6 +111,42 @@ name a compiled client, keep `fullScopeAllowed` and `crossFamilyRolesAllowed`
 false, and list distinct compiled realm roles from a single
 `codestra.role.family`. Protocol mappers on a client or client scope need a
 unique name, and no two of them may write the same `claim.name`.
+
+Required actions are compiled from `config/security/required-actions.json`.
+Every switch in the `requiredActions` section of
+`config/security/realm-security-policy.json` is covered exactly once: either by
+a required-action alias whose `enabled` equals the switch, or by a managed realm
+setting with the same value (`verifyEmail` maps to the realm's `verifyEmail`,
+because MoneyBee's email code replaces Keycloak's link verification). The
+compiled row holds `alias`, `enabled` and `defaultAction`; an update sends the
+live provider record with those fields replaced, so its name, priority and
+configuration are kept. Required actions are never created or deleted by the
+plan; an unregistered provider is an `ERROR`.
+
+Service-account realm roles are declared under
+`config/desired-state/<group>/service-account-roles/<clientId>.json` as
+`{"clientId": ..., "realmRoles": [...]}`. The client must be a protected service
+client, every role must be a compiled realm role with
+`codestra.actor.kind: ["service"]` that is not `PREPARED_DISABLED`, the roles
+must share one `codestra.role.family`, and each must also be in the client's role
+scope mapping, because a service client never has full scope and a role outside
+that mapping would never reach its token. Once declared, the service account's
+realm roles are exactly the declared set; the realm's `default-roles-*`
+composite is left alone. No grant is declared yet; the prepared CIP service
+grants stay with their own staging reconciler.
+
+User-profile attributes are declared in `config/security/user-profile.json`.
+Each must give edit rights to administrators only, must not be a Keycloak
+built-in attribute or an attribute a desired-state family declares under its own
+`user-profile/`, and may carry only `name`, `displayName`, `multivalued`,
+`permissions`, `validations` and `annotations`. Every user attribute that a
+compiled client, staged client or client scope copies into a token with an
+attribute mapper must be declared admin-edited here or by its family
+(`token_claim_attribute_not_admin_only`), so a user can never choose a claim.
+`tenant_id` and `tenant_ids` are declared this way. The plan appends missing
+attributes, replaces a declared attribute whose declared fields drift, and keeps
+every other attribute, the groups and the unmanaged-attribute policy. A rollback
+deletes only attributes its apply created and restores replaced ones exactly.
 
 ## Apply evidence and statuses
 
