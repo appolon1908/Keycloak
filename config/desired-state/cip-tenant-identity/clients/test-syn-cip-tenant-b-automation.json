@@ -1,7 +1,7 @@
 {
   "clientId": "test-syn-cip-tenant-b-automation",
   "name": "Codestra CIP identity: test-syn-cip-tenant-b-automation",
-  "description": "Tenant B twin of the tenant A automation account. Exists only to prove cross-tenant isolation. Staging-only desired state outside the protected managed-client policy.",
+  "description": "Tenant B twin of the tenant A automation account. Exists only to prove cross-tenant isolation. Staging only; not a managed client.",
   "enabled": true,
   "protocol": "openid-connect",
   "bearerOnly": false,

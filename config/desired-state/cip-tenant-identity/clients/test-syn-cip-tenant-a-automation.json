@@ -1,7 +1,7 @@
 {
   "clientId": "test-syn-cip-tenant-a-automation",
   "name": "Codestra CIP identity: test-syn-cip-tenant-a-automation",
-  "description": "Tenant A automation service account: submits and reads tenant A commands and reads tenant A usage. Staging-only desired state outside the protected managed-client policy.",
+  "description": "Tenant A automation service account: submits and reads tenant A commands and reads tenant A usage. Staging only; not a managed client.",
   "enabled": true,
   "protocol": "openid-connect",
   "bearerOnly": false,

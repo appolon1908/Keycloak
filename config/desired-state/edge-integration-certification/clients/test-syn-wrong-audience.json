@@ -1,7 +1,7 @@
 {
   "clientId": "test-syn-wrong-audience",
   "name": "Codestra edge-certification identity: test-syn-wrong-audience",
-  "description": "Isolated staging service identity for the TEST_SYN Keycloak -> Caddy -> Kong -> Middleware edge certification. Valid staging token whose audience is not the Middleware/Kong audience; expected 401 on every route. Repository-only desired state outside the protected managed-client policy; never a production client.",
+  "description": "TEST_SYN edge-certification identity (Keycloak -> Caddy -> Kong -> Middleware). Valid staging token whose audience is not the Middleware/Kong audience; expected 401 on every route. Staging only; never a production client.",
   "enabled": true,
   "protocol": "openid-connect",
   "publicClient": false,

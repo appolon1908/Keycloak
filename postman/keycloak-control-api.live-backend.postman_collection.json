@@ -1,0 +1,121 @@
+{
+  "info": {
+    "name": "Keycloak Control API - Disposable Realm Lifecycle",
+    "description": "Run only against a control API backed by a disposable, loopback-only TEST_SYN realm that starts empty, with KEYCLOAK_MUTATION_ENABLED=true. It applies the compiled desired state, checks convergence and idempotency, then rolls back to the empty realm. Pass a unique runKey per run. Never point it at staging or production.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key": "baseUrl", "value": "http://127.0.0.1:8785"},
+    {"key": "runKey", "value": "disposable-lifecycle"}
+  ],
+  "item": [
+    {
+      "name": "Health reports a mutation-enabled TEST_SYN target",
+      "request": {"method": "GET", "url": "{{baseUrl}}/platform/v1/keycloak/health"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('200', () => pm.response.to.have.status(200));",
+        "const body = pm.response.json();",
+        "pm.test('apply enabled', () => pm.expect(body.applyEnabled).to.eql(true));",
+        "pm.test('disposable TEST_SYN environment', () => pm.expect(body.environment).to.eql('test-syn'));"
+      ]}}]
+    },
+    {
+      "name": "Drift on the empty realm has no ERROR",
+      "request": {"method": "GET", "url": "{{baseUrl}}/platform/v1/keycloak/drift"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('200', () => pm.response.to.have.status(200));",
+        "const actions = pm.response.json().plan.actions;",
+        "pm.test('no ERROR action', () => pm.expect(actions.filter(a => a.kind === 'ERROR')).to.eql([]));",
+        "pm.test('realm starts empty', () => pm.expect(actions.filter(a => a.kind === 'CREATE').length).to.be.above(0));"
+      ]}}]
+    },
+    {
+      "name": "Dry run does not mutate",
+      "request": {"method": "POST", "header": [{"key": "X-Idempotency-Key", "value": "{{runKey}}-dry-run"}], "url": "{{baseUrl}}/platform/v1/keycloak/reconcile/dry-run"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('200', () => pm.response.to.have.status(200));",
+        "const e = pm.response.json().execution;",
+        "pm.test('dry run completed', () => { pm.expect(e.mode).to.eql('DRY_RUN'); pm.expect(e.status).to.eql('COMPLETED'); });",
+        "pm.test('no mutation', () => pm.expect(e.mutationPerformed).to.eql(false));"
+      ]}}]
+    },
+    {
+      "name": "Apply converges with readback equal",
+      "request": {"method": "POST", "header": [{"key": "X-Idempotency-Key", "value": "{{runKey}}-apply"}], "url": "{{baseUrl}}/platform/v1/keycloak/reconcile/apply"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('200', () => pm.response.to.have.status(200));",
+        "const e = pm.response.json().execution;",
+        "pm.test('completed', () => pm.expect(e.status).to.eql('COMPLETED'));",
+        "pm.test('mutation performed', () => pm.expect(e.mutationPerformed).to.eql(true));",
+        "pm.test('readback equal', () => pm.expect(e.readback.equal).to.eql(true));",
+        "pm.test('no pending action', () => pm.expect(e.readback.pendingActions).to.eql([]));",
+        "pm.collectionVariables.set('executionId', e.executionId);"
+      ]}}]
+    },
+    {
+      "name": "Drift after apply is all KEEP",
+      "request": {"method": "GET", "url": "{{baseUrl}}/platform/v1/keycloak/drift"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('200', () => pm.response.to.have.status(200));",
+        "const changes = pm.response.json().plan.actions.filter(a => a.kind !== 'KEEP');",
+        "pm.test('converged', () => pm.expect(changes).to.eql([]));"
+      ]}}]
+    },
+    {
+      "name": "Repeat apply with a new key performs no mutation",
+      "request": {"method": "POST", "header": [{"key": "X-Idempotency-Key", "value": "{{runKey}}-apply-repeat"}], "url": "{{baseUrl}}/platform/v1/keycloak/reconcile/apply"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('200', () => pm.response.to.have.status(200));",
+        "const e = pm.response.json().execution;",
+        "pm.test('completed', () => pm.expect(e.status).to.eql('COMPLETED'));",
+        "pm.test('no mutation', () => pm.expect(e.mutationPerformed).to.eql(false));"
+      ]}}]
+    },
+    {
+      "name": "Replaying the first key returns the recorded execution",
+      "request": {"method": "POST", "header": [{"key": "X-Idempotency-Key", "value": "{{runKey}}-apply"}], "url": "{{baseUrl}}/platform/v1/keycloak/reconcile/apply"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('200', () => pm.response.to.have.status(200));",
+        "pm.test('same execution', () => pm.expect(pm.response.json().execution.executionId).to.eql(pm.collectionVariables.get('executionId')));"
+      ]}}]
+    },
+    {
+      "name": "Execution evidence is hashed and redacted",
+      "request": {"method": "GET", "url": "{{baseUrl}}/platform/v1/keycloak/reconcile/executions/{{executionId}}/evidence"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('200', () => pm.response.to.have.status(200));",
+        "const ev = pm.response.json().evidence;",
+        "pm.test('sha256 recorded', () => pm.expect(ev.sha256).to.match(/^[0-9a-f]{64}$/));",
+        "pm.test('redaction recorded', () => pm.expect(ev.payload.preStateRedactedPaths).to.be.an('array'));"
+      ]}}]
+    },
+    {
+      "name": "Rollback restores the empty realm",
+      "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"executionId\":\"{{executionId}}\"}"}, "url": "{{baseUrl}}/platform/v1/keycloak/reconcile/rollback"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('200', () => pm.response.to.have.status(200));",
+        "const r = pm.response.json().rollback;",
+        "pm.test('completed', () => pm.expect(r.status).to.eql('COMPLETED'));",
+        "pm.test('readback equal to the pre-state', () => pm.expect(r.readback.equal).to.eql(true));"
+      ]}}]
+    },
+    {
+      "name": "A second rollback is refused",
+      "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"executionId\":\"{{executionId}}\"}"}, "url": "{{baseUrl}}/platform/v1/keycloak/reconcile/rollback"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('409', () => pm.response.to.have.status(409));",
+        "pm.test('already rolled back', () => pm.expect(pm.response.json().error.code).to.eql('rollback_already_applied'));"
+      ]}}]
+    },
+    {
+      "name": "Drift after rollback shows the empty realm again",
+      "request": {"method": "GET", "url": "{{baseUrl}}/platform/v1/keycloak/drift"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('200', () => pm.response.to.have.status(200));",
+        "const actions = pm.response.json().plan.actions;",
+        "pm.test('no ERROR action', () => pm.expect(actions.filter(a => a.kind === 'ERROR')).to.eql([]));",
+        "pm.test('desired resources are absent again', () => pm.expect(actions.filter(a => a.kind === 'CREATE').length).to.be.above(0));"
+      ]}}]
+    }
+  ]
+}

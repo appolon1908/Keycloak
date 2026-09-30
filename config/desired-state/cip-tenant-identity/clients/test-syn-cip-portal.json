@@ -1,7 +1,7 @@
 {
   "clientId": "test-syn-cip-portal",
   "name": "Codestra CIP identity: test-syn-cip-portal",
-  "description": "Synthetic staging browser client for the P1 product portal (Vite dev origin) and TEST_SYN human certification. Serves many tenants, so it carries no tenant mapper; tenant comes only from the admin-only user attribute. Staging-only desired state outside the protected managed-client policy.",
+  "description": "Synthetic staging browser client for the P1 product portal (Vite dev origin) and TEST_SYN human certification. Serves many tenants, so it carries no tenant mapper; tenant comes only from the admin-only user attribute. Staging only; not a managed client.",
   "enabled": true,
   "protocol": "openid-connect",
   "bearerOnly": false,

@@ -1,6 +1,6 @@
 {
   "name": "cip-connector-admin",
-  "description": "Codestra CIP human user role: lets its holder obtain cip.connector.admin for the holder's own tenant only. Non-composite, never a default role, never copied into the access token; prepared only and assigned by no planner.",
+  "description": "CIP human user role: obtains cip.connector.admin for its own tenant only. Non-composite, never default, not in the access token; prepared only.",
   "composite": false,
   "clientRole": false,
   "attributes": {

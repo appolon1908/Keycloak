@@ -1,7 +1,7 @@
 {
   "clientId": "loki-runtime",
   "name": "Codestra service identity: loki-runtime",
-  "description": "Confidential machine identity for the monitoring plane. Reads Loki object-storage and ingestion authentication material. Repository-only desired state applied to staging by the narrow OpenBao workload-identity reconciler; production binding requires the protected managed-client process.",
+  "description": "Monitoring machine identity. Reads Loki object-storage and ingestion authentication material. Staging via the OpenBao workload reconciler; production needs managed-client review.",
   "enabled": true,
   "protocol": "openid-connect",
   "publicClient": false,

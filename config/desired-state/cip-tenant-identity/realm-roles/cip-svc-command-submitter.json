@@ -1,6 +1,6 @@
 {
   "name": "cip-svc-command-submitter",
-  "description": "Codestra CIP dedicated single-tenant CIP service account role: lets its holder obtain platform.command for the holder's own tenant only. Non-composite, never a default role, never copied into the access token; prepared only and assigned by no planner.",
+  "description": "CIP dedicated single-tenant CIP service account role: obtains platform.command for its own tenant only. Non-composite, never default, not in the access token; prepared only.",
   "composite": false,
   "clientRole": false,
   "attributes": {

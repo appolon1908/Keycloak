@@ -1,7 +1,7 @@
 {
   "clientId": "test-syn-cip-tenant-a-auditor",
   "name": "Codestra CIP identity: test-syn-cip-tenant-a-auditor",
-  "description": "Tenant A audit-export service account: reads the tenant A audit trail only. Staging-only desired state outside the protected managed-client policy.",
+  "description": "Tenant A audit-export service account: reads the tenant A audit trail only. Staging only; not a managed client.",
   "enabled": true,
   "protocol": "openid-connect",
   "bearerOnly": false,

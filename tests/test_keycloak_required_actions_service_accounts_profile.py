@@ -331,10 +331,19 @@ def test_values_longer_than_keycloak_columns_are_errors_before_any_write():
         def __getattr__(self,name): return lambda *a,**k: calls.append(name)
     assert apply_plan(doc,desired,live,API(),enabled=True,environment="staging")["status"]=="REJECTED" and calls==[]
 
-def test_compiled_authority_has_no_over_length_value_outside_the_kong_pinned_family():
+def test_compiled_authority_fits_keycloak_columns():
     model=compile_identity()
-    over=sorted(r.get("name") for r in model["clientScopes"]+model["realmRoles"] if len(r.get("description") or "")>255)
-    assert all(name.startswith(("cip.","cip-")) or name in {"platform.command","platform.command.read"} for name in over), over
+    rows=model["clients"]+[s["client"] for s in model["stagedClients"]]+model["clientScopes"]+model["realmRoles"]
+    over=[(r.get("clientId") or r.get("name"),f) for r in rows for f in compiler.COLUMN_LIMITED_FIELDS if len(str(r.get(f) or ""))>255]
+    assert over==[]
+
+@pytest.mark.parametrize("directory,document,label",[
+    ("client-scopes",{"name":"long-scope","protocol":"openid-connect","description":"d"*256},"scope:long-scope:description:256"),
+    ("realm-roles",{"name":"long-role","description":"d"*300},"realm_role:long-role:description:300"),
+])
+def test_over_length_values_fail_compilation(monkeypatch,directory,document,label):
+    add_nested(monkeypatch,directory,document)
+    with pytest.raises(IdentityModelError,match="keycloak_column_too_long:"+label): compile_identity()
 
 # --- representation differences seen on Keycloak 26.7.2 ------------------------
 

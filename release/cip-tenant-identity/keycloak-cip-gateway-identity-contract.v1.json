@@ -9,16 +9,16 @@
     "production cip-portal remains blocked until its origin is reviewed; unbound scopes stay unbound until Middleware routes exist"
   ],
   "authority": {
-    "configurationChecksum": "cb3993ffdd5e691931ef842b8057f574b96994c049d3fdb5f31e5ae946506d2c",
+    "configurationChecksum": "a790de74382dff2ca06bc0cb13c92211234ad856e6eea88e91b2497a26bf1abe",
     "consumptionRule": "Kong imports this file as data only, pins it by sha256 and never edits Keycloak desired state.",
     "contract": "config/desired-state/cip-tenant-identity/contract.json",
     "contractSha256": "af7dc452969859370f82ac9a3479cd8cd01ed2bcb7b83bf2498f41fca19e978b",
     "desiredStatePlan": "release/cip-tenant-identity/keycloak-cip-tenant-identity-desired-state-plan.json",
-    "desiredStatePlanSha256": "5b75a7ef69456e8e429addb846814068caaff94c9288463c617a6376067e993f",
+    "desiredStatePlanSha256": "d1a3ddbf1e7f03565343806daa8c06a5996144905a6efbb97fdaf80c47253c3b",
     "hashRule": "contractSha256, tokenMatrixSha256 and parityEvidenceSha256 are sha256 over json.dumps(document, sort_keys=True, separators=(',', ':')).encode('utf-8'); desiredStatePlanSha256 is sha256 over the committed plan file bytes, as recorded in its .sha256 file",
     "parityEvidence": "config/certification/cip-f3-cross-repo-parity-recertification.v1.json",
     "parityEvidenceSha256": "6fad70e4cf2c319210cbc9f4fc96e3830dc8efae3a12ed03f1cc4555a3c54b80",
-    "repository": "ingtrader21-spec/Keycloak",
+    "repository": "appolon1908/Keycloak",
     "tokenMatrix": "config/certification/cip-tenant-token-matrix.v1.json",
     "tokenMatrixSha256": "f5f98b3eb5658f1c180a15389ecc63cc5619c7df730140825b7d3fc549db1551"
   },

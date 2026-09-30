@@ -1,7 +1,7 @@
 {
   "clientId": "test-syn-n8n-submit",
   "name": "Codestra edge-certification identity: test-syn-n8n-submit",
-  "description": "Isolated staging service identity for the TEST_SYN Keycloak -> Caddy -> Kong -> Middleware edge certification. Submits one safe TEST_SYN n8n result through the shared edge; expected 202. Repository-only desired state outside the protected managed-client policy; never a production client.",
+  "description": "TEST_SYN edge-certification identity (Keycloak -> Caddy -> Kong -> Middleware). Submits one safe TEST_SYN n8n result through the shared edge; expected 202. Staging only; never a production client.",
   "enabled": true,
   "protocol": "openid-connect",
   "publicClient": false,

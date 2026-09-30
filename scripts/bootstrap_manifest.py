@@ -12,7 +12,7 @@ import sys
 
 SCHEMA = "keycloak.bootstrap-closure.v1"
 POLICY_PATH = "config/bootstrap/executable-closure.json"
-REPOSITORY = "appolon1908-hue/Keycloak"
+REPOSITORY = "appolon1908/Keycloak"
 
 
 class ManifestError(ValueError):

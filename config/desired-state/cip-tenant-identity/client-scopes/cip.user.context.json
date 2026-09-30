@@ -1,6 +1,6 @@
 {
   "name": "cip.user.context",
-  "description": "Codestra CIP human tenant context managed by protected Keycloak GitOps. Emits tenant_id and project_ids from the admin-only codestra_tenant_id / codestra_project_ids user-profile attributes and the amr MFA evidence. Default scope of CIP browser clients only; never a realm default, never on a service client, and not an authorization scope (excluded from the scope claim).",
+  "description": "CIP human tenant context: tenant_id and project_ids from admin-only codestra_* profile attributes, plus amr. Default scope of CIP browser clients only; never a realm default or on a service client, and not an authorization scope.",
   "protocol": "openid-connect",
   "attributes": {
     "display.on.consent.screen": "false",

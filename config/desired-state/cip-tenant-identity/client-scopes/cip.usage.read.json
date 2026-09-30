@@ -1,6 +1,6 @@
 {
   "name": "cip.usage.read",
-  "description": "Codestra CIP optional product scope (usage read) managed by protected Keycloak GitOps. Read metering and usage for the token tenant (and its projects when narrowed). Read-only; no billing or quota mutation. Requested explicitly per short-lived token, issued only to holders of its mapped CIP realm roles, bound to the token tenant_id, and never a realm or client default.",
+  "description": "CIP optional scope (usage read): Read metering and usage for the token tenant (and its projects when narrowed). Read-only; no billing or quota mutation. Per-token, role-gated, tenant-bound; never a default.",
   "protocol": "openid-connect",
   "attributes": {
     "display.on.consent.screen": "false",

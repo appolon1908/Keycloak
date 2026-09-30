@@ -1,7 +1,7 @@
 {
   "clientId": "redis-exporter",
   "name": "Codestra service identity: redis-exporter",
-  "description": "Confidential machine identity for the monitoring plane. Reads the monitoring-only Redis ACL credential for the Redis exporter. Repository-only desired state applied to staging by the narrow OpenBao workload-identity reconciler; production binding requires the protected managed-client process.",
+  "description": "Monitoring machine identity. Reads the monitoring-only Redis ACL credential for the Redis exporter. Staging via the OpenBao workload reconciler; production needs managed-client review.",
   "enabled": true,
   "protocol": "openid-connect",
   "publicClient": false,

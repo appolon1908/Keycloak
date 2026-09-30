@@ -1,7 +1,7 @@
 {
   "clientId": "grafana-runtime",
   "name": "Codestra service identity: grafana-runtime",
-  "description": "Confidential machine identity for the monitoring plane. Reads Grafana datasource credentials, the Middleware observability read token and the Grafana OIDC client secret; reads Middleware operational views. Repository-only desired state applied to staging by the narrow OpenBao workload-identity reconciler; production binding requires the protected managed-client process.",
+  "description": "Monitoring machine identity. Reads Grafana datasource credentials, the Middleware observability token and the Grafana OIDC secret; reads Middleware operational views. Staging via the OpenBao workload reconciler; production needs managed-client review.",
   "enabled": true,
   "protocol": "openid-connect",
   "publicClient": false,

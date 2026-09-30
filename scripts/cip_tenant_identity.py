@@ -490,10 +490,9 @@ def render_user_context_scope(contract: dict[str, Any]) -> dict[str, Any]:
     return {
         "name": USER_CONTEXT_SCOPE,
         "description": (
-            "Codestra CIP human tenant context managed by protected Keycloak GitOps. Emits tenant_id and "
-            "project_ids from the admin-only codestra_tenant_id / codestra_project_ids user-profile attributes "
-            "and the amr MFA evidence. Default scope of CIP browser clients only; never a realm default, never "
-            "on a service client, and not an authorization scope (excluded from the scope claim)."
+            "CIP human tenant context: tenant_id and project_ids from admin-only codestra_* profile attributes, "
+            "plus amr. Default scope of CIP browser clients only; never a realm default or on a service client, "
+            "and not an authorization scope."
         ),
         "protocol": "openid-connect",
         "attributes": {
@@ -557,9 +556,8 @@ def render_product_scope(scope: dict[str, Any]) -> dict[str, Any]:
     return {
         "name": scope["name"],
         "description": (
-            f"Codestra CIP optional product scope ({scope['capability']}) managed by protected Keycloak GitOps. "
-            f"{scope['description']} Requested explicitly per short-lived token, issued only to holders of its "
-            "mapped CIP realm roles, bound to the token tenant_id, and never a realm or client default."
+            f"CIP optional scope ({scope['capability']}): {scope['description']} "
+            "Per-token, role-gated, tenant-bound; never a default."
         ),
         "protocol": "openid-connect",
         "attributes": {
@@ -576,9 +574,8 @@ def render_realm_role(role: dict[str, Any]) -> dict[str, Any]:
     return {
         "name": role["name"],
         "description": (
-            f"Codestra CIP {holder} role: lets its holder obtain {', '.join(role['grantsScopes'])} for the "
-            "holder's own tenant only. Non-composite, never a default role, never copied into the access token; "
-            "prepared only and assigned by no planner."
+            f"CIP {holder} role: obtains {', '.join(role['grantsScopes'])} for its own tenant only. "
+            "Non-composite, never default, not in the access token; prepared only."
         ),
         "composite": False,
         "clientRole": False,
@@ -611,7 +608,7 @@ def render_client(contract: dict[str, Any], entry: dict[str, Any]) -> dict[str, 
     common = {
         "clientId": client_id,
         "name": f"Codestra CIP identity: {client_id}",
-        "description": entry["purpose"] + " Staging-only desired state outside the protected managed-client policy.",
+        "description": entry["purpose"] + " Staging only; not a managed client.",
         "enabled": True,
         "protocol": "openid-connect",
         "bearerOnly": False,
@@ -1003,7 +1000,7 @@ def build_gateway_contract(contract: dict[str, Any], plan: dict[str, Any]) -> di
         "schema": "codestra.keycloak.cip-gateway-identity-contract.v1",
         "status": contract["status"],
         "authority": {
-            "repository": "ingtrader21-spec/Keycloak",
+            "repository": "appolon1908/Keycloak",
             "contract": relative(CONTRACT_PATH),
             "contractSha256": sha256_of(contract),
             "desiredStatePlan": relative(PLAN_PATH),

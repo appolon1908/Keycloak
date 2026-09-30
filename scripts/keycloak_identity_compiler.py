@@ -32,6 +32,10 @@ PROFILE_ATTRIBUTE_FIELDS = {"name", "displayName", "multivalued", "permissions",
 # Keycloak's own profile attributes belong to the realm configuration, not to this declaration.
 BUILT_IN_PROFILE_ATTRIBUTES = {"username", "email", "firstName", "lastName"}
 ATTRIBUTE_MAPPERS = {"oidc-usermodel-attribute-mapper", "saml-user-attribute-mapper"}
+# Keycloak stores these fields in varchar(255) columns; a longer value fails its write
+# with a database error after earlier writes have already landed.
+KEYCLOAK_COLUMN_LIMIT = 255
+COLUMN_LIMITED_FIELDS = ("clientId", "name", "description", "rootUrl", "baseUrl")
 
 
 class IdentityModelError(ValueError):
@@ -455,6 +459,13 @@ def _user_profile_attributes(token_owners: dict[str, set[str]]) -> list[dict[str
     return sorted(output, key=lambda row: row["name"])
 
 
+def validate_column_limits(label: str, document: dict[str, Any]) -> None:
+    for field in COLUMN_LIMITED_FIELDS:
+        value = document.get(field)
+        if isinstance(value, str) and len(value) > KEYCLOAK_COLUMN_LIMIT:
+            raise IdentityModelError(f"keycloak_column_too_long:{label}:{field}:{len(value)}")
+
+
 def _unique_by_path(
     documents: list[tuple[Path, dict[str, Any]]],
     key: str,
@@ -581,6 +592,15 @@ def compile_identity() -> dict[str, Any]:
         + [(f"scope:{scope['name']}", scope) for scope in scopes]
     )
     user_profile_attributes = _user_profile_attributes(token_owners)
+    for client in protected_clients + [item["client"] for item in staged_with_provenance]:
+        validate_column_limits(f"client:{client['clientId']}", client)
+    for scope in scopes:
+        validate_column_limits(f"scope:{scope['name']}", scope)
+    for role in roles:
+        validate_column_limits(f"realm_role:{role['name']}", role)
+    for entry in client_roles:
+        for role in entry["roles"]:
+            validate_column_limits(f"client_role:{entry['clientId']}:{role['name']}", role)
     realm_model = {
         "realm": realm["realm"],
         "enabled": realm["enabled"],

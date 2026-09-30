@@ -1,7 +1,7 @@
 {
   "clientId": "test-syn-odoo-reader",
   "name": "Codestra edge-certification identity: test-syn-odoo-reader",
-  "description": "Isolated staging service identity for the TEST_SYN Keycloak -> Caddy -> Kong -> Middleware edge certification. Reads campaign TEST_SYN and its desired state; expected 200 from staging Odoo through Middleware. Repository-only desired state outside the protected managed-client policy; never a production client.",
+  "description": "TEST_SYN edge-certification identity (Keycloak -> Caddy -> Kong -> Middleware). Reads campaign TEST_SYN and its desired state; expected 200 from staging Odoo through Middleware. Staging only; never a production client.",
   "enabled": true,
   "protocol": "openid-connect",
   "publicClient": false,

@@ -32,7 +32,7 @@
         "display.on.consent.screen": "false",
         "include.in.token.scope": "true"
       },
-      "description": "Codestra CIP optional product scope (audit read) managed by protected Keycloak GitOps. Read the token tenant's audit trail. Read-only and separate from tenant and connector administration. Requested explicitly per short-lived token, issued only to holders of its mapped CIP realm roles, bound to the token tenant_id, and never a realm or client default.",
+      "description": "CIP optional scope (audit read): Read the token tenant's audit trail. Read-only and separate from tenant and connector administration. Per-token, role-gated, tenant-bound; never a default.",
       "name": "cip.audit.read",
       "protocol": "openid-connect",
       "protocolMappers": []
@@ -42,7 +42,7 @@
         "display.on.consent.screen": "false",
         "include.in.token.scope": "true"
       },
-      "description": "Codestra CIP optional product scope (connector administration) managed by protected Keycloak GitOps. Install, configure, enable and disable connectors for the token tenant and bind OpenBao credential references. Never reads secret values. Requested explicitly per short-lived token, issued only to holders of its mapped CIP realm roles, bound to the token tenant_id, and never a realm or client default.",
+      "description": "CIP optional scope (connector administration): Install, configure, enable and disable connectors for the token tenant and bind OpenBao credential references. Never reads secret values. Per-token, role-gated, tenant-bound; never a default.",
       "name": "cip.connector.admin",
       "protocol": "openid-connect",
       "protocolMappers": []
@@ -52,7 +52,7 @@
         "display.on.consent.screen": "false",
         "include.in.token.scope": "true"
       },
-      "description": "Codestra CIP optional product scope (tenant administration) managed by protected Keycloak GitOps. Administer the token tenant's own CIP settings, projects and member role requests. Never cross-tenant, never realm or platform administration. Requested explicitly per short-lived token, issued only to holders of its mapped CIP realm roles, bound to the token tenant_id, and never a realm or client default.",
+      "description": "CIP optional scope (tenant administration): Administer the token tenant's own CIP settings, projects and member role requests. Never cross-tenant, never realm or platform administration. Per-token, role-gated, tenant-bound; never a default.",
       "name": "cip.tenant.admin",
       "protocol": "openid-connect",
       "protocolMappers": []
@@ -62,7 +62,7 @@
         "display.on.consent.screen": "false",
         "include.in.token.scope": "true"
       },
-      "description": "Codestra CIP optional product scope (usage read) managed by protected Keycloak GitOps. Read metering and usage for the token tenant (and its projects when narrowed). Read-only; no billing or quota mutation. Requested explicitly per short-lived token, issued only to holders of its mapped CIP realm roles, bound to the token tenant_id, and never a realm or client default.",
+      "description": "CIP optional scope (usage read): Read metering and usage for the token tenant (and its projects when narrowed). Read-only; no billing or quota mutation. Per-token, role-gated, tenant-bound; never a default.",
       "name": "cip.usage.read",
       "protocol": "openid-connect",
       "protocolMappers": []
@@ -72,7 +72,7 @@
         "display.on.consent.screen": "false",
         "include.in.token.scope": "false"
       },
-      "description": "Codestra CIP human tenant context managed by protected Keycloak GitOps. Emits tenant_id and project_ids from the admin-only codestra_tenant_id / codestra_project_ids user-profile attributes and the amr MFA evidence. Default scope of CIP browser clients only; never a realm default, never on a service client, and not an authorization scope (excluded from the scope claim).",
+      "description": "CIP human tenant context: tenant_id and project_ids from admin-only codestra_* profile attributes, plus amr. Default scope of CIP browser clients only; never a realm default or on a service client, and not an authorization scope.",
       "name": "cip.user.context",
       "protocol": "openid-connect",
       "protocolMappers": [
@@ -213,7 +213,7 @@
         "display.on.consent.screen": "false",
         "include.in.token.scope": "true"
       },
-      "description": "Codestra optional Middleware V3 scope managed by protected Keycloak GitOps: submit, cancel or otherwise drive a Middleware V3 platform-kernel command (POST /platform/v1/commands, POST /platform/v1/operations/{operation_id}/cancel). Requested explicitly per short-lived service-account token; never a realm default. Pinned to Middleware V3 route digest 9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b; attached to no client until PAS-157 caller/token certification resolves the authorized caller.",
+      "description": "Middleware V3 kernel scope: submit or cancel a command. Explicit per-token request; never a realm default. Route digest 9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b. Attached to no client until PAS-157 resolves the caller.",
       "name": "platform.command",
       "protocol": "openid-connect",
       "protocolMappers": []
@@ -223,7 +223,7 @@
         "display.on.consent.screen": "false",
         "include.in.token.scope": "true"
       },
-      "description": "Codestra optional Middleware V3 scope managed by protected Keycloak GitOps: read Middleware V3 platform-kernel operations, timelines and the kernel description. Requested explicitly per short-lived service-account token; never a realm default. Pinned to Middleware V3 route digest 9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b; attached to no client until PAS-157 caller/token certification resolves the authorized caller.",
+      "description": "Middleware V3 kernel scope: read operations, timelines and the kernel description. Explicit per-token request; never a realm default. Route digest 9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b. Unattached until PAS-157.",
       "name": "platform.command.read",
       "protocol": "openid-connect",
       "protocolMappers": []
@@ -2431,7 +2431,7 @@
       },
       "clientRole": false,
       "composite": false,
-      "description": "Codestra CIP human user role: lets its holder obtain cip.audit.read for the holder's own tenant only. Non-composite, never a default role, never copied into the access token; prepared only and assigned by no planner.",
+      "description": "CIP human user role: obtains cip.audit.read for its own tenant only. Non-composite, never default, not in the access token; prepared only.",
       "name": "cip-audit-viewer"
     },
     {
@@ -2464,7 +2464,7 @@
       },
       "clientRole": false,
       "composite": false,
-      "description": "Codestra CIP human user role: lets its holder obtain platform.command, platform.command.read for the holder's own tenant only. Non-composite, never a default role, never copied into the access token; prepared only and assigned by no planner.",
+      "description": "CIP human user role: obtains platform.command, platform.command.read for its own tenant only. Non-composite, never default, not in the access token; prepared only.",
       "name": "cip-command-operator"
     },
     {
@@ -2496,7 +2496,7 @@
       },
       "clientRole": false,
       "composite": false,
-      "description": "Codestra CIP human user role: lets its holder obtain platform.command.read for the holder's own tenant only. Non-composite, never a default role, never copied into the access token; prepared only and assigned by no planner.",
+      "description": "CIP human user role: obtains platform.command.read for its own tenant only. Non-composite, never default, not in the access token; prepared only.",
       "name": "cip-command-viewer"
     },
     {
@@ -2528,7 +2528,7 @@
       },
       "clientRole": false,
       "composite": false,
-      "description": "Codestra CIP human user role: lets its holder obtain cip.connector.admin for the holder's own tenant only. Non-composite, never a default role, never copied into the access token; prepared only and assigned by no planner.",
+      "description": "CIP human user role: obtains cip.connector.admin for its own tenant only. Non-composite, never default, not in the access token; prepared only.",
       "name": "cip-connector-admin"
     },
     {
@@ -2560,7 +2560,7 @@
       },
       "clientRole": false,
       "composite": false,
-      "description": "Codestra CIP dedicated single-tenant CIP service account role: lets its holder obtain cip.audit.read for the holder's own tenant only. Non-composite, never a default role, never copied into the access token; prepared only and assigned by no planner.",
+      "description": "CIP dedicated single-tenant CIP service account role: obtains cip.audit.read for its own tenant only. Non-composite, never default, not in the access token; prepared only.",
       "name": "cip-svc-audit-reader"
     },
     {
@@ -2592,7 +2592,7 @@
       },
       "clientRole": false,
       "composite": false,
-      "description": "Codestra CIP dedicated single-tenant CIP service account role: lets its holder obtain platform.command.read for the holder's own tenant only. Non-composite, never a default role, never copied into the access token; prepared only and assigned by no planner.",
+      "description": "CIP dedicated single-tenant CIP service account role: obtains platform.command.read for its own tenant only. Non-composite, never default, not in the access token; prepared only.",
       "name": "cip-svc-command-reader"
     },
     {
@@ -2624,7 +2624,7 @@
       },
       "clientRole": false,
       "composite": false,
-      "description": "Codestra CIP dedicated single-tenant CIP service account role: lets its holder obtain platform.command for the holder's own tenant only. Non-composite, never a default role, never copied into the access token; prepared only and assigned by no planner.",
+      "description": "CIP dedicated single-tenant CIP service account role: obtains platform.command for its own tenant only. Non-composite, never default, not in the access token; prepared only.",
       "name": "cip-svc-command-submitter"
     },
     {
@@ -2656,7 +2656,7 @@
       },
       "clientRole": false,
       "composite": false,
-      "description": "Codestra CIP dedicated single-tenant CIP service account role: lets its holder obtain cip.usage.read for the holder's own tenant only. Non-composite, never a default role, never copied into the access token; prepared only and assigned by no planner.",
+      "description": "CIP dedicated single-tenant CIP service account role: obtains cip.usage.read for its own tenant only. Non-composite, never default, not in the access token; prepared only.",
       "name": "cip-svc-usage-reader"
     },
     {
@@ -2689,7 +2689,7 @@
       },
       "clientRole": false,
       "composite": false,
-      "description": "Codestra CIP human user role: lets its holder obtain cip.tenant.admin, cip.usage.read for the holder's own tenant only. Non-composite, never a default role, never copied into the access token; prepared only and assigned by no planner.",
+      "description": "CIP human user role: obtains cip.tenant.admin, cip.usage.read for its own tenant only. Non-composite, never default, not in the access token; prepared only.",
       "name": "cip-tenant-admin"
     },
     {
@@ -2721,7 +2721,7 @@
       },
       "clientRole": false,
       "composite": false,
-      "description": "Codestra CIP human user role: lets its holder obtain cip.usage.read for the holder's own tenant only. Non-composite, never a default role, never copied into the access token; prepared only and assigned by no planner.",
+      "description": "CIP human user role: obtains cip.usage.read for its own tenant only. Non-composite, never default, not in the access token; prepared only.",
       "name": "cip-usage-viewer"
     },
     {
@@ -2952,7 +2952,7 @@
     }
   ],
   "serviceAccountRoles": [],
-  "sourceSha256": "3266e9af52084578b0b63188b21bc6fbe04eda8beb8b51d9f1afbc5be834f84e",
+  "sourceSha256": "7328daa7f5b64fc213a8f5d8fe3b8ae3f9658a872f9cdbe72132429e25a8fb4a",
   "stagedClients": [
     {
       "authorityGroup": "cip-tenant-identity",
@@ -2973,7 +2973,7 @@
           "basic",
           "cip.user.context"
         ],
-        "description": "Synthetic staging browser client for the P1 product portal (Vite dev origin) and TEST_SYN human certification. Serves many tenants, so it carries no tenant mapper; tenant comes only from the admin-only user attribute. Staging-only desired state outside the protected managed-client policy.",
+        "description": "Synthetic staging browser client for the P1 product portal (Vite dev origin) and TEST_SYN human certification. Serves many tenants, so it carries no tenant mapper; tenant comes only from the admin-only user attribute. Staging only; not a managed client.",
         "directAccessGrantsEnabled": false,
         "enabled": true,
         "frontchannelLogout": true,
@@ -3046,7 +3046,7 @@
         "defaultClientScopes": [
           "basic"
         ],
-        "description": "Tenant A audit-export service account: reads the tenant A audit trail only. Staging-only desired state outside the protected managed-client policy.",
+        "description": "Tenant A audit-export service account: reads the tenant A audit trail only. Staging only; not a managed client.",
         "directAccessGrantsEnabled": false,
         "enabled": true,
         "frontchannelLogout": false,
@@ -3125,7 +3125,7 @@
         "defaultClientScopes": [
           "basic"
         ],
-        "description": "Tenant A automation service account: submits and reads tenant A commands and reads tenant A usage. Staging-only desired state outside the protected managed-client policy.",
+        "description": "Tenant A automation service account: submits and reads tenant A commands and reads tenant A usage. Staging only; not a managed client.",
         "directAccessGrantsEnabled": false,
         "enabled": true,
         "frontchannelLogout": false,
@@ -3221,7 +3221,7 @@
         "defaultClientScopes": [
           "basic"
         ],
-        "description": "Tenant B twin of the tenant A automation account. Exists only to prove cross-tenant isolation. Staging-only desired state outside the protected managed-client policy.",
+        "description": "Tenant B twin of the tenant A automation account. Exists only to prove cross-tenant isolation. Staging only; not a managed client.",
         "directAccessGrantsEnabled": false,
         "enabled": true,
         "frontchannelLogout": false,
@@ -3316,7 +3316,7 @@
           "basic",
           "n8n.results.read"
         ],
-        "description": "Isolated staging service identity for the TEST_SYN Keycloak -> Caddy -> Kong -> Middleware edge certification. Reads the seeded TEST_SYN n8n result back; expected 200, missing 404, and 403 on the submit route. Repository-only desired state outside the protected managed-client policy; never a production client.",
+        "description": "TEST_SYN edge-certification identity (Keycloak -> Caddy -> Kong -> Middleware). Reads the seeded TEST_SYN n8n result back; expected 200, missing 404, and 403 on the submit route. Staging only; never a production client.",
         "directAccessGrantsEnabled": false,
         "enabled": true,
         "frontchannelLogout": false,
@@ -3422,7 +3422,7 @@
           "basic",
           "n8n.results.submit"
         ],
-        "description": "Isolated staging service identity for the TEST_SYN Keycloak -> Caddy -> Kong -> Middleware edge certification. Submits one safe TEST_SYN n8n result through the shared edge; expected 202. Repository-only desired state outside the protected managed-client policy; never a production client.",
+        "description": "TEST_SYN edge-certification identity (Keycloak -> Caddy -> Kong -> Middleware). Submits one safe TEST_SYN n8n result through the shared edge; expected 202. Staging only; never a production client.",
         "directAccessGrantsEnabled": false,
         "enabled": true,
         "frontchannelLogout": false,
@@ -3528,7 +3528,7 @@
           "basic",
           "odoo.campaigns.read"
         ],
-        "description": "Isolated staging service identity for the TEST_SYN Keycloak -> Caddy -> Kong -> Middleware edge certification. Reads campaign TEST_SYN and its desired state; expected 200 from staging Odoo through Middleware. Repository-only desired state outside the protected managed-client policy; never a production client.",
+        "description": "TEST_SYN edge-certification identity (Keycloak -> Caddy -> Kong -> Middleware). Reads campaign TEST_SYN and its desired state; expected 200 from staging Odoo through Middleware. Staging only; never a production client.",
         "directAccessGrantsEnabled": false,
         "enabled": true,
         "frontchannelLogout": false,
@@ -3633,7 +3633,7 @@
         "defaultClientScopes": [
           "basic"
         ],
-        "description": "Isolated staging service identity for the TEST_SYN Keycloak -> Caddy -> Kong -> Middleware edge certification. Valid staging token whose audience is not the Middleware/Kong audience; expected 401 on every route. Repository-only desired state outside the protected managed-client policy; never a production client.",
+        "description": "TEST_SYN edge-certification identity (Keycloak -> Caddy -> Kong -> Middleware). Valid staging token whose audience is not the Middleware/Kong audience; expected 401 on every route. Staging only; never a production client.",
         "directAccessGrantsEnabled": false,
         "enabled": true,
         "frontchannelLogout": false,
@@ -3740,7 +3740,7 @@
           "n8n.results.read",
           "odoo.campaigns.read"
         ],
-        "description": "Isolated staging service identity for the TEST_SYN Keycloak -> Caddy -> Kong -> Middleware edge certification. Valid audience and scopes bound to another tenant; expected the same 404 body as a missing result and an indistinguishable campaign denial. Repository-only desired state outside the protected managed-client policy; never a production client.",
+        "description": "TEST_SYN edge-certification identity (Keycloak -> Caddy -> Kong -> Middleware). Valid audience and scopes bound to another tenant; expects the same 404 body as a missing result and an identical campaign denial. Staging only; never a production client.",
         "directAccessGrantsEnabled": false,
         "enabled": true,
         "frontchannelLogout": false,
@@ -4033,7 +4033,7 @@
         "defaultClientScopes": [
           "basic"
         ],
-        "description": "Confidential machine identity for the monitoring plane. Reads Loki push and OTLP gateway client credentials for the local Alloy collector. Repository-only desired state applied to staging by the narrow OpenBao workload-identity reconciler; production binding requires the protected managed-client process.",
+        "description": "Monitoring machine identity. Reads Loki push and OTLP gateway client credentials for the local Alloy collector. Staging via the OpenBao workload reconciler; production needs managed-client review.",
         "directAccessGrantsEnabled": false,
         "enabled": true,
         "frontchannelLogout": false,
@@ -4068,7 +4068,7 @@
         "defaultClientScopes": [
           "basic"
         ],
-        "description": "Confidential machine identity for the monitoring plane. Reads Grafana datasource credentials, the Middleware observability read token and the Grafana OIDC client secret; reads Middleware operational views. Repository-only desired state applied to staging by the narrow OpenBao workload-identity reconciler; production binding requires the protected managed-client process.",
+        "description": "Monitoring machine identity. Reads Grafana datasource credentials, the Middleware observability token and the Grafana OIDC secret; reads Middleware operational views. Staging via the OpenBao workload reconciler; production needs managed-client review.",
         "directAccessGrantsEnabled": false,
         "enabled": true,
         "frontchannelLogout": false,
@@ -4130,7 +4130,7 @@
         "defaultClientScopes": [
           "basic"
         ],
-        "description": "Confidential machine identity for the monitoring plane. Reads Loki object-storage and ingestion authentication material. Repository-only desired state applied to staging by the narrow OpenBao workload-identity reconciler; production binding requires the protected managed-client process.",
+        "description": "Monitoring machine identity. Reads Loki object-storage and ingestion authentication material. Staging via the OpenBao workload reconciler; production needs managed-client review.",
         "directAccessGrantsEnabled": false,
         "enabled": true,
         "frontchannelLogout": false,
@@ -4165,7 +4165,7 @@
         "defaultClientScopes": [
           "basic"
         ],
-        "description": "Confidential machine identity for the monitoring plane. Reads the central OpenTelemetry gateway receiver and Tempo/Loki exporter credentials. Repository-only desired state applied to staging by the narrow OpenBao workload-identity reconciler; production binding requires the protected managed-client process.",
+        "description": "Monitoring machine identity. Reads the central OpenTelemetry gateway receiver and Tempo/Loki exporter credentials. Staging via the OpenBao workload reconciler; production needs managed-client review.",
         "directAccessGrantsEnabled": false,
         "enabled": true,
         "frontchannelLogout": false,
@@ -4200,7 +4200,7 @@
         "defaultClientScopes": [
           "basic"
         ],
-        "description": "Confidential machine identity for the monitoring plane. Reads the monitoring-only PostgreSQL role credential for the Postgres exporter. Repository-only desired state applied to staging by the narrow OpenBao workload-identity reconciler; production binding requires the protected managed-client process.",
+        "description": "Monitoring machine identity. Reads the monitoring-only PostgreSQL role credential for the Postgres exporter. Staging via the OpenBao workload reconciler; production needs managed-client review.",
         "directAccessGrantsEnabled": false,
         "enabled": true,
         "frontchannelLogout": false,
@@ -4235,7 +4235,7 @@
         "defaultClientScopes": [
           "basic"
         ],
-        "description": "Confidential machine identity for the monitoring plane. Reads the private OpenBao metrics-client material and the reviewed scrape credentials; the only OpenBao role with sys/metrics read. Repository-only desired state applied to staging by the narrow OpenBao workload-identity reconciler; production binding requires the protected managed-client process.",
+        "description": "Monitoring machine identity. Reads the private OpenBao metrics-client material and the reviewed scrape credentials; the only OpenBao role with sys/metrics read. Staging via the OpenBao workload reconciler; production needs managed-client review.",
         "directAccessGrantsEnabled": false,
         "enabled": true,
         "frontchannelLogout": false,
@@ -4270,7 +4270,7 @@
         "defaultClientScopes": [
           "basic"
         ],
-        "description": "Confidential machine identity for the monitoring plane. Reads the monitoring-only Redis ACL credential for the Redis exporter. Repository-only desired state applied to staging by the narrow OpenBao workload-identity reconciler; production binding requires the protected managed-client process.",
+        "description": "Monitoring machine identity. Reads the monitoring-only Redis ACL credential for the Redis exporter. Staging via the OpenBao workload reconciler; production needs managed-client review.",
         "directAccessGrantsEnabled": false,
         "enabled": true,
         "frontchannelLogout": false,
@@ -4305,7 +4305,7 @@
         "defaultClientScopes": [
           "basic"
         ],
-        "description": "Confidential machine identity for the monitoring plane. Reads the read-only analytics projection database, metadata database and Superset OIDC client secret. Repository-only desired state applied to staging by the narrow OpenBao workload-identity reconciler; production binding requires the protected managed-client process.",
+        "description": "Monitoring machine identity. Reads the read-only analytics projection database, metadata database and Superset OIDC client secret. Staging via the OpenBao workload reconciler; production needs managed-client review.",
         "directAccessGrantsEnabled": false,
         "enabled": true,
         "frontchannelLogout": false,
@@ -4340,7 +4340,7 @@
         "defaultClientScopes": [
           "basic"
         ],
-        "description": "Confidential machine identity for the monitoring plane. Reads Tempo object-storage and ingestion authentication material. Repository-only desired state applied to staging by the narrow OpenBao workload-identity reconciler; production binding requires the protected managed-client process.",
+        "description": "Monitoring machine identity. Reads Tempo object-storage and ingestion authentication material. Staging via the OpenBao workload reconciler; production needs managed-client review.",
         "directAccessGrantsEnabled": false,
         "enabled": true,
         "frontchannelLogout": false,

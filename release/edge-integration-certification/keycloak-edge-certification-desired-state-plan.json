@@ -8,7 +8,7 @@
   ],
   "audience": "middleware-api",
   "campaign": "TEST_SYN",
-  "configurationChecksum": "3650a082f2ea7f1111cca0dafa38befcda437256277578deba5976feb34ff148",
+  "configurationChecksum": "95ea0253521828311a7d4108c359bd4eceade2cda72fd633cbc24dc89f845de3",
   "edgeContract": {
     "hashRule": "sha256 over json.dumps(contract, sort_keys=True, separators=(',', ':')).encode('utf-8')",
     "path": "deploy/public-api-route-contract.json",
@@ -55,7 +55,7 @@
     },
     {
       "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
-      "desiredSha256": "baf1f6d50d93c788a254c25f02348488ba48c5177d8f26688c54bdc0165d106a",
+      "desiredSha256": "230881bcfc94d825c93b55fe1de4e10eb1472225992f368ae8d1226f247b0a07",
       "resourceId": "test-syn-n8n-submit",
       "resourceType": "client"
     },
@@ -67,7 +67,7 @@
     },
     {
       "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
-      "desiredSha256": "b7283c85613dcbe99026638b1b8978015787987196772fe2084e308e34ba4558",
+      "desiredSha256": "2be68b793bb2d2c8b676ef1a3fe7ce6a18e98e2fe96d5753c81b0abf25483f93",
       "resourceId": "test-syn-n8n-read",
       "resourceType": "client"
     },
@@ -79,7 +79,7 @@
     },
     {
       "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
-      "desiredSha256": "f9768e048a5429a8be7eaaeb780a8260bf95ce260243286a044c5a3c696a7122",
+      "desiredSha256": "e2034bb6d90be59a50b51a66e13b4192c3ae0177d4a43456dd65af3c5cad456d",
       "resourceId": "test-syn-odoo-reader",
       "resourceType": "client"
     },
@@ -91,7 +91,7 @@
     },
     {
       "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
-      "desiredSha256": "0134c02cdb626da05da17d46429b1188255a9ec4d8d16c1aca9df5e66651ef0c",
+      "desiredSha256": "0950ce190d3fd1cb78abf58ad1dd8cf8beb17317e0c0d8912704ed793e7fda07",
       "resourceId": "test-syn-wrong-audience",
       "resourceType": "client"
     },
@@ -103,7 +103,7 @@
     },
     {
       "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
-      "desiredSha256": "a1e14847ffcdf37d9a44c9751121943269d749f7acb0e7ce50e2880fa6a19fc9",
+      "desiredSha256": "5f7825739097b04d07a4621c2be67a6c84887b0e242951b31e3dc9a019209ab5",
       "resourceId": "test-syn-wrong-tenant",
       "resourceType": "client"
     },
@@ -151,23 +151,23 @@
     },
     {
       "path": "config/desired-state/edge-integration-certification/clients/test-syn-n8n-read.json",
-      "sha256": "b7283c85613dcbe99026638b1b8978015787987196772fe2084e308e34ba4558"
+      "sha256": "2be68b793bb2d2c8b676ef1a3fe7ce6a18e98e2fe96d5753c81b0abf25483f93"
     },
     {
       "path": "config/desired-state/edge-integration-certification/clients/test-syn-n8n-submit.json",
-      "sha256": "baf1f6d50d93c788a254c25f02348488ba48c5177d8f26688c54bdc0165d106a"
+      "sha256": "230881bcfc94d825c93b55fe1de4e10eb1472225992f368ae8d1226f247b0a07"
     },
     {
       "path": "config/desired-state/edge-integration-certification/clients/test-syn-odoo-reader.json",
-      "sha256": "f9768e048a5429a8be7eaaeb780a8260bf95ce260243286a044c5a3c696a7122"
+      "sha256": "e2034bb6d90be59a50b51a66e13b4192c3ae0177d4a43456dd65af3c5cad456d"
     },
     {
       "path": "config/desired-state/edge-integration-certification/clients/test-syn-wrong-audience.json",
-      "sha256": "0134c02cdb626da05da17d46429b1188255a9ec4d8d16c1aca9df5e66651ef0c"
+      "sha256": "0950ce190d3fd1cb78abf58ad1dd8cf8beb17317e0c0d8912704ed793e7fda07"
     },
     {
       "path": "config/desired-state/edge-integration-certification/clients/test-syn-wrong-tenant.json",
-      "sha256": "a1e14847ffcdf37d9a44c9751121943269d749f7acb0e7ce50e2880fa6a19fc9"
+      "sha256": "5f7825739097b04d07a4621c2be67a6c84887b0e242951b31e3dc9a019209ab5"
     },
     {
       "path": "config/desired-state/edge-integration-certification/contract.json",
