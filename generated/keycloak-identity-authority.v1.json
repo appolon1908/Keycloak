@@ -146,7 +146,7 @@
         "display.on.consent.screen": "false",
         "include.in.token.scope": "true"
       },
-      "description": "Codestra shared-edge ingress scope managed by protected Keycloak GitOps. n8n reads back a delivered automation result: GET /api/v1/integrations/n8n/results/{event_id}. Attached only as an explicit per-client default scope; never a realm default or optional scope.",
+      "description": "Codestra shared-edge scope: n8n reads a delivered automation result (GET /api/v1/integrations/n8n/results/{event_id}). Explicit per-client default scope only; never a realm default or optional scope.",
       "name": "n8n.results.read",
       "protocol": "openid-connect",
       "protocolMappers": []
@@ -166,7 +166,7 @@
         "display.on.consent.screen": "false",
         "include.in.token.scope": "true"
       },
-      "description": "Codestra shared-edge ingress scope managed by protected Keycloak GitOps. Reads a campaign and its desired state through Middleware: GET /api/v1/integrations/odoo/campaigns/{campaign_id}[/desired-state]. Attached only as an explicit per-client default scope; never a realm default or optional scope.",
+      "description": "Codestra shared-edge scope: read a campaign and its desired state through Middleware (GET /api/v1/integrations/odoo/campaigns/{campaign_id}[/desired-state]). Explicit per-client default scope only.",
       "name": "odoo.campaigns.read",
       "protocol": "openid-connect",
       "protocolMappers": []
@@ -176,7 +176,7 @@
         "display.on.consent.screen": "false",
         "include.in.token.scope": "true"
       },
-      "description": "Codestra optional workload scope managed by repository desired state. Requested explicitly per short-lived service-account token when a workload authenticates to OpenBao; it adds the openbao audience and the codestra_environment claim OpenBao roles require. Never a realm default scope.",
+      "description": "Codestra optional workload scope, requested per short-lived service-account token to authenticate to OpenBao; adds the openbao audience and the codestra_environment claim. Never a realm default.",
       "name": "openbao.workload",
       "protocol": "openid-connect",
       "protocolMappers": [
@@ -233,7 +233,7 @@
         "display.on.consent.screen": "false",
         "include.in.token.scope": "true"
       },
-      "description": "Codestra optional Middleware V3 scope managed by protected Keycloak GitOps: replay a Middleware V3 platform-kernel operation (POST /platform/v1/operations/{operation_id}/replay). Requested explicitly per short-lived service-account token; never a realm default. Pinned to Middleware V3 route digest 9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b; attached to no client until PAS-157 caller/token certification resolves the authorized caller.",
+      "description": "Middleware V3 kernel scope: replay an operation (POST /platform/v1/operations/{operation_id}/replay). Per-token request; never a realm default. Route digest 9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b. Unattached until PAS-157.",
       "name": "platform.command.replay",
       "protocol": "openid-connect",
       "protocolMappers": []
@@ -2816,7 +2816,7 @@
       },
       "clientRole": false,
       "composite": false,
-      "description": "Middleware V3 platform-kernel operator: required, together with the platform.command.replay scope, to replay an operation (POST /platform/v1/operations/{operation_id}/replay). Never grants provider, secrets, identity or business administration. Pinned to Middleware V3 route digest 9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b; prepared only, provisioned by no planner, and not assigned until PAS-157 caller/token certification is complete.",
+      "description": "Middleware V3 kernel operator: with platform.command.replay, may replay an operation. No provider, secret, identity or business rights. Route digest 9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b. Prepared only; unassigned until PAS-157.",
       "name": "platform-operator"
     },
     {
@@ -2885,7 +2885,7 @@
       },
       "clientRole": false,
       "composite": false,
-      "description": "Codestra agent desktop: lets an authenticated human agent use the browser webphone and connect to the Middleware realtime gateway. Required by config/contracts/agent-desktop-realtime-client.json together with the codestra-agent-desktop client role realtime.agent.connect. Non-composite, never a default role, assigned per agent by identity administration and never by a planner.",
+      "description": "Codestra agent desktop: lets a human agent use the browser webphone and the Middleware realtime gateway, with client role codestra-agent-desktop:realtime.agent.connect. Non-composite, never default, assigned per agent.",
       "name": "telephony.webphone.use"
     }
   ],
@@ -2952,7 +2952,7 @@
     }
   ],
   "serviceAccountRoles": [],
-  "sourceSha256": "b304d8d38c062ab16ac525a4bddd007ccb4a2f3ea32009c273702e04730e082f",
+  "sourceSha256": "3266e9af52084578b0b63188b21bc6fbe04eda8beb8b51d9f1afbc5be834f84e",
   "stagedClients": [
     {
       "authorityGroup": "cip-tenant-identity",

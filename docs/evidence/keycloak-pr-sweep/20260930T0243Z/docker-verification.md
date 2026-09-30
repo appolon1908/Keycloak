@@ -46,3 +46,27 @@ the `codestra` realm, run the control plane against it (dry-run, apply, readback
 confirm through the Admin API that the agent desktop client, its client role and its
 scope-mapped realm role exist, run the Postman collection against that control plane, then
 remove only that project's containers, network and volumes.
+
+## Disposable realm run, 2026-09-30 (branch `feat/keycloak-pas237-security-model-20260930`)
+
+After the workstation owner restarted Docker Desktop, one disposable stack ran on loopback
+with a unique project name (`kc-disp-c0d4c9b`) and throwaway credentials: Postgres
+`17.6-alpine` and Keycloak `26.7.2` built from the exact bytes of `c0d4c9b` (image
+`sha256:3c6d3a339d82eb0c8376cd0369f2787ecf3812dc001bd3adb19fc799115efdef`), ports bound to
+`127.0.0.1` only, an empty `codestra` realm, and the control plane in `test-syn` mode.
+
+| Step | Result |
+|---|---|
+| Readiness on the management interface | ready after 50 s |
+| First full apply with the code as published | `PARTIAL_FAILURE`: HTTP 500, `value too long for type character varying(255)` |
+| Same desired state after the fixes | `REJECTED` before any write: eight `keycloak_column_too_long` errors, all in the Kong-pinned CIP plan and the two platform-command scopes it reuses |
+| Apply of everything else (harness leaving out only those eight) | all writes landed; readback first showed perpetual drift from five representation differences, fixed on the branch |
+| Apply after the fixes, twice | `COMPLETED`, readback equal, no mutation on the repeat |
+| Admin API readback | agent desktop client with `fullScopeAllowed: false`, client role `realtime.agent.connect`, scope-mapped `telephony.webphone.use`; `moneybee-verify-email-otp` registered and enabled; `tenant_id` and `tenant_ids` view and edit admin only; `klyrow-staging-portal` absent from `test-syn` |
+| Rollback of the first apply | `COMPLETED`, readback equal: realm empty again, attributes removed, provider unregistered |
+| Teardown | containers, network and volume removed; credentials deleted; the image kept as local build evidence |
+
+Findings fixed on the branch: the MoneyBee provider is not registered by Keycloak itself;
+over-length values; role lists omit attributes unless full representations are requested;
+omitted `false` flags; the automatic `service_account` default scope; mapper config defaults
+and dropped empty values. Still open: the eight over-length values (decision D3).

@@ -136,6 +136,7 @@ class FakeAdminAPI:
     def client_scopes(self): return self._read("clientScopes")
     def realm_roles(self): return self._read("realmRoles")
     def required_actions(self): return self._read("requiredActions")
+    def unregistered_required_actions(self): return copy.deepcopy(self.state.get("unregisteredRequiredActions",[]))
     def user_profile(self):
         if self.fail_reads: return self._read("userProfile")
         return copy.deepcopy(self.state.get("userProfile",{"attributes":[]}))

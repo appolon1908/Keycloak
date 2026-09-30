@@ -1,6 +1,6 @@
 {
   "name": "telephony.webphone.use",
-  "description": "Codestra agent desktop: lets an authenticated human agent use the browser webphone and connect to the Middleware realtime gateway. Required by config/contracts/agent-desktop-realtime-client.json together with the codestra-agent-desktop client role realtime.agent.connect. Non-composite, never a default role, assigned per agent by identity administration and never by a planner.",
+  "description": "Codestra agent desktop: lets a human agent use the browser webphone and the Middleware realtime gateway, with client role codestra-agent-desktop:realtime.agent.connect. Non-composite, never default, assigned per agent.",
   "composite": false,
   "clientRole": false,
   "attributes": {

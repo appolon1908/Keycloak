@@ -65,7 +65,7 @@ class Service:
                 if roles is not None: service_roles.append({"clientId":client["clientId"],"realmRoles":roles})
         # The whole user profile is read so a rollback can restore any attribute an apply touched.
         profile=api.user_profile() or {}
-        return {"realm":api.realm_state(),"clients":clients,"clientScopes":api.client_scopes(),"realmRoles":api.realm_roles(),"clientRoles":client_roles,"scopeMappings":mappings,"serviceAccountRoles":service_roles,"userProfileAttributes":list(profile.get("attributes") or []),"requiredActions":api.required_actions()}
+        return {"realm":api.realm_state(),"clients":clients,"clientScopes":api.client_scopes(),"realmRoles":api.realm_roles(),"clientRoles":client_roles,"scopeMappings":mappings,"serviceAccountRoles":service_roles,"userProfileAttributes":list(profile.get("attributes") or []),"requiredActions":api.required_actions(),"unregisteredRequiredActions":api.unregistered_required_actions()}
     def scoped_desired(self,environment=None):
         # Only the desired state that may live in this environment is planned; a scoped
         # client (klyrow-staging-portal) never reaches a production or TEST_SYN plan.

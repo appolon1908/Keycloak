@@ -120,8 +120,23 @@ setting with the same value (`verifyEmail` maps to the realm's `verifyEmail`,
 because MoneyBee's email code replaces Keycloak's link verification). The
 compiled row holds `alias`, `enabled` and `defaultAction`; an update sends the
 live provider record with those fields replaced, so its name, priority and
-configuration are kept. Required actions are never created or deleted by the
-plan; an unregistered provider is an `ERROR`.
+configuration are kept. A provider the server ships but the realm has not
+registered (Keycloak does not register custom providers such as
+`moneybee-verify-email-otp` by itself) is planned as `CREATE`: the apply
+registers it and then sets its declared flags. A provider the server does not
+ship at all is an `ERROR`. A rollback unregisters only a provider its apply
+registered.
+
+Keycloak keeps names, descriptions and URLs of clients, client scopes and roles
+in 255-character columns. A declared value longer than that is planned as
+`ERROR` with reason `keycloak_column_too_long:<field>:<length>`, so the apply is
+refused before any write instead of failing part-way with a database error.
+
+Live readback is compared the way Keycloak stores it: role lists are read with
+full representations so attributes are compared, a declared `false` flag matches
+an omitted one, the built-in `service_account` default scope Keycloak adds to
+service clients is ignored unless declared, and mapper configuration is compared
+on declared keys only, with a declared empty value matching an omitted one.
 
 Service-account realm roles are declared under
 `config/desired-state/<group>/service-account-roles/<clientId>.json` as

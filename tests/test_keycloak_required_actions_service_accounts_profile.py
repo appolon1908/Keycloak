@@ -282,3 +282,91 @@ def test_admin_adapter_uses_the_documented_endpoints():
     assert seen==[("GET","/clients/c%201/service-account-user",None),("GET","/users/u1/role-mappings/realm",None),
                   ("POST","/users/u1/role-mappings/realm",{204}),("DELETE","/users/u1/role-mappings/realm",{204}),
                   ("GET","/users/profile",None),("PUT","/users/profile",{200})]
+
+class RegistrationAPI(FakeAdminAPI):
+    def register_required_action(self,payload):
+        self._mutate("register_required_action",payload["providerId"])
+        self.state["unregisteredRequiredActions"]=[r for r in self.state["unregisteredRequiredActions"] if r["providerId"]!=payload["providerId"]]
+        self.state["requiredActions"].append({"alias":payload["providerId"],"name":payload["name"],"providerId":payload["providerId"],"enabled":True,"defaultAction":False,"priority":140,"config":{}})
+    def required_action(self,alias): return copy.deepcopy(next((r for r in self.state["requiredActions"] if r["alias"]==alias),None))
+    def update_required_action(self,alias,payload):
+        self._mutate("update_required_action",alias)
+        self.state["requiredActions"]=[copy.deepcopy(payload) if r["alias"]==alias else r for r in self.state["requiredActions"]]
+    def delete_required_action(self,alias):
+        self._mutate("delete_required_action",alias)
+        row=next(r for r in self.state["requiredActions"] if r["alias"]==alias)
+        self.state["requiredActions"]=[r for r in self.state["requiredActions"] if r["alias"]!=alias]
+        self.state["unregisteredRequiredActions"].append({"providerId":alias,"name":row["name"]})
+
+def test_deployed_unregistered_provider_is_registered_and_rollback_unregisters_it(tmp_path,monkeypatch):
+    enable_staging_mutation(monkeypatch)
+    state=live_fixture(); state["unregisteredRequiredActions"]=[{"providerId":"moneybee-verify-email-otp","name":"Verify email with MoneyBee code"}]
+    api=RegistrationAPI(state)
+    desired={"realm":copy.deepcopy(state["realm"]),"requiredActions":[{"alias":"moneybee-verify-email-otp","enabled":True,"defaultAction":False}]}
+    service=make_service(tmp_path,api,desired)
+    rows=[(a["kind"],a["reason"]) for a in service.drift()["actions"] if a["resource_id"]=="moneybee-verify-email-otp"]
+    assert rows==[("CREATE","provider_unregistered")]
+    record=service.apply("register-otp")
+    assert record["status"]=="COMPLETED" and record["readback"]["equal"] is True
+    assert ("register_required_action","moneybee-verify-email-otp") in api.calls
+    row=next(r for r in api.state["requiredActions"] if r["alias"]=="moneybee-verify-email-otp")
+    assert row["name"]=="Verify email with MoneyBee code" and row["priority"]==140
+    assert service.apply("register-otp-again")["mutationPerformed"] is False
+    result=service.rollback(record["executionId"])
+    assert result["status"]=="COMPLETED"
+    assert all(r["alias"]!="moneybee-verify-email-otp" for r in api.state["requiredActions"])
+    assert ("delete_required_action","VERIFY_EMAIL") not in api.calls
+
+def test_values_longer_than_keycloak_columns_are_errors_before_any_write():
+    desired={"clientScopes":[{"name":"long","description":"x"*256},{"name":"short","description":"x"*255}],
+             "realmRoles":[{"name":"role","description":"y"*300}]}
+    live={"clientScopes":[],"realmRoles":[{"name":"role","description":"old"}]}
+    doc=plan(desired,live,environment="staging")
+    rows={(a["resource_id"],a["kind"],a["reason"]) for a in doc["actions"] if a["resource_type"] in {"client_scope","realm_role"}}
+    assert ("long","ERROR","keycloak_column_too_long:description:256") in rows
+    assert ("short","CREATE","missing_live") in rows
+    assert ("role","ERROR","keycloak_column_too_long:description:300") in rows
+    calls=[]
+    class API:
+        def __getattr__(self,name): return lambda *a,**k: calls.append(name)
+    assert apply_plan(doc,desired,live,API(),enabled=True,environment="staging")["status"]=="REJECTED" and calls==[]
+
+def test_compiled_authority_has_no_over_length_value_outside_the_kong_pinned_family():
+    model=compile_identity()
+    over=sorted(r.get("name") for r in model["clientScopes"]+model["realmRoles"] if len(r.get("description") or "")>255)
+    assert all(name.startswith(("cip.","cip-")) or name in {"platform.command","platform.command.read"} for name in over), over
+
+# --- representation differences seen on Keycloak 26.7.2 ------------------------
+
+def test_live_representation_defaults_do_not_read_as_drift():
+    desired={"clients":[{"clientId":"svc","serviceAccountsEnabled":True,"authorizationServicesEnabled":False,"defaultClientScopes":[],
+                         "protocolMappers":[{"name":"aud","protocolMapper":"oidc-audience-mapper","config":{"included.custom.audience":"svc","access.token.claim":"true"}}]}]}
+    live={"clients":[{"id":"1","clientId":"svc","serviceAccountsEnabled":True,"defaultClientScopes":["service_account"],
+                      "protocolMappers":[{"id":"m1","name":"aud","protocolMapper":"oidc-audience-mapper","config":{"access.token.claim":"true","included.custom.audience":"svc","userinfo.token.claim":"false","introspection.token.claim":"true"}}]}]}
+    assert [a["kind"] for a in plan(desired,live)["actions"] if a["resource_type"]=="client"]==["KEEP"]
+
+@pytest.mark.parametrize("change",[
+    lambda c: c.update(defaultClientScopes=["service_account","profile"]),
+    lambda c: c["protocolMappers"][0]["config"].update({"included.custom.audience":"other"}),
+    lambda c: c["protocolMappers"].append({"name":"extra","protocolMapper":"oidc-audience-mapper","config":{}}),
+    lambda c: c.update(authorizationServicesEnabled=True),
+])
+def test_real_drift_is_still_detected(change):
+    desired={"clients":[{"clientId":"svc","serviceAccountsEnabled":True,"authorizationServicesEnabled":False,"defaultClientScopes":[],
+                         "protocolMappers":[{"name":"aud","protocolMapper":"oidc-audience-mapper","config":{"included.custom.audience":"svc"}}]}]}
+    live=copy.deepcopy(desired); live["clients"][0]["id"]="1"; change(live["clients"][0])
+    assert [a["kind"] for a in plan(desired,live)["actions"] if a["resource_type"]=="client"]==["UPDATE"]
+
+def test_role_reads_request_full_representations():
+    from keycloak_admin_api import KeycloakAdminAPI
+    api=KeycloakAdminAPI("http://127.0.0.1:1","codestra","token"); seen=[]
+    api.request=lambda method,suffix,body=None,expected=None: seen.append(suffix) or []
+    api.realm_roles(); api.client_roles("c1")
+    assert seen==["/roles?briefRepresentation=false","/clients/c1/roles?briefRepresentation=false"]
+
+def test_empty_mapper_config_value_matches_its_absence_but_not_a_value():
+    want={"clients":[{"clientId":"svc","protocolMappers":[{"name":"m","config":{"claim.name":"scope","claim.value":""}}]}]}
+    stored={"clients":[{"id":"1","clientId":"svc","protocolMappers":[{"id":"x","name":"m","config":{"claim.name":"scope"}}]}]}
+    assert [a["kind"] for a in plan(want,stored)["actions"] if a["resource_type"]=="client"]==["KEEP"]
+    stored["clients"][0]["protocolMappers"][0]["config"]["claim.value"]="admin"
+    assert [a["kind"] for a in plan(want,stored)["actions"] if a["resource_type"]=="client"]==["UPDATE"]
