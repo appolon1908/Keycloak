@@ -15,7 +15,12 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-REPOSITORY = "appolon1908-hue/Keycloak"
+REPOSITORY = "appolon1908/Keycloak"
+# GitHub keeps a repository's numeric id across transfers and renames, while an
+# old name can be reused by a different repository. Every lookup must return
+# this exact name and id, so a future move fails closed until trust is rebound.
+REPOSITORY_ID = 1347523366
+OWNER, NAME = REPOSITORY.split("/")
 POLICY = "config/bootstrap/protected-candidate.json"
 TRUST_FILES = frozenset({
     POLICY, "scripts/verify_protected_candidate.py",
@@ -100,6 +105,25 @@ def pages(endpoint: str) -> list:
     raise Rejected("pagination-limit")
 
 
+def verify_repository_identity() -> None:
+    repo = api(f"repos/{REPOSITORY}")
+    require(isinstance(repo, dict) and repo.get("full_name") == REPOSITORY
+            and type(repo.get("id")) is int and repo["id"] == REPOSITORY_ID,
+            "repository-identity-mismatch")
+
+
+def graphql(query: str, variables: dict) -> dict:
+    return json.loads(subprocess.check_output(
+        ["gh", "api", "graphql", "--input", "-"],
+        input=canonical({"query": query, "variables": {"owner": OWNER, "name": NAME, **variables}}),
+        stderr=subprocess.DEVNULL))
+
+
+def require_repository_node(repository: object) -> None:
+    require(isinstance(repository, dict) and repository.get("databaseId") == REPOSITORY_ID,
+            "repository-identity-mismatch")
+
+
 def verify_reviews(pr: int, sha: str, author: str) -> None:
     latest = {}
     for review in pages(f"repos/{REPOSITORY}/pulls/{pr}/reviews"):
@@ -138,14 +162,14 @@ def verify_native_review_gate(pr: int, sha: str) -> None:
             "independent-push-approval-protection-required")
     admins = protection.get("enforce_admins")
     require(isinstance(admins, dict) and admins.get("enabled") is True, "admin-review-bypass-enabled")
-    query = ('query($number:Int!){repository(owner:"appolon1908-hue",name:"Keycloak")'
-             '{pullRequest(number:$number){headRefOid baseRefName reviewDecision}}}')
-    response = json.loads(subprocess.check_output(
-        ["gh", "api", "graphql", "--input", "-"],
-        input=canonical({"query": query, "variables": {"number": pr}}), stderr=subprocess.DEVNULL))
+    query = ('query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name)'
+             '{databaseId pullRequest(number:$number){headRefOid baseRefName reviewDecision}}}')
+    response = graphql(query, {"number": pr})
     require(isinstance(response, dict) and not response.get("errors"), "native-review-api-error")
     try:
-        pull = response["data"]["repository"]["pullRequest"]
+        repository = response["data"]["repository"]
+        require_repository_node(repository)
+        pull = repository["pullRequest"]
         require(pull["headRefOid"] == sha and pull["baseRefName"] == "main", "native-review-head-mismatch")
         require(pull["reviewDecision"] == "APPROVED", "native-independent-review-not-approved")
     except (KeyError, TypeError):
@@ -156,15 +180,15 @@ def verify_threads(pr: int) -> None:
     cursor = None
     seen = set()
     for _ in range(100):
-        query = ('query($cursor:String){repository(owner:"appolon1908-hue",name:"Keycloak")'
-                 '{pullRequest(number:' + str(pr) + '){reviewThreads(first:100,after:$cursor)'
+        query = ('query($owner:String!,$name:String!,$number:Int!,$cursor:String){repository(owner:$owner,name:$name)'
+                 '{databaseId pullRequest(number:$number){reviewThreads(first:100,after:$cursor)'
                  '{nodes{isResolved}pageInfo{hasNextPage endCursor}}}}}')
-        response = json.loads(subprocess.check_output(
-            ["gh", "api", "graphql", "--input", "-"],
-            input=canonical({"query": query, "variables": {"cursor": cursor}}), stderr=subprocess.DEVNULL))
+        response = graphql(query, {"number": pr, "cursor": cursor})
         require(isinstance(response, dict) and not response.get("errors"), "thread-api-error")
         try:
-            connection = response["data"]["repository"]["pullRequest"]["reviewThreads"]
+            repository = response["data"]["repository"]
+            require_repository_node(repository)
+            connection = repository["pullRequest"]["reviewThreads"]
             nodes, info = connection["nodes"], connection["pageInfo"]
             require(isinstance(nodes, list) and all(isinstance(n, dict) and n.get("isResolved") is True for n in nodes),
                     "unresolved-or-invalid-thread")
@@ -212,6 +236,7 @@ def main() -> int:
     args = parser.parse_args()
     try:
         require(args.pr > 0, "invalid-pr")
+        verify_repository_identity()
         main_branch = api(f"repos/{REPOSITORY}/branches/main")
         require(main_branch.get("protected") is True, "main-not-protected")
         main_sha = main_branch["commit"]["sha"]

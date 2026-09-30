@@ -43,7 +43,7 @@
     },
     {
       "path": "scripts/validate-workflows.py",
-      "sha256": "0db2642d56f62de36bddc70f6c4a3127c2779e3ff2abd1d20746ccd6526b5af1"
+      "sha256": "bdb34c02b8e7a5c5339cb9d1871c9a5fa93f32211a5986a26046481d31eb93d4"
     },
     {
       "path": "scripts/validate.sh",
@@ -54,5 +54,5 @@
       "sha256": "f1133e8b04226a854b3484ded27149995d54dfceb8b1ff9dfbf062a9140d33e6"
     }
   ],
-  "manifest_sha256": "08fd685c99aa7f8f88dc718d7a61b814357156a29e96aba58e2a2de693e4f708"
+  "manifest_sha256": "90bc591f38df8cc5564a40ae9ce4821903b7fc45cf88e566e523b12d1c8efe5f"
 }

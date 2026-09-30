@@ -117,16 +117,31 @@ class ProtectedCandidateTests(unittest.TestCase):
             with self.assertRaisesRegex(verifier.Rejected, 'missing-independent'):
                 verifier.verify_reviews(96, self.main, 'author')
 
+    @staticmethod
+    def threads(resolved, more, cursor, database_id=verifier.REPOSITORY_ID):
+        return json.dumps({'data': {'repository': {'databaseId': database_id, 'pullRequest': {'reviewThreads': {
+            'nodes': [{'isResolved': resolved}],
+            'pageInfo': {'hasNextPage': more, 'endCursor': cursor},
+        }}}}}).encode()
+
     def test_unresolved_thread_on_second_page_is_rejected(self):
-        def response(resolved, more, cursor):
-            return json.dumps({'data': {'repository': {'pullRequest': {'reviewThreads': {
-                'nodes': [{'isResolved': resolved}],
-                'pageInfo': {'hasNextPage': more, 'endCursor': cursor},
-            }}}}}).encode()
         with patch.object(verifier.subprocess, 'check_output', side_effect=[
-                response(True, True, 'cursor1'), response(False, False, None)]):
+                self.threads(True, True, 'cursor1'), self.threads(False, False, None)]):
             with self.assertRaisesRegex(verifier.Rejected, 'unresolved-or-invalid-thread'):
                 verifier.verify_threads(96)
+
+    def test_resolved_threads_pass_and_query_the_bound_repository(self):
+        with patch.object(verifier.subprocess, 'check_output', return_value=self.threads(True, False, None)) as call:
+            verifier.verify_threads(96)
+        variables = json.loads(call.call_args.kwargs['input'])['variables']
+        self.assertEqual((variables['owner'], variables['name'], variables['number']), ('appolon1908', 'Keycloak', 96))
+
+    def test_threads_of_a_different_repository_are_rejected(self):
+        for database_id in (None, 1, verifier.REPOSITORY_ID + 1):
+            with self.subTest(database_id=database_id), patch.object(
+                    verifier.subprocess, 'check_output', return_value=self.threads(True, False, None, database_id)):
+                with self.assertRaisesRegex(verifier.Rejected, 'repository-identity-mismatch'):
+                    verifier.verify_threads(96)
 
     def test_git_replacement_does_not_change_reviewed_bytes(self):
         self.write('app.py', 'different fixture data\n')
@@ -149,10 +164,24 @@ class NativeReviewGateTests(unittest.TestCase):
             'required_approving_review_count': 1,
         }, 'enforce_admins': {'enabled': True}}
 
-    def decision(self, value='APPROVED', sha=None):
-        return json.dumps({'data': {'repository': {'pullRequest': {
-            'headRefOid': sha or self.sha, 'baseRefName': 'main', 'reviewDecision': value,
+    def decision(self, value='APPROVED', sha=None, base='main', database_id=verifier.REPOSITORY_ID):
+        return json.dumps({'data': {'repository': {'databaseId': database_id, 'pullRequest': {
+            'headRefOid': sha or self.sha, 'baseRefName': base, 'reviewDecision': value,
         }}}}).encode()
+
+    def test_native_review_of_a_different_repository_is_rejected(self):
+        for database_id in (None, 7, verifier.REPOSITORY_ID + 1):
+            with self.subTest(database_id=database_id), patch.object(verifier, 'api', return_value=self.protection()), patch.object(
+                    verifier.subprocess, 'check_output', return_value=self.decision(database_id=database_id)):
+                with self.assertRaisesRegex(verifier.Rejected, 'repository-identity-mismatch'):
+                    verifier.verify_native_review_gate(96, self.sha)
+
+    def test_native_review_against_another_base_branch_is_rejected(self):
+        with patch.object(verifier, 'api', return_value=self.protection()), patch.object(
+                verifier.subprocess, 'check_output', return_value=self.decision(base='production')):
+            with self.assertRaisesRegex(verifier.Rejected, 'native-review-head-mismatch'):
+                verifier.verify_native_review_gate(96, self.sha)
+
 
     def test_enforced_native_approval_passes(self):
         with patch.object(verifier, 'api', return_value=self.protection()), patch.object(
@@ -205,3 +234,29 @@ class NativeReviewGateTests(unittest.TestCase):
                 verifier.subprocess, 'check_output', return_value=b'{"data":null}'):
             with self.assertRaisesRegex(verifier.Rejected, 'native-review-evidence-missing'):
                 verifier.verify_native_review_gate(96, self.sha)
+
+
+class RepositoryIdentityTests(unittest.TestCase):
+    def test_binding_names_the_transferred_repository_and_its_stable_id(self):
+        self.assertEqual(verifier.REPOSITORY, 'appolon1908/Keycloak')
+        self.assertEqual(verifier.REPOSITORY_ID, 1347523366)
+
+    def test_bound_name_and_id_pass(self):
+        with patch.object(verifier, 'api', return_value={'full_name': 'appolon1908/Keycloak', 'id': 1347523366}) as api:
+            verifier.verify_repository_identity()
+        api.assert_called_once_with('repos/appolon1908/Keycloak')
+
+    def test_same_name_with_another_id_or_a_moved_name_is_rejected(self):
+        cases = [
+            {'full_name': 'appolon1908/Keycloak', 'id': 999},
+            {'full_name': 'appolon1908/Keycloak', 'id': '1347523366'},
+            {'full_name': 'appolon1908-hue/Keycloak', 'id': 1347523366},
+            {'full_name': 'someone-else/Keycloak', 'id': 1347523366},
+            {'full_name': 'appolon1908/Keycloak'},
+            [],
+            None,
+        ]
+        for repo in cases:
+            with self.subTest(repo=repo), patch.object(verifier, 'api', return_value=repo):
+                with self.assertRaisesRegex(verifier.Rejected, 'repository-identity-mismatch'):
+                    verifier.verify_repository_identity()
