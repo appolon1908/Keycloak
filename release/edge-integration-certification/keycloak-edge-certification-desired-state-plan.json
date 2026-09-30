@@ -8,7 +8,7 @@
   ],
   "audience": "middleware-api",
   "campaign": "TEST_SYN",
-  "configurationChecksum": "d17f874fd68cda12780464236a099e89f20465c47b4f2e6d702c9c308c1285ec",
+  "configurationChecksum": "3650a082f2ea7f1111cca0dafa38befcda437256277578deba5976feb34ff148",
   "edgeContract": {
     "hashRule": "sha256 over json.dumps(contract, sort_keys=True, separators=(',', ':')).encode('utf-8')",
     "path": "deploy/public-api-route-contract.json",
@@ -43,13 +43,13 @@
     },
     {
       "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
-      "desiredSha256": "5bfb7b8bfcd89ea7c487ee648e902cac0ef30e810f613ae7427ac87644d3ec6e",
+      "desiredSha256": "a704383f3188c86aea14c215792cfb2458341507f42769dcda86e5b47142598a",
       "resourceId": "n8n.results.read",
       "resourceType": "client-scope"
     },
     {
       "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
-      "desiredSha256": "be3ec417a3d4b5b820d8e7533b06550cd06e48a6390e75d40d6e9626d47d80d0",
+      "desiredSha256": "07da825ab949937984bb967f18874448c28190bf70f931ca5a0cd9b8f842cff7",
       "resourceId": "odoo.campaigns.read",
       "resourceType": "client-scope"
     },
@@ -139,7 +139,7 @@
   "sourceFiles": [
     {
       "path": "config/desired-state/edge-integration-certification/client-scopes/n8n.results.read.json",
-      "sha256": "5bfb7b8bfcd89ea7c487ee648e902cac0ef30e810f613ae7427ac87644d3ec6e"
+      "sha256": "a704383f3188c86aea14c215792cfb2458341507f42769dcda86e5b47142598a"
     },
     {
       "path": "config/desired-state/edge-integration-certification/client-scopes/n8n.results.submit.json",
@@ -147,7 +147,7 @@
     },
     {
       "path": "config/desired-state/edge-integration-certification/client-scopes/odoo.campaigns.read.json",
-      "sha256": "be3ec417a3d4b5b820d8e7533b06550cd06e48a6390e75d40d6e9626d47d80d0"
+      "sha256": "07da825ab949937984bb967f18874448c28190bf70f931ca5a0cd9b8f842cff7"
     },
     {
       "path": "config/desired-state/edge-integration-certification/clients/test-syn-n8n-read.json",
