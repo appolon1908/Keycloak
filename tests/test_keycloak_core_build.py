@@ -144,7 +144,7 @@ def test_scope_mapping_authority_is_explicit_and_fail_closed():
 
 def test_scope_mapping_plan_detects_role_drift():
     from keycloak_reconciliation import plan
-    desired={"scopeMappings":[{"clientId":"grafana","fullScopeAllowed":False,"realmRoles":["viewer"],"crossFamilyRolesAllowed":False}]}
+    desired={"realmRoles":[{"name":"viewer"}],"scopeMappings":[{"clientId":"grafana","fullScopeAllowed":False,"realmRoles":["viewer"],"crossFamilyRolesAllowed":False}]}
     live={"scopeMappings":[{"clientId":"grafana","fullScopeAllowed":False,"realmRoles":[],"crossFamilyRolesAllowed":False}]}
     a=[x for x in plan(desired,live)["actions"] if x["resource_type"]=="scope_mapping"]
     assert len(a)==1 and a[0]["kind"]=="UPDATE"
@@ -169,7 +169,7 @@ def test_scope_mapping_apply_adds_and_removes_exact_roles():
 
 def test_scope_mapping_for_absent_unmanaged_client_stays_unmanaged():
     from keycloak_reconciliation import plan
-    desired={"clients":[{"clientId":"middleware-api"}],"scopeMappings":[{"clientId":"grafana-observability","realmRoles":["viewer"],"fullScopeAllowed":False,"crossFamilyRolesAllowed":False}]}
+    desired={"clients":[{"clientId":"middleware-api"}],"realmRoles":[{"name":"viewer"}],"scopeMappings":[{"clientId":"grafana-observability","realmRoles":["viewer"],"fullScopeAllowed":False,"crossFamilyRolesAllowed":False}]}
     live={"clients":[{"id":"1","clientId":"middleware-api"}],"scopeMappings":[]}
     a=[x for x in plan(desired,live)["actions"] if x["resource_type"]=="scope_mapping"]
     assert len(a)==1 and a[0]["kind"]=="KEEP" and a[0]["managed"] is False and a[0]["reason"]=="scope_mapping_client_not_managed"

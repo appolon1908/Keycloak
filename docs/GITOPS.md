@@ -68,6 +68,10 @@ production-issued tokens.
 - The control API applies the same policy through `KEYCLOAK_ENVIRONMENT`; see
   `docs/operations/CONTROL_API.md`.
 
+The deploy workflow's rollback export selects the same environment-scoped
+client set before an apply, so rollback evidence never covers a client that
+the reviewed plan excluded.
+
 A live copy of a scoped client found in another environment is unmanaged
 there: it is never updated or deleted by the plan. `scripts/validate.sh`
 requires the policy to name only managed clients with sorted, known

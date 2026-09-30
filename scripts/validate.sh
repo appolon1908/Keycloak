@@ -24,7 +24,7 @@ else
 fi
 python3 -m unittest discover -s "$ROOT_DIR/tests" -p 'test_password_reset_smtp_transport.py' -v
 python3 "$ROOT_DIR/scripts/keycloak_identity_compiler.py" --check
-python3 -m pytest -q "$ROOT_DIR/tests/test_pas237_keycloak_control_plane.py" "$ROOT_DIR/tests/test_keycloak_core_build.py" "$ROOT_DIR/tests/test_keycloak_environment_scope_and_client_roles.py" "$ROOT_DIR/tests/test_agent_desktop_identity.py"
+python3 -m pytest -q "$ROOT_DIR/tests/test_pas237_keycloak_control_plane.py" "$ROOT_DIR/tests/test_keycloak_core_build.py" "$ROOT_DIR/tests/test_keycloak_environment_scope_and_client_roles.py" "$ROOT_DIR/tests/test_keycloak_token_scope_and_plan_errors.py" "$ROOT_DIR/tests/test_environment_scoped_rollback_export.py" "$ROOT_DIR/tests/test_agent_desktop_identity.py"
 python3 "$ROOT_DIR/scripts/validate-authority-controls.py"
 python3 "$ROOT_DIR/scripts/validate-kyyow-identity.py"
 python3 -m unittest discover -s "$ROOT_DIR/tests" -p 'test_kyyow_identity.py' -v

@@ -61,6 +61,14 @@ def test_contract_roles_must_be_compiled_and_client_roles_need_a_compiled_client
     monkeypatch.setattr(compiler,"_nested_documents",lambda name: [] if name=="client-roles" else original(name))
     with pytest.raises(IdentityModelError,match="contract_client_role_unprovisioned:.*codestra-agent-desktop:realtime.agent.connect"): compile_identity()
     monkeypatch.setattr(compiler,"_nested_documents",lambda name: [(p,d) for p,d in original(name) if d.get("name")!="telephony.webphone.use"] if name=="realm-roles" else original(name))
+    # The desktop's scope mapping names the role too, so that reference fails closed first.
+    with pytest.raises(IdentityModelError,match="scope_mapping_role_unknown:codestra-agent-desktop:telephony.webphone.use"): compile_identity()
+    def without_role_or_mapping(name):
+        rows=original(name)
+        if name=="realm-roles": return [(p,d) for p,d in rows if d.get("name")!="telephony.webphone.use"]
+        if name=="scope-mappings": return [(p,d) for p,d in rows if d.get("clientId")!="codestra-agent-desktop"]
+        return rows
+    monkeypatch.setattr(compiler,"_nested_documents",without_role_or_mapping)
     with pytest.raises(IdentityModelError,match="contract_realm_role_unprovisioned:.*telephony.webphone.use"): compile_identity()
     ghost=(ROOT/"config"/"desired-state"/"ghost"/"client-roles"/"ghost.json",{"clientId":"ghost","roles":[{"name":"r"}]})
     monkeypatch.setattr(compiler,"_nested_documents",lambda name: original(name)+[ghost] if name=="client-roles" else original(name))

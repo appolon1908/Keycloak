@@ -14,6 +14,10 @@ ACTION_FIELDS=("alias","name","enabled","defaultAction","priority","config")
 MAPPING_FIELDS=("clientId","fullScopeAllowed","realmRoles","crossFamilyRolesAllowed")
 RESOURCE_ORDER=("realm","client_scope","realm_role","client","client_role","scope_mapping","required_action")
 MUTATION_KINDS={"CREATE","UPDATE","DELETE"}
+# ERROR marks a managed resource the plan cannot reconcile; it is never applied and
+# counts as unconverged, so a plan that carries one is refused before any write.
+UNCONVERGED_KINDS=MUTATION_KINDS|{"ERROR"}
+INTERNAL_ID_TYPES={"client","client_scope"}
 UNORDERED_LIST_FIELDS={"redirectUris","webOrigins","defaultClientScopes","optionalClientScopes"}
 COLLECTION_KEYS={"client":"clients","client_scope":"clientScopes","realm_role":"realmRoles"}
 
@@ -80,16 +84,24 @@ def _plan_collection(actions:list[Action],rtype:str,desired_rows:list[dict[str,A
     d=_index(desired_rows,key); l=_index(live_rows,key)
     for rid in sorted(d):
         if rid not in l: actions.append(Action("CREATE",rtype,rid,"missing_live"))
-        elif not managed_fields_match(d[rid],l[rid],fields): actions.append(Action("UPDATE",rtype,rid,"managed_fields_drift"))
+        elif not managed_fields_match(d[rid],l[rid],fields): actions.append(_mutation_or_error("UPDATE",rtype,rid,"managed_fields_drift",l[rid]))
         else: actions.append(Action("KEEP",rtype,rid,"in_sync"))
     for rid in sorted(set(l)-set(d)):
-        if managed_ids is not None and rid in managed_ids: actions.append(Action("DELETE",rtype,rid,"managed_resource_removed"))
+        if managed_ids is not None and rid in managed_ids: actions.append(_mutation_or_error("DELETE",rtype,rid,"managed_resource_removed",l[rid]))
         else: actions.append(Action("KEEP",rtype,rid,"unmanaged_live_resource",False))
+
+def _mutation_or_error(kind:str,rtype:str,rid:str,reason:str,live_row:dict[str,Any])->Action:
+    # Keycloak addresses clients and client scopes by internal id; a live row without
+    # one cannot be updated or deleted, so the plan reports it instead of failing mid-apply.
+    if rtype in INTERNAL_ID_TYPES and not live_row.get("id"): return Action("ERROR",rtype,rid,f"missing_internal_id:{rid}")
+    return Action(kind,rtype,rid,reason)
 
 def _plan_client_roles(actions:list[Action],desired:dict[str,Any],live:dict[str,Any],managed_ids:set[str]):
     d={client_role_key(r):r for r in client_role_rows(desired)}; l={client_role_key(r):r for r in client_role_rows(live)}
+    known_clients={str(c.get("clientId")) for c in (desired.get("clients") or [])+(live.get("clients") or []) if c.get("clientId")}
     for rid in sorted(d):
-        if rid not in l: actions.append(Action("CREATE","client_role",rid,"missing_live"))
+        if rid.partition(":")[0] not in known_clients: actions.append(Action("ERROR","client_role",rid,f"client_role_client_missing:{rid}"))
+        elif rid not in l: actions.append(Action("CREATE","client_role",rid,"missing_live"))
         elif not managed_fields_match(d[rid],l[rid],CLIENT_ROLE_FIELDS): actions.append(Action("UPDATE","client_role",rid,"managed_fields_drift"))
         else: actions.append(Action("KEEP","client_role",rid,"in_sync"))
     for rid in sorted(set(l)-set(d)):
@@ -100,14 +112,19 @@ def _plan_scope_mappings(actions:list[Action],desired:dict[str,Any],live:dict[st
     d=_index(desired.get("scopeMappings",[]),"clientId"); l=_index(live.get("scopeMappings",[]),"clientId")
     desired_clients={str(c.get("clientId")) for c in desired.get("clients",[]) if c.get("clientId")}
     live_clients={str(c.get("clientId")) for c in live.get("clients",[]) if c.get("clientId")}
+    known_roles={str(r.get("name")) for r in (desired.get("realmRoles") or [])+(live.get("realmRoles") or []) if r.get("name")}
     for rid in sorted(d):
         # A mapping whose client is neither managed here nor present live has no
         # target; it stays unmanaged instead of failing the apply half-way through.
         if rid not in desired_clients and rid not in live_clients and rid not in l:
             actions.append(Action("KEEP","scope_mapping",rid,"scope_mapping_client_not_managed",False)); continue
-        if rid not in l: actions.append(Action("UPDATE","scope_mapping",rid,"missing_live"))
-        elif canonical(_mapping_view(d[rid]))!=canonical(_mapping_view(l[rid])): actions.append(Action("UPDATE","scope_mapping",rid,"managed_fields_drift"))
-        else: actions.append(Action("KEEP","scope_mapping",rid,"in_sync"))
+        if rid in l and canonical(_mapping_view(d[rid]))==canonical(_mapping_view(l[rid])):
+            actions.append(Action("KEEP","scope_mapping",rid,"in_sync")); continue
+        # Realm roles are created earlier in the same apply, so a role that is neither
+        # desired nor live would only fail after those earlier writes.
+        missing=sorted(set(str(x) for x in d[rid].get("realmRoles") or [])-known_roles)
+        if missing: actions.append(Action("ERROR","scope_mapping",rid,f"scope_mapping_role_missing:{','.join(missing)}"))
+        else: actions.append(Action("UPDATE","scope_mapping",rid,"missing_live" if rid not in l else "managed_fields_drift"))
     for rid in sorted(set(l)-set(d)): actions.append(Action("KEEP","scope_mapping",rid,"unmanaged_live_resource",False))
 
 def plan(desired:dict[str,Any],live:dict[str,Any],*,managed_inventory:dict[str,list[str]]|None=None,environment:str="unknown")->dict[str,Any]:
@@ -147,6 +164,7 @@ def validate_plan(plan_doc:dict[str,Any],desired:dict[str,Any],live:dict[str,Any
     for action in plan_doc.get("actions",[]):
         kind=action.get("kind"); rt=action.get("resource_type"); rid=str(action.get("resource_id") or "")
         if kind=="KEEP": continue
+        if kind=="ERROR": raise RuntimeError(str(action.get("reason") or f"plan_error:{rt}:{rid}"))
         if kind not in MUTATION_KINDS: raise RuntimeError(f"unsupported_action:{kind}")
         if kind=="DELETE" and (not allow_delete or not action.get("managed",False)): raise RuntimeError(f"delete_not_authorized:{rt}:{rid}")
         if rt=="realm":
@@ -188,6 +206,7 @@ def apply_plan(plan_doc:dict[str,Any],desired:dict[str,Any],live:dict[str,Any],a
         for action in plan_doc["actions"]:
             kind=action["kind"]; rt=action["resource_type"]; rid=action["resource_id"]
             if kind=="KEEP": journal.append({"kind":kind,"resourceType":rt,"resourceId":rid}); continue
+            if kind not in MUTATION_KINDS: raise RuntimeError(str(action.get("reason") or f"unsupported_action:{kind}"))
             if kind=="DELETE" and (not allow_delete or not action.get("managed",False)): raise RuntimeError(f"delete_not_authorized:{rt}:{rid}")
             if rt=="realm":
                 if kind!="UPDATE": raise RuntimeError("unsupported_realm_action")
@@ -260,10 +279,10 @@ def mutation_performed(journal:list[dict[str,Any]]|None)->bool:
     return any(entry.get("kind") in MUTATION_KINDS for entry in journal or [])
 
 def verify_readback(desired:dict[str,Any],live_after:dict[str,Any])->dict[str,Any]:
-    # Readback is converged when no managed resource still needs a mutation; live
-    # built-ins that desired state never declares are unmanaged and do not count.
+    # Readback is converged when no managed resource still needs a mutation or cannot be
+    # reconciled; live built-ins that desired state never declares are unmanaged.
     expected=normalize_state(desired); actual=normalize_state(live_after)
-    pending=[a for a in plan(desired,live_after)["actions"] if a["kind"] in MUTATION_KINDS]
+    pending=[a for a in plan(desired,live_after)["actions"] if a["kind"] in UNCONVERGED_KINDS]
     return {"equal":not pending,"desiredDigest":digest(expected),"liveDigest":digest(actual),"pendingActions":pending}
 
 def created_inventory(journal:list[dict[str,Any]]|None)->dict[str,list[str]]:

@@ -70,6 +70,16 @@ All routes live under `/platform/v1/keycloak`. Responses are JSON with
 
 A plan orders its actions by resource type: `realm`, `client_scope`,
 `realm_role`, `client`, `client_role`, `scope_mapping`, `required_action`.
+Each action is `CREATE`, `UPDATE`, `DELETE`, `KEEP` or `ERROR`.
+
+`ERROR` marks a managed resource the plan cannot reconcile. Its `reason`
+names the cause: `missing_internal_id:<id>` for a live client or client scope
+without a Keycloak id, `client_role_client_missing:<clientId>:<role>` for a
+role whose client is neither desired nor live, and
+`scope_mapping_role_missing:<roles>` for a scope mapping naming a realm role
+that is neither desired nor live. Drift and dry-run show these actions; an
+apply whose plan carries one is `REJECTED` with that reason before any write,
+and readback and observability count it as unconverged.
 
 Client roles are declared once per client under
 `config/desired-state/<group>/client-roles/<clientId>.json` and compiled into
@@ -83,9 +93,19 @@ deletes (`deleted_with_client`).
 The compiler fails closed when a checked-in contract under `config/contracts/`
 requires a realm role or client role that is not compiled
 (`contract_realm_role_unprovisioned`, `contract_client_role_unprovisioned`).
-The agent desktop contract therefore provisions `telephony.webphone.use` and
-`codestra-agent-desktop:realtime.agent.connect` from
-`config/desired-state/agent-desktop-identity/`.
+A client with `fullScopeAllowed: false` only carries its own client roles and
+the realm roles in its role scope mapping into a token, so a required realm
+role outside that mapping fails with `contract_realm_role_not_in_token_scope`,
+and another client's roles fail with `contract_client_role_not_in_token_scope`.
+The agent desktop contract therefore provisions `telephony.webphone.use`,
+`codestra-agent-desktop:realtime.agent.connect` and the desktop's scope mapping
+for the realm role from `config/desired-state/agent-desktop-identity/`.
+
+Role scope mappings under `config/desired-state/<group>/scope-mappings/` must
+name a compiled client, keep `fullScopeAllowed` and `crossFamilyRolesAllowed`
+false, and list distinct compiled realm roles from a single
+`codestra.role.family`. Protocol mappers on a client or client scope need a
+unique name, and no two of them may write the same `claim.name`.
 
 ## Apply evidence and statuses
 

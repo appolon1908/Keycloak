@@ -418,7 +418,14 @@ jobs:
         if: ${{ inputs.mode == 'apply' }}
         run: |
           set -Eeuo pipefail
-          mapfile -t clients < <(jq -r '.clients[]' config/policy/managed-clients.json)
+          # Rollback evidence covers exactly the clients the reviewed plan manages in this
+          # environment, the same set apply-plan.sh accepts.
+          mapfile -t clients < <(
+            jq -r --arg environment "$DEPLOY_ENVIRONMENT" \
+              --slurpfile scopes config/policy/environment-scoped-clients.json '
+                .clients[] | select((($scopes[0].clients[.] // [$environment]) | index($environment)) != null)
+              ' config/policy/managed-clients.json
+          )
           ./scripts/export-client.sh \
             --output "$RUNNER_TEMP/keycloak-before" \
             "${clients[@]}"

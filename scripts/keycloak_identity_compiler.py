@@ -68,13 +68,63 @@ def validate_client(client: dict[str, Any]) -> None:
     elif client.get("publicClient") is True and client.get("standardFlowEnabled") is not True:
         raise IdentityModelError(f"{client_id}:public_client_requires_code_flow")
 
-    for mapper in client.get("protocolMappers") or []:
+    validate_mappers(client_id, client.get("protocolMappers"))
+
+
+def validate_mappers(label: str, mappers: Any) -> None:
+    """Mapper names are unique per owner and no two mappers write the same claim.
+
+    Keycloak refuses a duplicate mapper name only at apply time, after earlier
+    writes, and lets whichever of two mappers runs last win a shared claim.
+    """
+    names: set[str] = set()
+    claims: set[str] = set()
+    for mapper in mappers or []:
         config = mapper.get("config") or {}
         if any(
             key.lower() in SECRET_CONFIG_KEYS and config.get(key)
             for key in config
         ):
-            raise IdentityModelError(f"{client_id}:secret_in_mapper")
+            raise IdentityModelError(f"{label}:secret_in_mapper")
+        name = str(mapper.get("name") or "")
+        if not name:
+            raise IdentityModelError(f"{label}:protocol_mapper_missing_name")
+        if name in names:
+            raise IdentityModelError(f"{label}:duplicate_protocol_mapper:{name}")
+        names.add(name)
+        claim = str(config.get("claim.name") or "")
+        if claim:
+            if claim in claims:
+                raise IdentityModelError(f"{label}:conflicting_protocol_mapper_claim:{claim}")
+            claims.add(claim)
+
+
+def validate_scope_mappings(
+    mappings: list[dict[str, Any]],
+    roles_by_name: dict[str, dict[str, Any]],
+    known_client_ids: set[str],
+) -> None:
+    """A role scope mapping may only carry compiled realm roles of one family into a known client."""
+    for mapping in mappings:
+        client_id = str(mapping.get("clientId") or "")
+        if client_id not in known_client_ids:
+            raise IdentityModelError(f"scope_mapping_unknown_client:{client_id}")
+        if mapping.get("fullScopeAllowed") is not False:
+            raise IdentityModelError(f"scope_mapping_full_scope_forbidden:{client_id}")
+        names = mapping.get("realmRoles")
+        if not isinstance(names, list) or not names or len(set(names)) != len(names):
+            raise IdentityModelError(f"scope_mapping_roles_invalid:{client_id}")
+        unknown = sorted(name for name in names if name not in roles_by_name)
+        if unknown:
+            raise IdentityModelError(f"scope_mapping_role_unknown:{client_id}:{','.join(unknown)}")
+        if mapping.get("crossFamilyRolesAllowed") is not False:
+            raise IdentityModelError(f"scope_mapping_cross_family_flag_required:{client_id}")
+        families = {
+            tuple((roles_by_name[name].get("attributes") or {}).get("codestra.role.family") or [])
+            for name in names
+        }
+        if len(families) > 1:
+            raise IdentityModelError(f"scope_mapping_cross_family_roles:{client_id}")
 
 
 def validate_role(role: Any, label: str, *, client_role: bool) -> dict[str, Any]:
@@ -154,12 +204,18 @@ def _environment_scopes(protected_ids: set[str]) -> dict[str, list[str]]:
     return dict(sorted(scopes.items()))
 
 
-def _validate_contract_roles(realm_roles: set[str], client_roles: dict[str, set[str]]) -> None:
-    """Every role a checked-in client contract requires must be compiled, or it is unprovisionable."""
+def _validate_contract_roles(
+    realm_roles: set[str],
+    client_roles: dict[str, set[str]],
+    clients_by_id: dict[str, dict[str, Any]],
+    scope_mapping_roles: dict[str, set[str]],
+) -> None:
+    """Every role a checked-in client contract requires must be compiled and reach the token."""
     for path in sorted(CONTRACTS.glob("*.json")):
         document = load_json(path)
         label = path.relative_to(ROOT).as_posix()
-        for name in document.get("requiredRealmRoles") or []:
+        required_realm_roles = document.get("requiredRealmRoles") or []
+        for name in required_realm_roles:
             if name not in realm_roles:
                 raise IdentityModelError(f"contract_realm_role_unprovisioned:{label}:{name}")
         required_client_roles = document.get("requiredClientRoles") or {}
@@ -171,6 +227,25 @@ def _validate_contract_roles(realm_roles: set[str], client_roles: dict[str, set[
                     raise IdentityModelError(
                         f"contract_client_role_unprovisioned:{label}:{client_id}:{name}"
                     )
+        # A client without full scope only puts its own client roles and the realm roles
+        # in its role scope mapping into a token; anything else never reaches the consumer.
+        token_client = str(document.get("clientId") or "")
+        if token_client and (required_realm_roles or required_client_roles):
+            client = clients_by_id.get(token_client)
+            if client is None:
+                raise IdentityModelError(f"contract_client_unknown:{label}:{token_client}")
+            if client.get("fullScopeAllowed") is False:
+                mapped = set(scope_mapping_roles.get(token_client, set()))
+                for name in required_realm_roles:
+                    if name not in mapped:
+                        raise IdentityModelError(
+                            f"contract_realm_role_not_in_token_scope:{label}:{token_client}:{name}"
+                        )
+                for client_id in required_client_roles:
+                    if str(client_id) != token_client:
+                        raise IdentityModelError(
+                            f"contract_client_role_not_in_token_scope:{label}:{token_client}:{client_id}"
+                        )
         if path.name.endswith("-client-roles.json"):
             client_id = str(document.get("clientId") or "")
             for role in document.get("roles") or []:
@@ -254,6 +329,8 @@ def compile_identity() -> dict[str, Any]:
     roles = _unique_by(role_docs, "name", "realm_role")
     for role in roles:
         validate_role(role, "realm-roles", client_role=False)
+    for scope in scopes:
+        validate_mappers(f"scope:{scope['name']}", scope.get("protocolMappers"))
     scope_mappings = _unique_by(scope_mapping_docs, "clientId", "scope_mapping")
     environment_scopes = _environment_scopes(protected_ids)
 
@@ -279,10 +356,16 @@ def compile_identity() -> dict[str, Any]:
     staged_with_provenance.sort(key=lambda item: (item["authorityGroup"], item["client"]["clientId"]))
 
     known_client_ids = protected_ids | {item["client"]["clientId"] for item in staged_with_provenance}
+    clients_by_id: dict[str, dict[str, Any]] = {}
+    for client in protected_clients + [item["client"] for item in staged_with_provenance]:
+        clients_by_id.setdefault(str(client["clientId"]), client)
+    validate_scope_mappings(scope_mappings, {role["name"]: role for role in roles}, known_client_ids)
     client_roles = _client_roles(client_role_docs, known_client_ids)
     _validate_contract_roles(
         {role["name"] for role in roles},
         {entry["clientId"]: {role["name"] for role in entry["roles"]} for entry in client_roles},
+        clients_by_id,
+        {str(m["clientId"]): set(m.get("realmRoles") or []) for m in scope_mappings},
     )
 
     model: dict[str, Any] = {

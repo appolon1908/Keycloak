@@ -2892,6 +2892,14 @@
   "schema": "codestra.keycloak.identity-authority.v1",
   "scopeMappings": [
     {
+      "clientId": "codestra-agent-desktop",
+      "crossFamilyRolesAllowed": false,
+      "fullScopeAllowed": false,
+      "realmRoles": [
+        "telephony.webphone.use"
+      ]
+    },
+    {
       "clientId": "grafana-observability",
       "crossFamilyRolesAllowed": false,
       "fullScopeAllowed": false,
@@ -2921,7 +2929,7 @@
       ]
     }
   ],
-  "sourceSha256": "2e825a4b1e55c108a65097f28e4b12b8a1477d0f1d9147021a1af86398f45725",
+  "sourceSha256": "79ac07c93170fc2c1e7063704350c6fa82ffd502fa164edf37529a3673f01b55",
   "stagedClients": [
     {
       "authorityGroup": "cip-tenant-identity",
