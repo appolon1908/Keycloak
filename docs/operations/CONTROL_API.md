@@ -128,9 +128,18 @@ ship at all is an `ERROR`. A rollback unregisters only a provider its apply
 registered.
 
 Keycloak keeps names, descriptions and URLs of clients, client scopes and roles
-in 255-character columns. A declared value longer than that is planned as
-`ERROR` with reason `keycloak_column_too_long:<field>:<length>`, so the apply is
-refused before any write instead of failing part-way with a database error.
+in 255-character columns. The compiler rejects a longer declared value for any
+protected client, staged client, client scope, realm role or client role
+(`keycloak_column_too_long:<resource>:<field>:<length>`), and the plan also
+marks one as `ERROR` before any write, so an apply never fails part-way with a
+database error.
+
+`postman/keycloak-control-api.postman_collection.json` covers the fail-closed
+contract without a backend. `postman/keycloak-control-api.live-backend.postman_collection.json`
+runs the full lifecycle against a control plane backed by a disposable, empty
+TEST_SYN realm with mutation enabled: apply, convergence, idempotent repeat and
+replay, hashed evidence, rollback and refusal of a second rollback. Never point
+it at staging or production.
 
 Live readback is compared the way Keycloak stores it: role lists are read with
 full representations so attributes are compared, a declared `false` flag matches

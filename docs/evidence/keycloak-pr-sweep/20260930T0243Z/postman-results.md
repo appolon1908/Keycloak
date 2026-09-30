@@ -44,3 +44,13 @@ realm-backed, mutation-enabled service rightly does not return. The collection's
 nothing to change, and its rollback request named a missing id (`404`). The collection has no
 backed-mode variant; the realm-backed API behaviour is evidenced by the apply, readback,
 repeat-apply and rollback results in `docker-verification.md`.
+
+## Final runs on `59f06e37eeb65738a14bc71969b07d67f197b75f`
+
+| Collection | Target | Result |
+|---|---|---|
+| `keycloak-control-api.postman_collection.json` | loopback control API, no backend, mutation disabled | 20 requests, 45 assertions, 0 failed |
+| `keycloak-control-api.live-backend.postman_collection.json` | loopback control API backed by the disposable realm, mutation enabled | 11 requests, 32 assertions, 0 failed |
+
+The live-backend collection holds no credentials; the disposable administrator token lived only
+in the control API's environment and was deleted with the stack.

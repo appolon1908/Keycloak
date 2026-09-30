@@ -70,3 +70,17 @@ Findings fixed on the branch: the MoneyBee provider is not registered by Keycloa
 over-length values; role lists omit attributes unless full representations are requested;
 omitted `false` flags; the automatic `service_account` default scope; mapper config defaults
 and dropped empty values. Still open: the eight over-length values (decision D3).
+
+## Final disposable realm run on `59f06e37eeb65738a14bc71969b07d67f197b75f`
+
+Same method as above, project `kc-disp-59f06e3`, image built from the exact commit
+(`sha256:8f4801da3a34c585173026988f98f31d015598da3aa4256b906e5e4cebde0c05`), the real control API
+with the complete desired state and nothing excluded.
+
+| Step | Result |
+|---|---|
+| Readiness | ready after 40 s |
+| Live-backend Postman lifecycle | 11 requests, 32 assertions, 0 failed: apply `COMPLETED` with readback equal, drift all `KEEP`, repeat apply without mutation, replay returns the same execution, hashed and redacted evidence, rollback `COMPLETED`, second rollback refused |
+| Second apply and Admin API field checks | apply `COMPLETED`, readback equal; 973 checks, 0 failures: 17 roles with descriptions and 116 attributes, 36 clients with descriptions, 206 flags, 31 default-scope sets, 80 mappers with 397 config values, 14 scopes with descriptions, 4 required actions, 2 profile attributes, agent desktop role and scope mapping, staging portal absent |
+| Rollback | `COMPLETED`, readback equal; realm back to Keycloak's six built-in clients and three built-in roles, default profile, MoneyBee provider unregistered |
+| Teardown | containers, network and volume removed; throwaway credentials and local evidence directories deleted |

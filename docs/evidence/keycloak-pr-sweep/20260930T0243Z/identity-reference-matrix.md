@@ -93,8 +93,8 @@ names a GitHub repository, and the transfer changes no issuer, redirect URI, aud
 | 2 historical evidence | `docs/review-proposals/n8n-editor-login-bootstrap-20260910.json` | 58 | `"repository": "appolon1908-hue/Keycloak",` | Keep unchanged: records what was true when produced |
 | 2 historical evidence | `release/intents/keycloak-20260909.json` | 3 | `"repository": "appolon1908-hue/Keycloak",` | Keep unchanged: records what was true when produced |
 | 2 historical evidence | `release/intents/keycloak-20260909.json` | 6 | `"image_repository": "ghcr.io/appolon1908-hue/codestra-keycloak",` | Keep unchanged: records what was true when produced |
-| 3 external contract (Kong, by digest) | `release/cip-tenant-identity/keycloak-cip-gateway-identity-contract.v1.json` | 21 | `"repository": "ingtrader21-spec/Keycloak",` | Keep: regenerate only together with the Kong owner, who pins the contract digest |
-| 3 external contract (Kong, by digest) | `scripts/cip_tenant_identity.py` | 1006 | `"repository": "ingtrader21-spec/Keycloak",` | Keep: regenerate only together with the Kong owner, who pins the contract digest |
+| 3 external contract (Kong, by digest) | `release/cip-tenant-identity/keycloak-cip-gateway-identity-contract.v1.json` | 21 | `"repository": "ingtrader21-spec/Keycloak",` | Resolved 2026-09-30: regenerated as `appolon1908/Keycloak`; no consumer pins it yet (see below) |
+| 3 external contract (Kong, by digest) | `scripts/cip_tenant_identity.py` | 1006 | `"repository": "ingtrader21-spec/Keycloak",` | Resolved 2026-09-30: the generator names `appolon1908/Keycloak` |
 | 3 external contract (Kyyow) | `contracts/kyyow-saas-identity-v1.json` | 6 | `"identity_owner": "appolon1908-hue/Keycloak",` | Defer: coordinated identity-owner update with the Kyyow owner |
 | 3 external contract (Kyyow) | `scripts/validate-kyyow-identity.py` | 15 | `'identity_owner': 'appolon1908-hue/Keycloak',` | Defer: coordinated identity-owner update with the Kyyow owner |
 | 3 external contract (Orbit adoption) | `orbit/adoption-manifest.json` | 3 | `"repository": "appolon1908-hue/Keycloak",` | Defer: coordinated with the Orbit owner |
@@ -112,3 +112,12 @@ The desired-state contracts that mention a repository (CIP, edge certification, 
 workload identity) name other repositories or record provenance; none names this repository's
 owner. No workflow configures an OIDC subject or signing identity by repository name; the release
 workflow's provenance attestations take their subject from the run.
+
+Correction, 2026-09-30: the CIP gateway contract says Kong pins it by digest, but that is an
+activation precondition, not current state. Read-only inspection of `appolon1908/Kong` found no
+reference to the contract or its digest on `main` or on its CIP branch
+(`product/cip-gateway-tenant-policy-20260924`). The contract was therefore regenerated here with
+its canonical generator. When Kong adopts it, Kong pins the digest in
+`release/cip-tenant-identity/keycloak-cip-gateway-identity-contract.v1.sha256` at the merged
+commit. The bootstrap proposal generator and the pull-request audit default now name
+`appolon1908/Keycloak`; historical proposals, audits and intents keep the names they were made with.
