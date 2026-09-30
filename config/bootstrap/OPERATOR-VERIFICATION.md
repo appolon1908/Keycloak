@@ -54,6 +54,23 @@ trust-owned paths (including source-binding refreshes) intentionally fail the
 policy comparison. Prepare and independently review a new policy for those
 bytes; do not silently regenerate the policy inside PR96.
 
+## Repository identity
+
+The repository was transferred to `appolon1908/Keycloak` on 2026-09-30 and
+keeps stable repository id `1347523366`. The verifier is bound to both: the
+REST repository lookup must return exactly that name and id, and both GraphQL
+queries must return that `databaseId`. An old owner name that redirects, or is
+reused by a different repository, is rejected as `repository-identity-mismatch`.
+A future transfer or rename therefore fails closed until an independently
+reviewed trust update rebinds the name; the stable id must not be removed.
+
+The verifier still reads classic branch protection
+(`repos/<repository>/branches/main/protection`). This repository enforces main
+through rulesets instead, so that lookup is rejected as
+`review-protection-missing` until a separately reviewed trust update reads the
+effective rules. Do not treat that rejection as an approval gap, and do not
+disable the check to obtain a pass.
+
 GitHub performs the last-push actor comparison; commit author and committer
 metadata are not substitutes for that identity. A missing native decision or
 inaccessible protection evidence is a rejection, not an inferred approval. See
