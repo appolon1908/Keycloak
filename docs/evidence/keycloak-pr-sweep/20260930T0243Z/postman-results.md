@@ -34,3 +34,13 @@ missing executions and evidence, redacted recovery, promotion blocks, unknown ro
 Validation of the same collection against a control plane backed by a disposable Keycloak
 realm is `NOT_RUN`: it depends on the Docker runtime in `docker-verification.md`. Postman Desktop
 was not opened; Newman ran the repository's collection directly.
+
+## Disposable realm, 2026-09-30
+
+The same collection against the realm-backed control plane: 20 requests, 34 of 45 assertions
+passed. The 11 failures are the collection's no-backend contract (`503` without an admin
+backend, `403` while apply is disabled, `apply_disabled` before evidence lookup), which a
+realm-backed, mutation-enabled service rightly does not return. The collection's apply found
+nothing to change, and its rollback request named a missing id (`404`). The collection has no
+backed-mode variant; the realm-backed API behaviour is evidenced by the apply, readback,
+repeat-apply and rollback results in `docker-verification.md`.

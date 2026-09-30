@@ -12,7 +12,18 @@ ROLE_FIELDS=("name","description","composite","attributes")
 CLIENT_ROLE_FIELDS=("clientId","name","description","composite","attributes")
 ACTION_FIELDS=("alias","name","enabled","defaultAction","priority","config")
 MAPPING_FIELDS=("clientId","fullScopeAllowed","realmRoles","crossFamilyRolesAllowed")
-RESOURCE_ORDER=("realm","client_scope","realm_role","client","client_role","scope_mapping","required_action")
+SERVICE_ACCOUNT_FIELDS=("clientId","realmRoles")
+PROFILE_FIELDS=("name","displayName","multivalued","permissions","validations","annotations","required","selector","group")
+RESOURCE_ORDER=("realm","user_profile_attribute","client_scope","realm_role","client","client_role","scope_mapping","service_account_roles","required_action")
+# Keycloak grants every user, service accounts included, the realm's default composite
+# role; it is realm configuration, not a grant the service-account declaration manages.
+DEFAULT_ROLE_PREFIX="default-roles-"
+# Keycloak stores these fields in varchar(255) columns; a longer value fails its write
+# with a database error after earlier writes have already landed.
+COLUMN_LIMIT=255
+COLUMN_FIELDS=("clientId","name","description","rootUrl","baseUrl")
+ROW_KEYS={"clients":"clientId","requiredActions":"alias","serviceAccountRoles":"clientId"}
+STATE_KEYS=("clients","clientScopes","realmRoles","clientRoles","requiredActions","serviceAccountRoles","userProfileAttributes")
 MUTATION_KINDS={"CREATE","UPDATE","DELETE"}
 # ERROR marks a managed resource the plan cannot reconcile; it is never applied and
 # counts as unconverged, so a plan that carries one is refused before any write.
@@ -49,7 +60,10 @@ def client_role_key(row:dict[str,Any])->str: return f"{row.get('clientId')}:{row
 
 def normalize_state(state:dict[str,Any])->dict[str,Any]:
     realm=projection(state.get("realm") or {},REALM_FIELDS)
-    return {"realm":realm,"clients":[projection(x,CLIENT_FIELDS) for x in state.get("clients",[])],"clientScopes":[projection(x,SCOPE_FIELDS) for x in state.get("clientScopes",[])],"realmRoles":[projection(x,ROLE_FIELDS) for x in state.get("realmRoles",[])],"clientRoles":[projection(x,CLIENT_ROLE_FIELDS) for x in client_role_rows(state)],"scopeMappings":[_mapping_view(x) for x in state.get("scopeMappings",[])],"requiredActions":[projection(x,ACTION_FIELDS) for x in state.get("requiredActions",[])]}
+    return {"realm":realm,"clients":[projection(x,CLIENT_FIELDS) for x in state.get("clients",[])],"clientScopes":[projection(x,SCOPE_FIELDS) for x in state.get("clientScopes",[])],"realmRoles":[projection(x,ROLE_FIELDS) for x in state.get("realmRoles",[])],"clientRoles":[projection(x,CLIENT_ROLE_FIELDS) for x in client_role_rows(state)],"scopeMappings":[_mapping_view(x) for x in state.get("scopeMappings",[])],"serviceAccountRoles":[_service_account_view(x) for x in state.get("serviceAccountRoles",[])],"userProfileAttributes":[projection(x,PROFILE_FIELDS) for x in state.get("userProfileAttributes",[])],"requiredActions":[projection(x,ACTION_FIELDS) for x in state.get("requiredActions",[])]}
+
+def _service_account_view(row:dict[str,Any])->dict[str,Any]:
+    return {"clientId":row.get("clientId"),"realmRoles":sorted(str(r) for r in row.get("realmRoles",[]) or [] if not str(r).startswith(DEFAULT_ROLE_PREFIX))}
 
 def _mapping_view(row:dict[str,Any])->dict[str,Any]:
     return {"clientId":row.get("clientId"),"fullScopeAllowed":bool(row.get("fullScopeAllowed",False)),"realmRoles":sorted(str(r) for r in row.get("realmRoles",[]) or []),"crossFamilyRolesAllowed":bool(row.get("crossFamilyRolesAllowed",False))}
@@ -57,6 +71,24 @@ def _mapping_view(row:dict[str,Any])->dict[str,Any]:
 def _mappers_view(rows:Any)->list[dict[str,Any]]:
     # Keycloak assigns ids to protocol mappers; identity is the mapper name.
     return sorted(({k:v for k,v in (row or {}).items() if k!="id"} for row in (rows or [])),key=lambda m:str(m.get("name") or ""))
+
+def _mappers_match(want:Any,have:Any)->bool:
+    # Keycloak fills in mapper config keys a declaration omits (userinfo.token.claim,
+    # introspection.token.claim, ...); only the declared keys are managed.
+    w={str(m.get("name")):m for m in _mappers_view(want)}; h={str(m.get("name")):m for m in _mappers_view(have)}
+    if set(w)!=set(h): return False
+    for name,mapper in w.items():
+        live=h[name]
+        for key,value in mapper.items():
+            if key=="config":
+                config=live.get("config") or {}
+                # Keycloak also drops empty-string config values when it stores a mapper.
+                if any(canonical(config.get(k))!=canonical(v) and not (v=="" and k not in config) for k,v in (value or {}).items()): return False
+            elif canonical(live.get(key))!=canonical(value): return False
+    return True
+
+# Keycloak attaches this built-in scope to every service-account client by itself.
+SERVICE_ACCOUNT_SCOPE="service_account"
 
 def managed_fields_match(desired_row:dict[str,Any],live_row:dict[str,Any],fields)->bool:
     """Compare only the fields the desired state manages.
@@ -70,11 +102,15 @@ def managed_fields_match(desired_row:dict[str,Any],live_row:dict[str,Any],fields
         # A field the desired document does not declare is not managed; Keycloak always
         # serialises it, so comparing it (or sending None back) could never converge.
         if want is None: continue
+        # Keycloak omits a false flag such as authorizationServicesEnabled from its representation.
+        if want is False and have is None: continue
+        if field=="defaultClientScopes" and live_row.get("serviceAccountsEnabled") and SERVICE_ACCOUNT_SCOPE not in (want or []):
+            have=[x for x in (have or []) if x!=SERVICE_ACCOUNT_SCOPE]
         if field=="attributes":
             want=want or {}; have=have or {}
             if canonical({k:have.get(k) for k in want})!=canonical(want): return False
         elif field=="protocolMappers":
-            if canonical(_mappers_view(want))!=canonical(_mappers_view(have)): return False
+            if not _mappers_match(want,have): return False
         elif field in UNORDERED_LIST_FIELDS:
             if sorted(str(x) for x in (want or []))!=sorted(str(x) for x in (have or [])): return False
         elif canonical(want)!=canonical(have): return False
@@ -127,6 +163,35 @@ def _plan_scope_mappings(actions:list[Action],desired:dict[str,Any],live:dict[st
         else: actions.append(Action("UPDATE","scope_mapping",rid,"missing_live" if rid not in l else "managed_fields_drift"))
     for rid in sorted(set(l)-set(d)): actions.append(Action("KEEP","scope_mapping",rid,"unmanaged_live_resource",False))
 
+def _plan_service_account_roles(actions:list[Action],desired:dict[str,Any],live:dict[str,Any]):
+    d=_index(desired.get("serviceAccountRoles",[]),"clientId"); l=_index(live.get("serviceAccountRoles",[]),"clientId")
+    clients={str(c.get("clientId")) for c in (desired.get("clients") or [])+(live.get("clients") or []) if c.get("clientId")}
+    known_roles={str(r.get("name")) for r in (desired.get("realmRoles") or [])+(live.get("realmRoles") or []) if r.get("name")}
+    for rid in sorted(d):
+        if rid not in clients: actions.append(Action("ERROR","service_account_roles",rid,f"service_account_client_missing:{rid}")); continue
+        if rid in l and canonical(_service_account_view(d[rid]))==canonical(_service_account_view(l[rid])):
+            actions.append(Action("KEEP","service_account_roles",rid,"in_sync")); continue
+        missing=sorted(set(_service_account_view(d[rid])["realmRoles"])-known_roles)
+        if missing: actions.append(Action("ERROR","service_account_roles",rid,f"service_account_role_missing:{','.join(missing)}"))
+        else: actions.append(Action("UPDATE","service_account_roles",rid,"missing_live" if rid not in l else "managed_fields_drift"))
+    for rid in sorted(set(l)-set(d)): actions.append(Action("KEEP","service_account_roles",rid,"unmanaged_live_resource",False))
+
+def _plan_required_actions(actions:list[Action],desired_rows:list[dict[str,Any]],live_rows:list[dict[str,Any]],deployed:set[str],managed_ids:set[str]):
+    d=_index(desired_rows,"alias"); l=_index(live_rows,"alias")
+    for rid in sorted(d):
+        if rid in l:
+            actions.append(Action("KEEP","required_action",rid,"in_sync") if managed_fields_match(d[rid],l[rid],ACTION_FIELDS) else Action("UPDATE","required_action",rid,"managed_fields_drift"))
+        # A deployed provider that the realm has not registered yet can be registered;
+        # one the server does not ship at all can never be applied.
+        elif rid in deployed: actions.append(Action("CREATE","required_action",rid,"provider_unregistered"))
+        else: actions.append(Action("ERROR","required_action",rid,f"required_action_not_registered:{rid}"))
+    for rid in sorted(set(l)-set(d)):
+        if rid in managed_ids: actions.append(Action("DELETE","required_action",rid,"managed_resource_removed"))
+        else: actions.append(Action("KEEP","required_action",rid,"unmanaged_live_resource",False))
+
+def unregistered_providers(state:dict[str,Any])->set[str]:
+    return {str(r.get("providerId")) for r in state.get("unregisteredRequiredActions",[]) or [] if r.get("providerId")}
+
 def plan(desired:dict[str,Any],live:dict[str,Any],*,managed_inventory:dict[str,list[str]]|None=None,environment:str="unknown")->dict[str,Any]:
     actions:list[Action]=[]; managed_inventory=managed_inventory or {}
     if canonical(projection(desired.get("realm") or {},REALM_FIELDS))!=canonical(projection(live.get("realm") or {},REALM_FIELDS)):
@@ -137,8 +202,17 @@ def plan(desired:dict[str,Any],live:dict[str,Any],*,managed_inventory:dict[str,l
     _plan_collection(actions,"client",desired.get("clients",[]),live.get("clients",[]),"clientId",CLIENT_FIELDS,set(managed_inventory.get("clients",[])))
     _plan_client_roles(actions,desired,live,set(managed_inventory.get("clientRoles",[])))
     _plan_scope_mappings(actions,desired,live)
+    _plan_service_account_roles(actions,desired,live)
+    if desired.get("userProfileAttributes") is not None:
+        _plan_collection(actions,"user_profile_attribute",desired.get("userProfileAttributes",[]),live.get("userProfileAttributes",[]),"name",PROFILE_FIELDS,set(managed_inventory.get("userProfileAttributes",[])))
     if desired.get("requiredActions") is not None:
-        _plan_collection(actions,"required_action",desired.get("requiredActions",[]),live.get("requiredActions",[]),"alias",ACTION_FIELDS,set())
+        _plan_required_actions(actions,desired.get("requiredActions",[]),live.get("requiredActions",[]),unregistered_providers(live),set(managed_inventory.get("requiredActions",[])))
+    too_long={}
+    for rtype,rows in (("client",[(str(r.get("clientId")),r) for r in desired.get("clients",[])]),("client_scope",[(str(r.get("name")),r) for r in desired.get("clientScopes",[])]),("realm_role",[(str(r.get("name")),r) for r in desired.get("realmRoles",[])]),("client_role",[(client_role_key(r),r) for r in client_role_rows(desired)])):
+        for rid,row in rows:
+            over=next((f"{f}:{len(row[f])}" for f in COLUMN_FIELDS if isinstance(row.get(f),str) and len(row[f])>COLUMN_LIMIT),None)
+            if over: too_long[(rtype,rid)]=over
+    actions=[Action("ERROR",a.resource_type,a.resource_id,f"keycloak_column_too_long:{too_long[(a.resource_type,a.resource_id)]}") if a.kind in {"CREATE","UPDATE"} and (a.resource_type,a.resource_id) in too_long else a for a in actions]
     # Deleting a client removes its roles with it; a separate role delete would then
     # fail against a client that no longer exists.
     deleting_clients={a.resource_id for a in actions if a.resource_type=="client" and a.kind=="DELETE"}
@@ -149,7 +223,7 @@ def plan(desired:dict[str,Any],live:dict[str,Any],*,managed_inventory:dict[str,l
 
 def _rows(state,key):
     if key=="clientRoles": return {client_role_key(r):r for r in client_role_rows(state)}
-    return _index(state.get(key,[]),"clientId" if key=="clients" else ("alias" if key=="requiredActions" else "name"))
+    return _index(state.get(key,[]),ROW_KEYS.get(key,"name"))
 
 def _role_payload(row:dict[str,Any],*,client_role:bool)->dict[str,Any]:
     payload={k:v for k,v in projection(row,ROLE_FIELDS).items() if v is not None}
@@ -158,8 +232,8 @@ def _role_payload(row:dict[str,Any],*,client_role:bool)->dict[str,Any]:
 
 def validate_plan(plan_doc:dict[str,Any],desired:dict[str,Any],live:dict[str,Any],*,allow_delete:bool=False)->None:
     """Reject the whole plan before any mutation when one action could not execute."""
-    maps={k:_rows(desired,k) for k in ("clients","clientScopes","realmRoles","clientRoles","requiredActions")}
-    live_maps={k:_rows(live,k) for k in ("clients","clientScopes","realmRoles","clientRoles","requiredActions")}
+    maps={k:_rows(desired,k) for k in STATE_KEYS}
+    live_maps={k:_rows(live,k) for k in STATE_KEYS}
     mappings=_index(desired.get("scopeMappings",[]),"clientId")
     for action in plan_doc.get("actions",[]):
         kind=action.get("kind"); rt=action.get("resource_type"); rid=str(action.get("resource_id") or "")
@@ -187,8 +261,16 @@ def validate_plan(plan_doc:dict[str,Any],desired:dict[str,Any],live:dict[str,Any
         elif rt=="scope_mapping":
             if kind!="UPDATE": raise RuntimeError(f"unsupported_scope_mapping:{kind}")
             if rid not in mappings: raise RuntimeError(f"scope_mapping_missing:{rid}")
+        elif rt=="service_account_roles":
+            if kind!="UPDATE": raise RuntimeError(f"unsupported_service_account_roles:{kind}")
+            if rid not in maps["serviceAccountRoles"]: raise RuntimeError(f"service_account_roles_missing:{rid}")
+        elif rt=="user_profile_attribute":
+            if kind in {"CREATE","UPDATE"} and rid not in maps["userProfileAttributes"]: raise RuntimeError(f"desired_resource_missing:{rt}:{rid}")
+            if kind in {"UPDATE","DELETE"} and rid not in live_maps["userProfileAttributes"]: raise RuntimeError(f"live_resource_missing:{rt}:{rid}")
         elif rt=="required_action":
-            if kind!="UPDATE" or rid not in maps["requiredActions"]: raise RuntimeError(f"unsupported_required_action:{kind}")
+            if kind in {"CREATE","UPDATE"} and rid not in maps["requiredActions"]: raise RuntimeError(f"desired_resource_missing:{rt}:{rid}")
+            if kind=="CREATE" and rid not in unregistered_providers(live): raise RuntimeError(f"required_action_not_registered:{rid}")
+            if kind in {"UPDATE","DELETE"} and rid not in live_maps["requiredActions"]: raise RuntimeError(f"live_resource_missing:{rt}:{rid}")
         else: raise RuntimeError(f"unsupported_resource:{rt}")
 
 def apply_plan(plan_doc:dict[str,Any],desired:dict[str,Any],live:dict[str,Any],api,*,enabled:bool=False,allow_delete:bool=False,environment:str|None=None,attribute_removals:dict[str,list[str]]|None=None)->dict[str,Any]:
@@ -199,8 +281,8 @@ def apply_plan(plan_doc:dict[str,Any],desired:dict[str,Any],live:dict[str,Any],a
     try: validate_plan(plan_doc,desired,live,allow_delete=allow_delete)
     except RuntimeError as exc:
         return {"schema":"codestra.keycloak.reconciliation-execution.v2","applied":False,"status":"REJECTED","journal":[],"error":str(exc)}
-    maps={k:_rows(desired,k) for k in ("clients","clientScopes","realmRoles","clientRoles","requiredActions")}
-    live_maps={k:_rows(live,k) for k in ("clients","clientScopes","realmRoles","clientRoles","requiredActions")}
+    maps={k:_rows(desired,k) for k in STATE_KEYS}
+    live_maps={k:_rows(live,k) for k in STATE_KEYS}
     journal=[]
     try:
         for action in plan_doc["actions"]:
@@ -266,9 +348,48 @@ def apply_plan(plan_doc:dict[str,Any],desired:dict[str,Any],live:dict[str,Any],a
                 remove=[existing_by[name] for name in sorted(current-wanted)]
                 if add: api.add_client_realm_role_mappings(str(client["id"]),add)
                 if remove: api.delete_client_realm_role_mappings(str(client["id"]),remove)
+            elif rt=="service_account_roles":
+                if kind!="UPDATE": raise RuntimeError(f"unsupported_service_account_roles:{kind}")
+                client=api.client_by_client_id(rid)
+                if not client or not client.get("id"): raise RuntimeError(f"service_account_client_missing:{rid}")
+                user=api.service_account_user(str(client["id"]))
+                if not user or not user.get("id"): raise RuntimeError(f"service_account_user_missing:{rid}")
+                user_id=str(user["id"])
+                existing={r.get("name"):r for r in api.user_realm_role_mappings(user_id) if r.get("name") and not str(r["name"]).startswith(DEFAULT_ROLE_PREFIX)}
+                wanted=set(_service_account_view(maps["serviceAccountRoles"][rid])["realmRoles"]); current=set(existing)
+                realm_by={r.get("name"):r for r in api.realm_roles() if r.get("name")}
+                add=[]
+                for name in sorted(wanted-current):
+                    role=realm_by.get(name)
+                    if not role: raise RuntimeError(f"service_account_role_missing:{name}")
+                    add.append(role)
+                remove=[existing[name] for name in sorted(current-wanted)]
+                if add: api.add_user_realm_role_mappings(user_id,add)
+                if remove: api.delete_user_realm_role_mappings(user_id,remove)
+            elif rt=="user_profile_attribute":
+                config=api.user_profile() or {}
+                rows=[dict(a) for a in (config.get("attributes") or [])]
+                index=next((i for i,a in enumerate(rows) if a.get("name")==rid),None)
+                if kind=="CREATE":
+                    if index is not None: raise RuntimeError(f"user_profile_attribute_exists:{rid}")
+                    rows.append(dict(maps["userProfileAttributes"][rid]))
+                elif index is None: raise RuntimeError(f"live_resource_missing:{rt}:{rid}")
+                # A declared attribute is managed whole, so a rollback restores it exactly.
+                elif kind=="UPDATE": rows[index]=dict(maps["userProfileAttributes"][rid])
+                elif kind=="DELETE": rows.pop(index)
+                # Groups and the unmanaged-attribute policy travel back unchanged.
+                api.update_user_profile({**config,"attributes":rows})
             elif rt=="required_action":
-                if kind!="UPDATE": raise RuntimeError(f"unsupported_required_action:{kind}")
-                api.update_required_action(rid,maps["requiredActions"][rid])
+                if kind=="DELETE": api.delete_required_action(rid)
+                else:
+                    if kind=="CREATE":
+                        provider=next(r for r in live.get("unregisteredRequiredActions",[]) if r.get("providerId")==rid)
+                        api.register_required_action({"providerId":rid,"name":provider.get("name") or rid})
+                        current=api.required_action(rid)
+                    else: current=live_maps["requiredActions"].get(rid)
+                    if not current: raise RuntimeError(f"live_resource_missing:{rt}:{rid}")
+                    # The Admin API replaces the whole provider record; undeclared fields keep their live values.
+                    api.update_required_action(rid,{**current,**{k:v for k,v in maps["requiredActions"][rid].items() if v is not None}})
             else: raise RuntimeError(f"unsupported_resource:{rt}")
             journal.append({"kind":kind,"resourceType":rt,"resourceId":rid})
     except Exception as exc:
@@ -286,12 +407,14 @@ def verify_readback(desired:dict[str,Any],live_after:dict[str,Any])->dict[str,An
     return {"equal":not pending,"desiredDigest":digest(expected),"liveDigest":digest(actual),"pendingActions":pending}
 
 def created_inventory(journal:list[dict[str,Any]]|None)->dict[str,list[str]]:
-    out:dict[str,list[str]]={"clients":[],"clientScopes":[],"realmRoles":[],"clientRoles":[]}
+    out:dict[str,list[str]]={"clients":[],"clientScopes":[],"realmRoles":[],"clientRoles":[],"userProfileAttributes":[],"requiredActions":[]}
     for entry in journal or []:
         if entry.get("kind")!="CREATE": continue
         rt=str(entry.get("resourceType"))
         if rt in COLLECTION_KEYS: out[COLLECTION_KEYS[rt]].append(str(entry.get("resourceId")))
         elif rt=="client_role": out["clientRoles"].append(str(entry.get("resourceId")))
+        elif rt=="user_profile_attribute": out["userProfileAttributes"].append(str(entry.get("resourceId")))
+        elif rt=="required_action": out["requiredActions"].append(str(entry.get("resourceId")))
     return out
 
 def rollback_attribute_removals(pre_state:dict[str,Any],desired:dict[str,Any],journal:list[dict[str,Any]]|None)->dict[str,list[str]]:

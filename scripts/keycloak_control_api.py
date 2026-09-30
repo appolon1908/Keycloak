@@ -6,7 +6,7 @@ from urllib.parse import parse_qs,urlsplit
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from keycloak_admin_api import KeycloakAdminAPI,KeycloakAdminError
 from keycloak_identity_compiler import OUT as GENERATED_AUTHORITY,compile_identity,scoped_for_environment
-from keycloak_reconciliation import plan,apply_plan,verify_readback,rollback_plan,rollback_attribute_removals,created_inventory,mutation_performed,normalize_environment,digest
+from keycloak_reconciliation import DEFAULT_ROLE_PREFIX,plan,apply_plan,verify_readback,rollback_plan,rollback_attribute_removals,created_inventory,mutation_performed,normalize_environment,digest
 from keycloak_execution_store import EvidenceStore,EvidenceStoreError,redact_secret_material
 from keycloak_recovery_controller import RecoveryController
 from keycloak_observability import normalize_events,metrics as event_metrics,status as observability_status,ObservabilityError
@@ -19,6 +19,15 @@ IN_FLIGHT_STATUSES={"IN_PROGRESS","APPLIED_PENDING_READBACK"}
 READBACK_FAILURE_STATUSES={"READBACK_MISMATCH","READBACK_UNAVAILABLE"}
 
 def _flag(name:str)->bool: return os.environ.get(name,"").strip().lower()=="true"
+
+def _service_account_roles(api,client_internal_id):
+    try: user=api.service_account_user(client_internal_id)
+    except KeycloakAdminError as exc:
+        # A client whose service account does not exist yet has no grants to read.
+        if exc.status==404: return None
+        raise
+    if not user or not user.get("id"): return None
+    return sorted(str(r["name"]) for r in api.user_realm_role_mappings(str(user["id"])) if r.get("name") and not str(r["name"]).startswith(DEFAULT_ROLE_PREFIX))
 
 class Service:
     def __init__(self,store=None):
@@ -36,10 +45,11 @@ class Service:
     def live(self):
         api=self._api()
         clients=api.clients()
-        mappings=[]; client_roles=[]
+        mappings=[]; client_roles=[]; service_roles=[]
         desired=self.desired()
         desired_ids={x.get("clientId") for x in desired.get("scopeMappings",[])}
         role_clients={str(x.get("clientId")) for x in desired.get("clientRoles",[])}
+        service_clients={str(x.get("clientId")) for x in desired.get("serviceAccountRoles",[])}
         for client in clients:
             if not client.get("id"): continue
             if client.get("clientId") in desired_ids:
@@ -49,7 +59,13 @@ class Service:
             # other client stay unmanaged and never enter a plan.
             if client.get("clientId") in role_clients:
                 for role in api.client_roles(str(client["id"])): client_roles.append({"clientId":client["clientId"],**role})
-        return {"realm":api.realm_state(),"clients":clients,"clientScopes":api.client_scopes(),"realmRoles":api.realm_roles(),"clientRoles":client_roles,"scopeMappings":mappings,"requiredActions":api.required_actions()}
+            # Service-account grants are read only for declared service clients, like scope mappings.
+            if client.get("clientId") in service_clients and client.get("serviceAccountsEnabled"):
+                roles=_service_account_roles(api,str(client["id"]))
+                if roles is not None: service_roles.append({"clientId":client["clientId"],"realmRoles":roles})
+        # The whole user profile is read so a rollback can restore any attribute an apply touched.
+        profile=api.user_profile() or {}
+        return {"realm":api.realm_state(),"clients":clients,"clientScopes":api.client_scopes(),"realmRoles":api.realm_roles(),"clientRoles":client_roles,"scopeMappings":mappings,"serviceAccountRoles":service_roles,"userProfileAttributes":list(profile.get("attributes") or []),"requiredActions":api.required_actions(),"unregisteredRequiredActions":api.unregistered_required_actions()}
     def scoped_desired(self,environment=None):
         # Only the desired state that may live in this environment is planned; a scoped
         # client (klyrow-staging-portal) never reaches a production or TEST_SYN plan.

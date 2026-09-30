@@ -18,3 +18,23 @@ by guessing.
 
 Not a decision: the Keycloak realm, issuers, client ids, roles and redirect URIs stay as they are.
 A repository transfer is not a realm migration.
+
+## Decisions taken on 2026-09-30
+
+The owner asked this writer to make the open decisions. Each is recorded with what was
+implemented on branch `feat/keycloak-pas237-security-model-20260930` and what still waits
+on another owner or a live system. PR #136 is unchanged by these decisions.
+
+| Id | Decision | Status |
+|---|---|---|
+| U1 | Required actions follow the realm security policy one to one: `CONFIGURE_TOTP`, `UPDATE_PASSWORD`, `moneybee-verify-email-otp` and `webauthn-register` are enabled and never default actions; `verifyEmail: false` is enforced through the realm setting because MoneyBee's email code replaces link verification. Priority, name and configuration stay as the server has them. An unregistered provider is an `ERROR`, never created. | Implemented and tested; applying it in a realm still follows the reviewed-plan gate |
+| U2 | Service-account realm roles are managed per declared service client, exactly, except the realm's default composite role. Only active service-kind roles of one family that are also in the client's role scope mapping are allowed. No grant is declared; the prepared CIP service grants stay with the CIP staging reconciler. | Adapter, plan, apply, rollback and validation implemented and tested; no live grant |
+| U3 | Every user attribute copied into a token is declared admin-edited. `tenant_id` (eight protected clients) and `tenant_ids` (agent desktop, Telnexa gateway) are declared with admin-only view and edit, a tenant-identifier pattern and, for `tenant_ids`, at most 64 values. | Implemented and tested; live readback of the current profile happens in the first reviewed plan |
+| U3a | The realm's unmanaged-attribute policy must not let users edit attributes, because the MoneyBee code counters are unmanaged user attributes. Target `ADMIN_VIEW`, matching the CIP contract, once a live readback shows no administrator tooling writes unmanaged attributes. | Decided; needs a live readback, not changed here |
+| U4 | Runtime sync pins and the server remote move to `git@github.com:appolon1908/Keycloak.git` in one runtime-owner change. Images move to `ghcr.io/appolon1908/codestra-keycloak` before the first post-transfer release, together with the release-intent mapping, compose and runtime-security patterns and the Infrastructure manifests; the old digests stay valid history. Kyyow, Orbit and monitoring contracts change with their owners. Protocol-repository links and the Kong-pinned contract stay. The two tooling defaults move with the next trust change. | Decided; coordinated changes, not in this repository alone |
+| U5 | The operator verifier reads the effective branch rules and the ruleset's bypass list, run with an owner token, instead of classic protection alone. | Decided; a separately reviewed trust change |
+| U6 | The protected-candidate policy is refreshed to the reviewed release commit after both open PRs merge, because a pin to today's `main` goes stale at the next merge. | Decided; release-time trust change |
+| U7 | Staged families keep their own reconcilers. Their realm roles and client scopes compile into the shared authority as today; their clients, user-profile fragments and service grants activate only through the family reconciler after staging certification. | Decided; no change |
+| U8, U9 | Password-reset lifecycle, JWKS rotation, sessions and revocation run in a separately authorized staging mission with staging credentials and a test mailbox. | Decided; blocked on that authorization |
+| U1a | Register the MoneyBee provider through the reviewed plan: Keycloak 26.7.2 ships it but does not register it, so the plan creates the registration and a rollback removes it. | Implemented; verified against a disposable realm |
+| D3 | Eight declared descriptions exceed Keycloak's 255-character column and would stop any real apply: five CIP scopes and one CIP role rendered from the CIP contract, and the `platform.command` and `platform.command.read` scopes the CIP plan reuses. Shortening them changes the CIP gateway contract digest Kong pins, so they change with the Kong owner in one coordinated regeneration. Until then the plan reports them as `ERROR` and refuses the apply before writing. The six other over-length descriptions were shortened. | Kong owner; blocks any live apply of the full desired state |
