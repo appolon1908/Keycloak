@@ -1,6 +1,9 @@
 {
   "schema": "codestra.keycloak.pr-sweep-baseline.v1",
-  "mission": "KEYCLOAK_FULL_SWEEP_CLAUDE_20260929",
+  "mission": [
+    "KEYCLOAK_FULL_SWEEP_CLAUDE_20260929",
+    "KC-COMPLETE-RECOVERY-CONVERGENCE-20260930"
+  ],
   "addendum": "KEYCLOAK_TRANSFER_AUTHORITY_RECONCILIATION_APPOLON1908",
   "run_id": "20260930T0243Z",
   "observed_utc": "2026-09-30T02:42:59Z",
@@ -16,7 +19,10 @@
     "stable_repository_id": 1347523366,
     "owner_id": 335843231,
     "owner_created_utc": "2026-09-30T03:11:49Z",
-    "previous_names_resolving_by_redirect": ["ingtrader21-spec/Keycloak", "appolon1908-hue/Keycloak"],
+    "previous_names_resolving_by_redirect": [
+      "ingtrader21-spec/Keycloak",
+      "appolon1908-hue/Keycloak"
+    ],
     "fork": false,
     "default_branch": "main",
     "transfer_observed": "During this run: REST and GraphQL lookups of both previous names return appolon1908/Keycloak with the same stable id"
@@ -61,9 +67,40 @@
   "preservation": {
     "private_directory": "C:/Users/Usuario/Documents/Codestra-Agent-Control/Keycloak-PR-Sweep-20260930T0243Z",
     "bundles": [
-      {"file": "preservation/code-mission-klyrow-staging-identity-20260921.bundle", "sha256": "85A62F20CEB58D038C707424DE90AEF3345D316ADF10AD39AF5669ECD3F217A5", "verify": "OK"},
-      {"file": "preservation/keycloak-lf-main.bundle", "sha256": "DBD133C4E4F318E7C8A288016A77CD197BA6EEE89DEBC759FE8EB4B32858735F", "verify": "OK"}
+      {
+        "file": "preservation/klyrow-staging-first-cut.v2.bundle",
+        "sha256": "7214B01704ADFE5F656E0D94DDBDAD2FB34EDC4A26383C2C58014BEB7631160D",
+        "prerequisite": "45a487d71a516ae3039b00c250752897469ffe7a",
+        "heads": {
+          "refs/heads/mission/klyrow-staging-identity-20260921": "4e76fa44947c92f341ea52f58026b472a19984c2"
+        },
+        "recipient_recovery": "PASS"
+      },
+      {
+        "file": "preservation/keycloak-lf-pr56.v2.bundle",
+        "sha256": "9370468EFC1EAAB0C572FEE1E379186370D137A23B5D1560A31D90A72F53381E",
+        "prerequisite": "c50a5427173f1b351d1e9605f55096fafc2b28cf",
+        "heads": {
+          "refs/heads/pr56": "f387ed6d1d0fa8eda545c49a06fa302b61b9aa79"
+        },
+        "recipient_recovery": "PASS"
+      }
     ],
-    "helper_backup": {"file": "helper/codestra-sentinel-handoff.ps1.as-found-20260930T0243Z", "sha256": "6B99974B1FE9FD75DBCB798DA80764DD5F254297994EC0B1840DBC1F9580CC82"}
+    "helper_backup": {
+      "file": "helper/codestra-sentinel-handoff.ps1.as-found-20260930T0243Z",
+      "sha256": "6B99974B1FE9FD75DBCB798DA80764DD5F254297994EC0B1840DBC1F9580CC82"
+    },
+    "superseded_bundles": [
+      {
+        "file": "preservation/code-mission-klyrow-staging-identity-20260921.bundle",
+        "sha256": "85A62F20CEB58D038C707424DE90AEF3345D316ADF10AD39AF5669ECD3F217A5",
+        "defect": "built from a shallow repository; an empty recipient cannot fetch it"
+      },
+      {
+        "file": "preservation/keycloak-lf-main.bundle",
+        "sha256": "DBD133C4E4F318E7C8A288016A77CD197BA6EEE89DEBC759FE8EB4B32858735F",
+        "defect": "captured main only; the local-only commits are on branch pr56"
+      }
+    ]
   }
 }

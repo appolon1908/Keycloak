@@ -1,0 +1,58 @@
+{
+  "schema": "codestra.keycloak.preservation-manifest.v1",
+  "mission": "KC-COMPLETE-RECOVERY-CONVERGENCE-20260930",
+  "private_root": "C:/Users/Usuario/Documents/Codestra-Agent-Control/Keycloak-PR-Sweep-20260930T0243Z",
+  "recipient": "fresh clone of https://github.com/appolon1908/Keycloak.git at main 45a487d71a516ae3039b00c250752897469ffe7a",
+  "lfs_or_submodules": "none: the repository has no .gitattributes LFS rules and no .gitmodules",
+  "contributions": [
+    {
+      "id": "klyrow-staging-first-cut",
+      "source": "C:/Users/Usuario/01_DEVELOPMENT/GitHub/ingtrader21-spec/Keycloak/Code (shallow repository), branch mission/klyrow-staging-identity-20260921",
+      "commit": "4e76fa44947c92f341ea52f58026b472a19984c2",
+      "parent": "45a487d71a516ae3039b00c250752897469ffe7a",
+      "files": ["config/clients/klyrow-staging-portal.json", "config/export-allowlists/klyrow-staging-portal.json", "config/policy/creatable-clients.json", "config/policy/managed-clients.json", "scripts/validate.sh"],
+      "purpose": "First cut of the Klyrow staging OIDC client (PR #124)",
+      "remote_reachability": "not on GitHub",
+      "containment": "CONTAINED: both new files byte-identical in #136; policy entries in the 37-client union; validate.sh lines present",
+      "bundle": "preservation/klyrow-staging-first-cut.v2.bundle",
+      "bundle_sha256": "7214B01704ADFE5F656E0D94DDBDAD2FB34EDC4A26383C2C58014BEB7631160D",
+      "bundle_prerequisites": ["45a487d71a516ae3039b00c250752897469ffe7a"],
+      "recipient_recovery": "PASS: commit restored, tree identical to the source"
+    },
+    {
+      "id": "pr56-pre-squash",
+      "source": "C:/Users/Usuario/Documents/CODESTRA/Keycloak-lf, local branch pr56 (remote origin names appolon1908-hue/Keycloak)",
+      "commits": ["f387ed6d1d0fa8eda545c49a06fa302b61b9aa79", "4621901bded90a0ab54f90e9003e167a1571a10c"],
+      "purpose": "Python 3.10 pins for validation and Stage 6 reconciliation",
+      "remote_reachability": "on GitHub as PR #56 branch commits; PR #56 was squash-merged into main on 2026-08-31",
+      "containment": "SUPERSEDED: main later adopted the Python 3.12 validation baseline",
+      "bundle": "preservation/keycloak-lf-pr56.v2.bundle",
+      "bundle_sha256": "9370468EFC1EAAB0C572FEE1E379186370D137A23B5D1560A31D90A72F53381E",
+      "bundle_prerequisites": ["c50a5427173f1b351d1e9605f55096fafc2b28cf"],
+      "recipient_recovery": "PASS: both commits restored, trees identical to the source"
+    },
+    {
+      "id": "sentinel-handoff-helper",
+      "source": "C:/Users/Usuario/Documents/GitHub/tools/codestra-sentinel-handoff.ps1 (not a Git repository)",
+      "backup": "helper/codestra-sentinel-handoff.ps1.as-found-20260930T0243Z",
+      "backup_sha256": "6B99974B1FE9FD75DBCB798DA80764DD5F254297994EC0B1840DBC1F9580CC82",
+      "pre_repair_copy": "helper/codestra-sentinel-handoff.ps1.before-repair",
+      "pre_repair_sha256": "13385DC731AFB8A96FC4A08D4D79BF89D8563CFEFA7862EABC04AE09F982D127"
+    }
+  ],
+  "superseded_artifacts": [
+    {"file": "preservation/code-mission-klyrow-staging-identity-20260921.bundle", "sha256": "85A62F20CEB58D038C707424DE90AEF3345D316ADF10AD39AF5669ECD3F217A5", "reason": "made from a shallow repository; an empty recipient cannot fetch it"},
+    {"file": "preservation/keycloak-lf-main.bundle", "sha256": "DBD133C4E4F318E7C8A288016A77CD197BA6EEE89DEBC759FE8EB4B32858735F", "reason": "captured main only, not branch pr56"}
+  ],
+  "counts": {
+    "checkouts_inventoried": 21,
+    "commits_classified": 40,
+    "backed_up_commits": 3,
+    "remotely_reachable_of_backed_up": 2,
+    "still_unpublished": 1,
+    "unpublished_but_contained": 1,
+    "unresolved": 0,
+    "uncommitted_or_untracked_work_found": 0
+  },
+  "not_visible_from_this_host": "The Ubuntu desktop and any other host were not reachable from this session; their checkouts are UNVERIFIED."
+}
