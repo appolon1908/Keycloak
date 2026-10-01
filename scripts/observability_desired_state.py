@@ -281,8 +281,8 @@ def build_plan() -> dict[str, Any]:
     documents = validate()
     source_files = []
     checksum_input = bytearray()
-    for path, value in sorted(documents, key=lambda item: str(item[0].relative_to(ROOT))):
-        relative = str(path.relative_to(ROOT))
+    for path, value in sorted(documents, key=lambda item: item[0].relative_to(ROOT).as_posix()):
+        relative = path.relative_to(ROOT).as_posix()
         payload = canonical(value)
         checksum_input.extend(relative.encode() + b"\0" + payload)
         source_files.append({"path": relative, "sha256": hashlib.sha256(payload).hexdigest()})
