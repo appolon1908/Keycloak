@@ -8,18 +8,18 @@
   ],
   "audience": "middleware-api",
   "campaign": "TEST_SYN",
-  "configurationChecksum": "d8e45d665c1dbad14484af898bee21aa04a93d97c2cf07d72986f7cbf644ca7b",
+  "configurationChecksum": "95ea0253521828311a7d4108c359bd4eceade2cda72fd633cbc24dc89f845de3",
   "edgeContract": {
     "hashRule": "sha256 over json.dumps(contract, sort_keys=True, separators=(',', ':')).encode('utf-8')",
     "path": "deploy/public-api-route-contract.json",
     "pinnedIn": "deploy/public-api-route-contract.sha256",
     "repository": "appolon1908-hue/Middleware-",
     "schema": "codestra.middleware.public-api-route-contract.v2",
-    "sha256": "7580123dead97ea342c704a57a3c8eed9f5dce69aab247d4b693db96bc7334d5",
+    "sha256": "9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b",
     "source": {
-      "branch": "codex/cross-repo-authority-20260916",
-      "contractCommit": "4c353df",
-      "verifiedAtCommit": "bd6adaf"
+      "branch": "main",
+      "contractCommit": "0606b0d",
+      "verifiedAtCommit": "0606b0d"
     },
     "supersedes": {
       "schema": "codestra.middleware.public-api-route-contract.v1",
@@ -43,19 +43,19 @@
     },
     {
       "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
-      "desiredSha256": "5bfb7b8bfcd89ea7c487ee648e902cac0ef30e810f613ae7427ac87644d3ec6e",
+      "desiredSha256": "a704383f3188c86aea14c215792cfb2458341507f42769dcda86e5b47142598a",
       "resourceId": "n8n.results.read",
       "resourceType": "client-scope"
     },
     {
       "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
-      "desiredSha256": "be3ec417a3d4b5b820d8e7533b06550cd06e48a6390e75d40d6e9626d47d80d0",
+      "desiredSha256": "07da825ab949937984bb967f18874448c28190bf70f931ca5a0cd9b8f842cff7",
       "resourceId": "odoo.campaigns.read",
       "resourceType": "client-scope"
     },
     {
       "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
-      "desiredSha256": "baf1f6d50d93c788a254c25f02348488ba48c5177d8f26688c54bdc0165d106a",
+      "desiredSha256": "230881bcfc94d825c93b55fe1de4e10eb1472225992f368ae8d1226f247b0a07",
       "resourceId": "test-syn-n8n-submit",
       "resourceType": "client"
     },
@@ -67,7 +67,7 @@
     },
     {
       "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
-      "desiredSha256": "b7283c85613dcbe99026638b1b8978015787987196772fe2084e308e34ba4558",
+      "desiredSha256": "2be68b793bb2d2c8b676ef1a3fe7ce6a18e98e2fe96d5753c81b0abf25483f93",
       "resourceId": "test-syn-n8n-read",
       "resourceType": "client"
     },
@@ -79,7 +79,7 @@
     },
     {
       "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
-      "desiredSha256": "f9768e048a5429a8be7eaaeb780a8260bf95ce260243286a044c5a3c696a7122",
+      "desiredSha256": "e2034bb6d90be59a50b51a66e13b4192c3ae0177d4a43456dd65af3c5cad456d",
       "resourceId": "test-syn-odoo-reader",
       "resourceType": "client"
     },
@@ -91,7 +91,7 @@
     },
     {
       "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
-      "desiredSha256": "0134c02cdb626da05da17d46429b1188255a9ec4d8d16c1aca9df5e66651ef0c",
+      "desiredSha256": "0950ce190d3fd1cb78abf58ad1dd8cf8beb17317e0c0d8912704ed793e7fda07",
       "resourceId": "test-syn-wrong-audience",
       "resourceType": "client"
     },
@@ -103,7 +103,7 @@
     },
     {
       "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
-      "desiredSha256": "a1e14847ffcdf37d9a44c9751121943269d749f7acb0e7ce50e2880fa6a19fc9",
+      "desiredSha256": "5f7825739097b04d07a4621c2be67a6c84887b0e242951b31e3dc9a019209ab5",
       "resourceId": "test-syn-wrong-tenant",
       "resourceType": "client"
     },
@@ -139,7 +139,7 @@
   "sourceFiles": [
     {
       "path": "config/desired-state/edge-integration-certification/client-scopes/n8n.results.read.json",
-      "sha256": "5bfb7b8bfcd89ea7c487ee648e902cac0ef30e810f613ae7427ac87644d3ec6e"
+      "sha256": "a704383f3188c86aea14c215792cfb2458341507f42769dcda86e5b47142598a"
     },
     {
       "path": "config/desired-state/edge-integration-certification/client-scopes/n8n.results.submit.json",
@@ -147,31 +147,31 @@
     },
     {
       "path": "config/desired-state/edge-integration-certification/client-scopes/odoo.campaigns.read.json",
-      "sha256": "be3ec417a3d4b5b820d8e7533b06550cd06e48a6390e75d40d6e9626d47d80d0"
+      "sha256": "07da825ab949937984bb967f18874448c28190bf70f931ca5a0cd9b8f842cff7"
     },
     {
       "path": "config/desired-state/edge-integration-certification/clients/test-syn-n8n-read.json",
-      "sha256": "b7283c85613dcbe99026638b1b8978015787987196772fe2084e308e34ba4558"
+      "sha256": "2be68b793bb2d2c8b676ef1a3fe7ce6a18e98e2fe96d5753c81b0abf25483f93"
     },
     {
       "path": "config/desired-state/edge-integration-certification/clients/test-syn-n8n-submit.json",
-      "sha256": "baf1f6d50d93c788a254c25f02348488ba48c5177d8f26688c54bdc0165d106a"
+      "sha256": "230881bcfc94d825c93b55fe1de4e10eb1472225992f368ae8d1226f247b0a07"
     },
     {
       "path": "config/desired-state/edge-integration-certification/clients/test-syn-odoo-reader.json",
-      "sha256": "f9768e048a5429a8be7eaaeb780a8260bf95ce260243286a044c5a3c696a7122"
+      "sha256": "e2034bb6d90be59a50b51a66e13b4192c3ae0177d4a43456dd65af3c5cad456d"
     },
     {
       "path": "config/desired-state/edge-integration-certification/clients/test-syn-wrong-audience.json",
-      "sha256": "0134c02cdb626da05da17d46429b1188255a9ec4d8d16c1aca9df5e66651ef0c"
+      "sha256": "0950ce190d3fd1cb78abf58ad1dd8cf8beb17317e0c0d8912704ed793e7fda07"
     },
     {
       "path": "config/desired-state/edge-integration-certification/clients/test-syn-wrong-tenant.json",
-      "sha256": "a1e14847ffcdf37d9a44c9751121943269d749f7acb0e7ce50e2880fa6a19fc9"
+      "sha256": "5f7825739097b04d07a4621c2be67a6c84887b0e242951b31e3dc9a019209ab5"
     },
     {
       "path": "config/desired-state/edge-integration-certification/contract.json",
-      "sha256": "352868f9a459c09f9f5dd9b2acb48d4e67d6cb452b14d83b1df3535765e3d676"
+      "sha256": "fc1450d3940e8a9dc1e3d178c07072a0620de93be302c97d35d95580263486a8"
     }
   ]
 }

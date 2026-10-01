@@ -1,0 +1,5 @@
+{
+  "schema": "codestra.keycloak.staged-client-ownership-conflicts.v1",
+  "rule": "A clientId may belong to one authority group only. Each entry records an existing conflict that needs an external owner decision; the compiler rejects any unrecorded conflict and any entry that no longer conflicts.",
+  "conflicts": []
+}

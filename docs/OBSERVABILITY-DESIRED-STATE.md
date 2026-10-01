@@ -5,7 +5,7 @@
 This repository contains repository-only, validate-only desired state for:
 
 - `grafana-observability` at `https://graf.codestra.media`;
-- `superset-analytics` at `https://supe.codestra.media`;
+- `superset-observability` at `https://supe.codestra.media`;
 - `openbao-secrets` at the restricted `https://bao.codestra.media` boundary;
 - `observability-viewer`, `observability-operator`, and `observability-admin`;
 - `secrets-operator` and `secrets-admin`.

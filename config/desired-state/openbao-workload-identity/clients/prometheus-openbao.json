@@ -1,7 +1,7 @@
 {
   "clientId": "prometheus-openbao",
   "name": "Codestra service identity: prometheus-openbao",
-  "description": "Confidential machine identity for the monitoring plane. Reads the private OpenBao metrics-client material and the reviewed scrape credentials; the only OpenBao role with sys/metrics read. Repository-only desired state applied to staging by the narrow OpenBao workload-identity reconciler; production binding requires the protected managed-client process.",
+  "description": "Monitoring machine identity. Reads the private OpenBao metrics-client material and the reviewed scrape credentials; the only OpenBao role with sys/metrics read. Staging via the OpenBao workload reconciler; production needs managed-client review.",
   "enabled": true,
   "protocol": "openid-connect",
   "publicClient": false,

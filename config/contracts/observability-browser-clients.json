@@ -14,7 +14,7 @@
       "runtimeSecretFile": "/run/secrets/grafana_oidc_client_secret"
     },
     {
-      "clientId": "superset-analytics",
+      "clientId": "superset-observability",
       "applicationUrl": "https://supe.codestra.media",
       "redirectUris": ["https://supe.codestra.media/oauth-authorized/keycloak"],
       "postLogoutRedirectUris": ["https://supe.codestra.media/"],

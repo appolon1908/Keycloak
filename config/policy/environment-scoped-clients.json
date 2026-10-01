@@ -1,0 +1,13 @@
+{
+  "schema": "codestra.keycloak.environment-scoped-clients.v1",
+  "environments": [
+    "production",
+    "staging",
+    "test-syn"
+  ],
+  "clients": {
+    "klyrow-staging-portal": [
+      "staging"
+    ]
+  }
+}

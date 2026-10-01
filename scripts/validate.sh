@@ -14,6 +14,7 @@ for command_name in jq python3; do
   command -v "$command_name" >/dev/null 2>&1 || fail "$command_name is required"
 done
 python3 -c 'import yaml' >/dev/null 2>&1 || fail "PyYAML is required"
+python3 -c 'import pytest' >/dev/null 2>&1 || fail "pytest is required"
 [[ -d "$CONFIG_ROOT" ]] || fail "Configuration root does not exist: $CONFIG_ROOT"
 
 if [[ -n "${RUNTIME_COMPOSE_FILE:-}" ]]; then
@@ -22,12 +23,18 @@ else
   python3 "$ROOT_DIR/scripts/validate-password-reset-contract.py"
 fi
 python3 -m unittest discover -s "$ROOT_DIR/tests" -p 'test_password_reset_smtp_transport.py' -v
+python3 "$ROOT_DIR/scripts/keycloak_identity_compiler.py" --check
+python3 -m pytest -q "$ROOT_DIR/tests/test_pas237_keycloak_control_plane.py" "$ROOT_DIR/tests/test_keycloak_core_build.py" "$ROOT_DIR/tests/test_keycloak_environment_scope_and_client_roles.py" "$ROOT_DIR/tests/test_keycloak_token_scope_and_plan_errors.py" "$ROOT_DIR/tests/test_environment_scoped_rollback_export.py" "$ROOT_DIR/tests/test_agent_desktop_identity.py" "$ROOT_DIR/tests/test_keycloak_required_actions_service_accounts_profile.py" "$ROOT_DIR/tests/test_cip_release_contract_integrity.py"
 python3 "$ROOT_DIR/scripts/validate-authority-controls.py"
 python3 "$ROOT_DIR/scripts/validate-kyyow-identity.py"
 python3 -m unittest discover -s "$ROOT_DIR/tests" -p 'test_kyyow_identity.py' -v
 python3 "$ROOT_DIR/scripts/validate-provider-control-authority.py"
 python3 -m unittest discover -s "$ROOT_DIR/tests" -p 'test_provider_control_authority.py' -v
 "$ROOT_DIR/scripts/test-backup-contract.sh"
+
+# MCR identity contract is part of the protected source/merge-result gate.
+python3 "$ROOT_DIR/scripts/validate_mcr_identity.py"
+python3 -m unittest discover -s "$ROOT_DIR/tests" -p 'test_mcr_identity.py' -v
 
 mapfile -t json_files < <(find "$CONFIG_ROOT" -type f -name '*.json' -print | sort)
 ((${#json_files[@]} > 0)) || fail "No JSON configuration files were found under $CONFIG_ROOT"
@@ -90,29 +97,33 @@ expected_managed='[
   "alertmanager",
   "beyvra-backend",
   "breero-backend",
+  "codestra-agent-desktop",
   "codestra-ai",
   "codestra-communication",
   "codestra-marketing",
   "codestra-provisioning-service",
   "codestra-social",
-  "klyrow-portal",
-  "kong-gateway",
   "klyrow-gateway",
+  "klyrow-portal",
+  "klyrow-staging-portal",
+  "kong-gateway",
   "kyqra-gateway",
   "larim-a-backend",
   "marketing-provider-adapter",
   "middleware-api",
   "middleware-worker",
-  "monitoring-readonly",
   "moneybee-admin",
   "moneybee-backend",
   "moneybee-borrower",
   "moneybee-lender",
+  "monitoring-readonly",
   "n8n-automation",
   "n8n-editor-gateway",
+  "odoo-email",
   "odoo-integration",
   "odoo-web",
   "postly-adapter",
+  "production-operator",
   "provisioning-service",
   "sdk-intake",
   "social-codestra",
@@ -132,6 +143,24 @@ jq -e --slurpfile managed "$managed_policy" '
   and .clients == $managed[0].clients
 ' "$creatable_policy" >/dev/null ||
   fail "Creatable-client policy must exactly match managed-client policy"
+
+# Environment scoping keeps a managed client out of every environment it does not name;
+# plan.sh, apply-plan.sh and the control API all read this single policy.
+environment_policy="$CONFIG_ROOT/policy/environment-scoped-clients.json"
+[[ -f "$environment_policy" ]] || fail "Environment-scoped client policy is missing"
+jq -e --slurpfile managed "$managed_policy" '
+  .schema == "codestra.keycloak.environment-scoped-clients.v1"
+  and .environments == ["production", "staging", "test-syn"]
+  and (.clients | type == "object")
+  and all(.clients | to_entries[];
+        .key as $client_id | .value as $environments
+        | (($managed[0].clients | index($client_id)) != null)
+        and ($environments | type == "array" and length > 0)
+        and ($environments == ($environments | unique))
+        and ($environments == ($environments | sort))
+        and all($environments[]; . == "production" or . == "staging" or . == "test-syn"))
+' "$environment_policy" >/dev/null ||
+  fail "Environment-scoped client policy must name managed clients with sorted, known environments"
 
 mapfile -t declared_client_ids < <(jq -r '.clients[]' "$managed_policy" | sort)
 mapfile -t configured_client_ids < <(
@@ -229,6 +258,32 @@ for file in "$CONFIG_ROOT"/clients/*.json; do
       jq -e 'has("protocolMappers") | not' "$file" >/dev/null ||
         fail "Klyrow desired state changed unexpectedly"
       ;;
+    klyrow-staging-portal)
+      jq -e '
+        .publicClient == true
+        and .standardFlowEnabled == true
+        and .implicitFlowEnabled == false
+        and .directAccessGrantsEnabled == false
+        and .serviceAccountsEnabled == false
+        and .rootUrl == "https://staging.klyrow.com"
+        and .baseUrl == "https://staging.klyrow.com/"
+        and .redirectUris == ["https://staging.klyrow.com/auth/callback"]
+        and .webOrigins == ["https://staging.klyrow.com"]
+        and .attributes["pkce.code.challenge.method"] == "S256"
+        and .attributes["post.logout.redirect.uris"] == "https://staging.klyrow.com/logged-out"
+        and (.protocolMappers | type == "array" and length == 1)
+        and .protocolMappers[0].name == "audience-klyrow-api"
+        and .protocolMappers[0].protocol == "openid-connect"
+        and .protocolMappers[0].protocolMapper == "oidc-audience-mapper"
+        and .protocolMappers[0].consentRequired == false
+        and .protocolMappers[0].config["included.custom.audience"] == "klyrow-api"
+        and .protocolMappers[0].config["access.token.claim"] == "true"
+        and .protocolMappers[0].config["id.token.claim"] == "false"
+      ' "$file" >/dev/null ||
+        fail "Klyrow staging portal must use the isolated staging host, PKCE S256, and klyrow-api audience"
+      jq -e '.clients["klyrow-staging-portal"] == ["staging"]' "$environment_policy" >/dev/null ||
+        fail "Klyrow staging portal must be scoped to the staging environment only"
+      ;;
     odoo-web)
       jq -e '
         .publicClient == true
@@ -271,6 +326,16 @@ for file in "$CONFIG_ROOT"/clients/*.json; do
       ' "$file" >/dev/null || fail "n8n editor gateway must be confidential Authorization Code + PKCE only"
       ;;
   esac
+
+  # A client whose every redirect URI lives on a staging host can never be planned into
+  # production, whatever the rest of its desired state says.
+  if jq -e '(.redirectUris | length > 0) and all(.redirectUris[]; test("^https://[^/]*staging[^/]*(/|$)"))' "$file" >/dev/null; then
+    jq -e --arg client_id "$client_id" '
+      (.clients[$client_id] | type == "array")
+      and ((.clients[$client_id] | index("production")) == null)
+    ' "$environment_policy" >/dev/null ||
+      fail "Staging-only client must be excluded from production by environment-scoped-clients.json: $client_id"
+  fi
 
   client_allowed_attributes="$allowed_attribute_fields"
   if [[ "$client_id" == n8n-editor-gateway ]]; then

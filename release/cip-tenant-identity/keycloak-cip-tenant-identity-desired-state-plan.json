@@ -1,0 +1,387 @@
+{
+  "activationPreconditions": [
+    "protected merge SHA recorded and the plan regenerated from it",
+    "staging-only reconciliation with the protected staging administrator credential after independent plan review",
+    "the realm OTP execution configured so the AMR mapper emits mfa; until then every human CIP token fails closed on mfa",
+    "Middleware registers the proposed platform-command-client members in config/control-plane-callers.v1.json",
+    "Kong consumes this gateway contract by digest and reproduces every token-matrix verdict and status",
+    "service client secrets handed to runners only through 0600 secret files resolved from secretReference",
+    "production cip-portal remains blocked until its origin is reviewed; unbound scopes stay unbound until Middleware routes exist"
+  ],
+  "audience": "middleware-api",
+  "configurationChecksum": "a790de74382dff2ca06bc0cb13c92211234ad856e6eea88e91b2497a26bf1abe",
+  "environment": "staging",
+  "issuer": "https://auth-staging.codestra.co/realms/codestra",
+  "kind": "CodestraKeycloakCipTenantIdentityDesiredStatePlan",
+  "middlewareRouteContract": {
+    "parityEvidence": "config/certification/cip-f3-cross-repo-parity-recertification.v1.json",
+    "path": "deploy/public-api-route-contract.json",
+    "repository": "ingtrader21-spec/Middleware-",
+    "routeCount": 117,
+    "sha256": "9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b"
+  },
+  "operations": [
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "3e8ef5a7c319008735c0a01219749f24f09e3799667de88bc41fb43f26f706f1",
+      "resourceId": "cip-tenant-attributes",
+      "resourceType": "user-profile-attributes"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "d8ed7c29aa5b67d89eeb547ecc9593b2ac2e4d779701fa16baf83196b2539b5e",
+      "resourceId": "cip.user.context",
+      "resourceType": "client-scope"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "3e41ad97cb568a95f45ebd360474f68944e249e8a0a31f3dea7682057b91052c",
+      "resourceId": "cip.tenant.admin",
+      "resourceType": "client-scope"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "7e06928879e73aa534ef92bf534d90e44642f8d6bc31cac665bb2ccfc7d31ad2",
+      "resourceId": "cip.connector.admin",
+      "resourceType": "client-scope"
+    },
+    {
+      "action": "REFERENCE_FROZEN_DEFINITION_UNCHANGED",
+      "desiredSha256": "4f0e1e1df50f98c80985c0d2ad408123a71b63b9ed77032729578defe9532457",
+      "resourceId": "platform.command",
+      "resourceType": "client-scope"
+    },
+    {
+      "action": "REFERENCE_FROZEN_DEFINITION_UNCHANGED",
+      "desiredSha256": "4b3d7b4b1bc9b133bd16ae72d274df74ff6bb6f993067e1efa6229485030e97f",
+      "resourceId": "platform.command.read",
+      "resourceType": "client-scope"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "cf9b4ca5ac5e48cfd76f6d34e49da2563ef8c36e0a48349af37fe16a6c7e0401",
+      "resourceId": "cip.usage.read",
+      "resourceType": "client-scope"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "403de2262fe08eef2dadd0ee01d384de5615a95941ca613f5f204e8d0b1dfa8e",
+      "resourceId": "cip.audit.read",
+      "resourceType": "client-scope"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "e2e43dd14ca12644ec384691f943e38522a642df1c992c7c82a42586e4c68c69",
+      "resourceId": "cip-tenant-admin",
+      "resourceType": "realm-role"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "bdc2e3d6962c3ffee6ec4b8a3eaeef46fe3064edbbbe23cbad22be9e7c1c2f78",
+      "resourceId": "cip-connector-admin",
+      "resourceType": "realm-role"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "ad13b7a3037b08792c58e58b9f132792b2a3f886781f04b519d0700465cd8e86",
+      "resourceId": "cip-command-operator",
+      "resourceType": "realm-role"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "1dec5e41fd2e24e30cc4f22fe23dfd05ecf3c79b301f2a09f2b2432865e3f3ce",
+      "resourceId": "cip-command-viewer",
+      "resourceType": "realm-role"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "ca01706c65102ea21cc58273a3fc3d50d25038616c349bdfdbc5aca890a2b5c8",
+      "resourceId": "cip-usage-viewer",
+      "resourceType": "realm-role"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "6a6df5206f2b40620dbab254c176d0651f8cd9dbbe26da8cd971d463c31c0007",
+      "resourceId": "cip-audit-viewer",
+      "resourceType": "realm-role"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "d3cd1bc714d7030b903f9a1ca3129bc471c075b1bd90bf9e22a8f3510ffe2cdd",
+      "resourceId": "cip-svc-command-submitter",
+      "resourceType": "realm-role"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "6d40c95d3d61d2e742043dd2fcedf2709d3b0a474560f1098455cb8047ca52a0",
+      "resourceId": "cip-svc-command-reader",
+      "resourceType": "realm-role"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "03719ffe6893aee7c0218996143427ec01bf71f113ad11e7cc2e4379cbdaa334",
+      "resourceId": "cip-svc-usage-reader",
+      "resourceType": "realm-role"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "212b22b6353700b10f8243d7d8431bca6065f5443da5230993dc57614c4ef565",
+      "resourceId": "cip-svc-audit-reader",
+      "resourceType": "realm-role"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "044bd6927da1aac9ca3b6bdd2c057615d041dcf55ac5e73982dc296357bbbed6",
+      "resourceId": "cip.tenant.admin",
+      "resourceType": "client-scope-role-mappings"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "b620078cf4a5fa942d833c3007bc4e2d908ac8db68958cf0320de2a87b316e18",
+      "resourceId": "cip.connector.admin",
+      "resourceType": "client-scope-role-mappings"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "fef3a1a196350edbda13a01e458d4b013eb75a1741cfa53ded3da05a7f0a1609",
+      "resourceId": "platform.command",
+      "resourceType": "client-scope-role-mappings"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "d79b18bca8c15d0db5368ae8ce70242624e4c118b412c9ada8a22796d4fb20c4",
+      "resourceId": "platform.command.read",
+      "resourceType": "client-scope-role-mappings"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "76b95b6e018fb2e5a2a2d78abb902eb3e090aa10c04f4468bda074598775a688",
+      "resourceId": "cip.usage.read",
+      "resourceType": "client-scope-role-mappings"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "a316e2d3cd4e9fab1e5f6f7c1d34618eac53fd89b5f3bf8abd788f023e651729",
+      "resourceId": "cip.audit.read",
+      "resourceType": "client-scope-role-mappings"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "172fcfe6b2b051d392844e905aadcdd10a34d27cbe29ba87a6065c51d8e53f6b",
+      "resourceId": "test-syn-cip-portal",
+      "resourceType": "client"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "96a90837e68a0fcfab7f0e0d6e340fe40b5ad7f77211a762e3b1d67e51b771c9",
+      "resourceId": "test-syn-cip-portal",
+      "resourceType": "client-default-scope-links"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "dff505e8b94df954d5297128b58e2d743568bcf4bd88a260170b14b28f4d6d48",
+      "resourceId": "test-syn-cip-portal",
+      "resourceType": "client-optional-scope-links"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "fa2413d0b8bbb98602ed4f49499d3fa9af885b9c8169594c9f12eaf627fe9e01",
+      "resourceId": "test-syn-cip-tenant-a-automation",
+      "resourceType": "client"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "4c3364a0067d4fc222d92a204115baed8181818f575ae07d5955d765429c7350",
+      "resourceId": "test-syn-cip-tenant-a-automation",
+      "resourceType": "client-default-scope-links"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "c5b78d6329fabe44930d69c4d24c33ba35b2bba63724295dd735f6cfb3b0dc3e",
+      "resourceId": "test-syn-cip-tenant-a-automation",
+      "resourceType": "client-optional-scope-links"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "3ac0e2ce469c6ec7b0623a9261730fe91ae25043df43b8d196df1d33af89da88",
+      "resourceId": "test-syn-cip-tenant-a-automation",
+      "resourceType": "service-account-realm-roles"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "f5f27fa9a2c185f1235d39de7d63fcf80966992a747e6ed647e9d08479d98f51",
+      "resourceId": "test-syn-cip-tenant-a-auditor",
+      "resourceType": "client"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "4c3364a0067d4fc222d92a204115baed8181818f575ae07d5955d765429c7350",
+      "resourceId": "test-syn-cip-tenant-a-auditor",
+      "resourceType": "client-default-scope-links"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "4c45c1f6ee88386e4b490b6b3aacefc9240cbf76406297301a250eb63f95571a",
+      "resourceId": "test-syn-cip-tenant-a-auditor",
+      "resourceType": "client-optional-scope-links"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "ab02909b2504bfff41d27eed17023e7017a1edaae2d0ab5e66c2fd30bff7b3ea",
+      "resourceId": "test-syn-cip-tenant-a-auditor",
+      "resourceType": "service-account-realm-roles"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "36fd157853d6a47033ce138ffd14f377721fee87051ae00f434e1810f91984eb",
+      "resourceId": "test-syn-cip-tenant-b-automation",
+      "resourceType": "client"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "4c3364a0067d4fc222d92a204115baed8181818f575ae07d5955d765429c7350",
+      "resourceId": "test-syn-cip-tenant-b-automation",
+      "resourceType": "client-default-scope-links"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "c5b78d6329fabe44930d69c4d24c33ba35b2bba63724295dd735f6cfb3b0dc3e",
+      "resourceId": "test-syn-cip-tenant-b-automation",
+      "resourceType": "client-optional-scope-links"
+    },
+    {
+      "action": "RECONCILE_IN_STAGING_ONLY_AUTHORIZED_MISSION",
+      "desiredSha256": "3ac0e2ce469c6ec7b0623a9261730fe91ae25043df43b8d196df1d33af89da88",
+      "resourceId": "test-syn-cip-tenant-b-automation",
+      "resourceType": "service-account-realm-roles"
+    },
+    {
+      "action": "BLOCKED_ORIGIN_UNRESOLVED",
+      "desiredSha256": null,
+      "resourceId": "cip-portal",
+      "resourceType": "client"
+    }
+  ],
+  "realm": "codestra",
+  "repositoryBoundary": {
+    "frozenArtifactsModified": false,
+    "liveApplyAuthorized": false,
+    "liveApplyPerformed": false,
+    "managedClientPolicyChanged": false,
+    "productionTargetAllowed": false,
+    "runtimeStateRead": false,
+    "secretsGenerated": false,
+    "tokensMinted": false
+  },
+  "rollback": {
+    "newClientScopeSequence": [
+      "unlink from every client",
+      "verify zero links",
+      "separately approve deletion"
+    ],
+    "newClientSequence": [
+      "disable",
+      "verify no active use",
+      "separately approve deletion"
+    ],
+    "roleScopeMappingSequence": [
+      "remove the CIP role mappings from the client scope",
+      "verify platform.command and platform.command.read definitions are byte-identical to the frozen files"
+    ],
+    "userProfileSequence": [
+      "remove the two appended attributes only",
+      "leave every other user-profile attribute unchanged"
+    ]
+  },
+  "schemaVersion": 1,
+  "sourceFiles": [
+    {
+      "path": "config/desired-state/cip-tenant-identity/client-scopes/cip.audit.read.json",
+      "sha256": "403de2262fe08eef2dadd0ee01d384de5615a95941ca613f5f204e8d0b1dfa8e"
+    },
+    {
+      "path": "config/desired-state/cip-tenant-identity/client-scopes/cip.connector.admin.json",
+      "sha256": "7e06928879e73aa534ef92bf534d90e44642f8d6bc31cac665bb2ccfc7d31ad2"
+    },
+    {
+      "path": "config/desired-state/cip-tenant-identity/client-scopes/cip.tenant.admin.json",
+      "sha256": "3e41ad97cb568a95f45ebd360474f68944e249e8a0a31f3dea7682057b91052c"
+    },
+    {
+      "path": "config/desired-state/cip-tenant-identity/client-scopes/cip.usage.read.json",
+      "sha256": "cf9b4ca5ac5e48cfd76f6d34e49da2563ef8c36e0a48349af37fe16a6c7e0401"
+    },
+    {
+      "path": "config/desired-state/cip-tenant-identity/client-scopes/cip.user.context.json",
+      "sha256": "d8ed7c29aa5b67d89eeb547ecc9593b2ac2e4d779701fa16baf83196b2539b5e"
+    },
+    {
+      "path": "config/desired-state/cip-tenant-identity/clients/test-syn-cip-portal.json",
+      "sha256": "172fcfe6b2b051d392844e905aadcdd10a34d27cbe29ba87a6065c51d8e53f6b"
+    },
+    {
+      "path": "config/desired-state/cip-tenant-identity/clients/test-syn-cip-tenant-a-auditor.json",
+      "sha256": "f5f27fa9a2c185f1235d39de7d63fcf80966992a747e6ed647e9d08479d98f51"
+    },
+    {
+      "path": "config/desired-state/cip-tenant-identity/clients/test-syn-cip-tenant-a-automation.json",
+      "sha256": "fa2413d0b8bbb98602ed4f49499d3fa9af885b9c8169594c9f12eaf627fe9e01"
+    },
+    {
+      "path": "config/desired-state/cip-tenant-identity/clients/test-syn-cip-tenant-b-automation.json",
+      "sha256": "36fd157853d6a47033ce138ffd14f377721fee87051ae00f434e1810f91984eb"
+    },
+    {
+      "path": "config/desired-state/cip-tenant-identity/contract.json",
+      "sha256": "af7dc452969859370f82ac9a3479cd8cd01ed2bcb7b83bf2498f41fca19e978b"
+    },
+    {
+      "path": "config/desired-state/cip-tenant-identity/realm-roles/cip-audit-viewer.json",
+      "sha256": "6a6df5206f2b40620dbab254c176d0651f8cd9dbbe26da8cd971d463c31c0007"
+    },
+    {
+      "path": "config/desired-state/cip-tenant-identity/realm-roles/cip-command-operator.json",
+      "sha256": "ad13b7a3037b08792c58e58b9f132792b2a3f886781f04b519d0700465cd8e86"
+    },
+    {
+      "path": "config/desired-state/cip-tenant-identity/realm-roles/cip-command-viewer.json",
+      "sha256": "1dec5e41fd2e24e30cc4f22fe23dfd05ecf3c79b301f2a09f2b2432865e3f3ce"
+    },
+    {
+      "path": "config/desired-state/cip-tenant-identity/realm-roles/cip-connector-admin.json",
+      "sha256": "bdc2e3d6962c3ffee6ec4b8a3eaeef46fe3064edbbbe23cbad22be9e7c1c2f78"
+    },
+    {
+      "path": "config/desired-state/cip-tenant-identity/realm-roles/cip-svc-audit-reader.json",
+      "sha256": "212b22b6353700b10f8243d7d8431bca6065f5443da5230993dc57614c4ef565"
+    },
+    {
+      "path": "config/desired-state/cip-tenant-identity/realm-roles/cip-svc-command-reader.json",
+      "sha256": "6d40c95d3d61d2e742043dd2fcedf2709d3b0a474560f1098455cb8047ca52a0"
+    },
+    {
+      "path": "config/desired-state/cip-tenant-identity/realm-roles/cip-svc-command-submitter.json",
+      "sha256": "d3cd1bc714d7030b903f9a1ca3129bc471c075b1bd90bf9e22a8f3510ffe2cdd"
+    },
+    {
+      "path": "config/desired-state/cip-tenant-identity/realm-roles/cip-svc-usage-reader.json",
+      "sha256": "03719ffe6893aee7c0218996143427ec01bf71f113ad11e7cc2e4379cbdaa334"
+    },
+    {
+      "path": "config/desired-state/cip-tenant-identity/realm-roles/cip-tenant-admin.json",
+      "sha256": "e2e43dd14ca12644ec384691f943e38522a642df1c992c7c82a42586e4c68c69"
+    },
+    {
+      "path": "config/desired-state/cip-tenant-identity/realm-roles/cip-usage-viewer.json",
+      "sha256": "ca01706c65102ea21cc58273a3fc3d50d25038616c349bdfdbc5aca890a2b5c8"
+    },
+    {
+      "path": "config/desired-state/cip-tenant-identity/scope-role-mappings/cip-product-scopes.json",
+      "sha256": "91fa01834e37dad8036c3ef58b198da510639ecb75f7538749bd04aa71ed6d95"
+    },
+    {
+      "path": "config/desired-state/cip-tenant-identity/user-profile/cip-tenant-attributes.json",
+      "sha256": "3e8ef5a7c319008735c0a01219749f24f09e3799667de88bc41fb43f26f706f1"
+    }
+  ]
+}

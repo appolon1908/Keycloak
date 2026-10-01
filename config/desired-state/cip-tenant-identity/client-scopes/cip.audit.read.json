@@ -1,0 +1,10 @@
+{
+  "name": "cip.audit.read",
+  "description": "CIP optional scope (audit read): Read the token tenant's audit trail. Read-only and separate from tenant and connector administration. Per-token, role-gated, tenant-bound; never a default.",
+  "protocol": "openid-connect",
+  "attributes": {
+    "display.on.consent.screen": "false",
+    "include.in.token.scope": "true"
+  },
+  "protocolMappers": []
+}

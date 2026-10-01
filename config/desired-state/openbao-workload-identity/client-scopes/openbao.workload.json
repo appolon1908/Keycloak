@@ -1,6 +1,6 @@
 {
   "name": "openbao.workload",
-  "description": "Codestra optional workload scope managed by repository desired state. Requested explicitly per short-lived service-account token when a workload authenticates to OpenBao; it adds the openbao audience and the codestra_environment claim OpenBao roles require. Never a realm default scope.",
+  "description": "Codestra optional workload scope, requested per short-lived service-account token to authenticate to OpenBao; adds the openbao audience and the codestra_environment claim. Never a realm default.",
   "protocol": "openid-connect",
   "attributes": {
     "display.on.consent.screen": "false",

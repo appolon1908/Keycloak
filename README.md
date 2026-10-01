@@ -40,7 +40,11 @@ The protected managed-client boundary is explicit in
 `klyrow-portal`, and the three MoneyBee browser clients. Creation is separately
 allowlisted in `config/policy/creatable-clients.json`; `klyrow-portal` is
 creatable only through the reviewed plan/apply gate with disable-first and
-separate-reviewed-delete rollback metadata.
+separate-reviewed-delete rollback metadata. A managed client that may exist in
+only some environments is listed in
+`config/policy/environment-scoped-clients.json`; `klyrow-staging-portal` is
+scoped to `staging`, so a production plan records it as excluded instead of
+creating it (see `docs/GITOPS.md`).
 
 MoneyBee uses three public PKCE clients:
 
@@ -101,6 +105,8 @@ scripts/
   export-client.sh            Existing/absent rollback evidence export
   reconcile-moneybee-oidc.sh  Read-only MoneyBee view of protected plan engine
   smoke-test.sh               Read-only discovery and redirect acceptance test
+  keycloak_identity_compiler.py  Compiles config/ into generated/keycloak-identity-authority.v1.json
+  keycloak_control_api.py     Loopback PAS-237 control plane (docs/operations/CONTROL_API.md)
 .github/workflows/
   validate.yml                Exact source-head and merge-result CI
   runtime-preflight.yml       Manual read-only server verification
@@ -113,8 +119,16 @@ scripts/
 make validate
 ```
 
+`scripts/validate.sh` needs `jq`, Python 3.12 or newer with `PyYAML` and
+`pytest`, and uses `shellcheck` when installed. Hosted CI installs these
+explicitly; a self-hosted runner that runs the deploy workflow must provide
+them too.
+
 CI additionally validates Docker Compose, exercises the protected plan gate,
 and builds the pinned Keycloak image without publishing it.
+
+The PAS-237 control plane has its own focused suite and a fail-closed Postman
+collection; see `docs/operations/CONTROL_API.md`.
 
 ## PostgreSQL recovery evidence
 
@@ -152,3 +166,7 @@ See `docs/GITOPS.md`, `docs/GITHUB_SECURITY.md`,
 procedures. The staging edge-certification identities and the Keycloak half of the
 Keycloak → Caddy → Kong → Middleware certification are described in
 `docs/EDGE_INTEGRATION_CERTIFICATION.md`.
+
+MCR human/service caller policy, offline certification and the readback procedure
+are documented in [MCR identity contracts](docs/MCR_IDENTITY_CONTRACT.md).
+Run `make mcr-identity-check`; all MCR live bindings remain disabled.

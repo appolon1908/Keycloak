@@ -1,0 +1,10 @@
+{
+  "name": "cip.usage.read",
+  "description": "CIP optional scope (usage read): Read metering and usage for the token tenant (and its projects when narrowed). Read-only; no billing or quota mutation. Per-token, role-gated, tenant-bound; never a default.",
+  "protocol": "openid-connect",
+  "attributes": {
+    "display.on.consent.screen": "false",
+    "include.in.token.scope": "true"
+  },
+  "protocolMappers": []
+}

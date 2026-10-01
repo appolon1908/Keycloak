@@ -1,0 +1,10 @@
+{
+  "name": "cip.tenant.admin",
+  "description": "CIP optional scope (tenant administration): Administer the token tenant's own CIP settings, projects and member role requests. Never cross-tenant, never realm or platform administration. Per-token, role-gated, tenant-bound; never a default.",
+  "protocol": "openid-connect",
+  "attributes": {
+    "display.on.consent.screen": "false",
+    "include.in.token.scope": "true"
+  },
+  "protocolMappers": []
+}

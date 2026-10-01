@@ -1,7 +1,7 @@
 {
   "clientId": "test-syn-wrong-tenant",
   "name": "Codestra edge-certification identity: test-syn-wrong-tenant",
-  "description": "Isolated staging service identity for the TEST_SYN Keycloak -> Caddy -> Kong -> Middleware edge certification. Valid audience and scopes bound to another tenant; expected the same 404 body as a missing result and an indistinguishable campaign denial. Repository-only desired state outside the protected managed-client policy; never a production client.",
+  "description": "TEST_SYN edge-certification identity (Keycloak -> Caddy -> Kong -> Middleware). Valid audience and scopes bound to another tenant; expects the same 404 body as a missing result and an identical campaign denial. Staging only; never a production client.",
   "enabled": true,
   "protocol": "openid-connect",
   "publicClient": false,

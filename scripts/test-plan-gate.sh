@@ -293,13 +293,15 @@ plan_dir="$test_root/plan"
 [[ "$(jq -er '.api.adminApiBaseUrl' "$plan_dir/plan.json")" == "https://auth-staging.codestra.co" ]]
 [[ "$(jq -er '.api.issuer' "$plan_dir/plan.json")" == "https://auth-staging.codestra.co/realms/codestra" ]]
 
-[[ "$(jq -er '.driftCount' "$plan_dir/plan.json")" -eq 34 ]]
+# 37 managed clients: klyrow-portal pre-exists in the mock (update), the other 36 are created,
+# and the realm policy drifts (update).
+[[ "$(jq -er '.driftCount' "$plan_dir/plan.json")" -eq 38 ]]
 [[ "$(jq -er '.blockedCount' "$plan_dir/plan.json")" -eq 0 ]]
-[[ "$(jq -er '.createCount' "$plan_dir/plan.json")" -eq 32 ]]
+[[ "$(jq -er '.createCount' "$plan_dir/plan.json")" -eq 36 ]]
 [[ "$(jq -er '.updateCount' "$plan_dir/plan.json")" -eq 2 ]]
 [[ "$(jq -er '.realmPolicy.action' "$plan_dir/plan.json")" == "update" ]]
 [[ "$(jq -er '.clients[] | select(.clientId == "klyrow-portal") | .action' "$plan_dir/plan.json")" == "update" ]]
-for client_id in codestra-provisioning-service odoo-web moneybee-admin moneybee-borrower moneybee-lender moneybee-backend breero-backend larim-a-backend transportation-backend beyvra-backend social-codestra; do
+for client_id in codestra-provisioning-service odoo-web moneybee-admin moneybee-borrower moneybee-lender moneybee-backend breero-backend larim-a-backend transportation-backend beyvra-backend social-codestra codestra-agent-desktop klyrow-staging-portal odoo-email production-operator; do
   [[ "$(jq -er --arg client_id "$client_id" '.clients[] | select(.clientId == $client_id) | .action' "$plan_dir/plan.json")" == "create" ]]
   jq -e --arg client_id "$client_id" '
     .clients[]
@@ -310,6 +312,31 @@ for client_id in codestra-provisioning-service odoo-web moneybee-admin moneybee-
       and .rollback.deleteRequiresSeparateReviewedRollback == true
   ' "$plan_dir/plan.json" >/dev/null
 done
+
+[[ "$(jq -er '.excludedCount' "$plan_dir/plan.json")" -eq 0 ]]
+[[ "$(jq -er '.excludedClients | length' "$plan_dir/plan.json")" -eq 0 ]]
+
+# The staging-only Klyrow portal is excluded from a production plan instead of being
+# created in the production realm with staging redirect URIs.
+production_plan_dir="$test_root/plan-production"
+DEPLOY_ENVIRONMENT=production KC_PUBLIC_URL="https://auth.codestra.co" "$ROOT_DIR/scripts/plan.sh" \
+  --output-dir "$production_plan_dir" \
+  --expected-deploy-sha "$expected_sha" >/dev/null
+[[ "$(jq -er '.environment' "$production_plan_dir/plan.json")" == "production" ]]
+[[ "$(jq -er '.api.adminApiBaseUrl' "$production_plan_dir/plan.json")" == "https://auth.codestra.co" ]]
+[[ "$(jq -er '.driftCount' "$production_plan_dir/plan.json")" -eq 37 ]]
+[[ "$(jq -er '.createCount' "$production_plan_dir/plan.json")" -eq 35 ]]
+[[ "$(jq -er '.updateCount' "$production_plan_dir/plan.json")" -eq 2 ]]
+[[ "$(jq -er '.excludedCount' "$production_plan_dir/plan.json")" -eq 1 ]]
+jq -e '
+  ([.clients[] | select(.clientId == "klyrow-staging-portal")] | length == 0)
+  and .excludedClients == [{
+    clientId: "klyrow-staging-portal",
+    reason: "environment_scoped",
+    allowedEnvironments: ["staging"]
+  }]
+' "$production_plan_dir/plan.json" >/dev/null
+printf 'PLAN_ENVIRONMENT_SCOPE_EXCLUSION=PASS\n'
 
 plan_sha256="$(awk 'NR == 1 {print $1}' "$plan_dir/plan.sha256")"
 [[ "$plan_sha256" =~ ^[0-9a-f]{64}$ ]]
@@ -331,7 +358,7 @@ mapfile -t managed_clients < <(jq -r '.clients[]' "$ROOT_DIR/config/policy/manag
   "${managed_clients[@]}" >/dev/null
 [[ -f "$rollback_dir/config/clients/klyrow-portal.json" ]]
 [[ "$(jq -er '.existingClientCount' "$rollback_dir/rollback-metadata.json")" -eq 1 ]]
-[[ "$(jq -er '.absentCreatableClientCount' "$rollback_dir/rollback-metadata.json")" -eq 32 ]]
+[[ "$(jq -er '.absentCreatableClientCount' "$rollback_dir/rollback-metadata.json")" -eq 36 ]]
 
 # Exercise the apply create path with a non-empty test credential for every
 # managed machine identity. Production values remain supplied only by the
@@ -352,6 +379,38 @@ if "$ROOT_DIR/scripts/apply-plan.sh" \
   echo 'TEST_ERROR=mismatched_plan_hash_was_accepted' >&2
   exit 1
 fi
+
+# A reviewed plan that excludes a client allowed in this environment is refused before
+# authentication or any write; only the environment-scope policy may exclude a client.
+tampered_dir="$test_root/tampered-exclusion"
+mkdir -p "$tampered_dir"
+jq -S '
+  del(.clients[] | select(.clientId == "klyrow-staging-portal"))
+  | .excludedClients = [{clientId: "klyrow-staging-portal", reason: "environment_scoped", allowedEnvironments: ["staging"]}]
+  | .excludedCount = 1
+  | .createCount -= 1
+  | .driftCount -= 1
+' "$plan_dir/plan.json" >"$tampered_dir/plan.json"
+tampered_sha256="$(jq -S -c . "$tampered_dir/plan.json" | sha256sum | awk '{print $1}')"
+"$ROOT_DIR/scripts/review-plan.sh" \
+  --plan "$tampered_dir/plan.json" \
+  --expected-plan-sha "$tampered_sha256" \
+  --expected-deploy-sha "$expected_sha" \
+  --output "$tampered_dir/review.json" >/dev/null
+tampered_review_sha256="$(awk 'NR == 1 {print $1}' "$tampered_dir/review.json.sha256")"
+if "$ROOT_DIR/scripts/apply-plan.sh" \
+  --plan "$tampered_dir/plan.json" \
+  --expected-plan-sha "$tampered_sha256" \
+  --review "$tampered_dir/review.json" \
+  --expected-review-sha "$tampered_review_sha256" \
+  --expected-deploy-sha "$expected_sha" \
+  --recovery-dir "$test_root/recovery-tampered-exclusion" >"$test_root/tampered-exclusion.log" 2>&1; then
+  echo 'TEST_ERROR=plan_with_unauthorized_exclusion_was_accepted' >&2
+  exit 1
+fi
+grep -Fq 'Plan client set does not match' "$test_root/tampered-exclusion.log"
+[[ "$(jq -er 'length' "$state_file")" -eq 1 ]]
+printf 'APPLY_UNAUTHORIZED_EXCLUSION_FAIL_CLOSED=PASS\n'
 
 jq -S \
   --slurpfile admin "$ROOT_DIR/config/clients/moneybee-admin.json" '
@@ -422,7 +481,7 @@ jq -e --argjson expected_operation_count "$expected_operation_count" '
   and all(.operations[]; (.state == "created" or .state == "updated" or .state == "unchanged"))
 ' "$test_root/recovery-success/recovery-manifest.json" >/dev/null
 
-for client_id in klyrow-portal moneybee-admin moneybee-borrower moneybee-lender moneybee-backend breero-backend larim-a-backend transportation-backend beyvra-backend social-codestra sdk-intake alertmanager; do
+for client_id in klyrow-portal moneybee-admin moneybee-borrower moneybee-lender moneybee-backend breero-backend larim-a-backend transportation-backend beyvra-backend social-codestra sdk-intake alertmanager codestra-agent-desktop klyrow-staging-portal odoo-email production-operator; do
   jq -e --arg client_id "$client_id" 'has($client_id)' "$state_file" >/dev/null
 done
 jq -e --slurpfile desired "$ROOT_DIR/config/clients/klyrow-portal.json" '

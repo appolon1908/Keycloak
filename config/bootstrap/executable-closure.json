@@ -11,7 +11,7 @@
     },
     {
       "path": ".github/workflows/validate.yml",
-      "sha256": "c208c34950199693bfbbc9db85dc091abd3bdbaedf0b2544ff8b7da4fa63ad70"
+      "sha256": "1540a1629653a8130fd330bf1796e4c69d39b8e2f846c7cf11dfc9e01a2445ab"
     },
     {
       "path": "contracts/kyyow-saas-identity-v1.json",
@@ -35,7 +35,7 @@
     },
     {
       "path": "scripts/validate-password-reset-contract.py",
-      "sha256": "060b0e1dea614d25962dc2efae3656cf36d3e22be378df59b62a20254cff8852"
+      "sha256": "d9257b3863054e687d9393bb74b017c1f694e08784863619a86e325e02dcd488"
     },
     {
       "path": "scripts/validate-repository-name-authority.py",
@@ -47,12 +47,12 @@
     },
     {
       "path": "scripts/validate.sh",
-      "sha256": "15800a99e6a3fe2bced5a2797b483464c42da13247ce8992414f21f0680f604a"
+      "sha256": "a8b1c36d6a9200fcef68af1d1ab0b858df5dfcfe2690a214e85f7e60e611edb1"
     },
     {
       "path": "tests/test_kyyow_identity.py",
       "sha256": "f1133e8b04226a854b3484ded27149995d54dfceb8b1ff9dfbf062a9140d33e6"
     }
   ],
-  "manifest_sha256": "5bd356842979abaed71f74f78d00efaa447afce9d1bb33159e5721cd13fc1e27"
+  "manifest_sha256": "b95d180f79d384478bea44d4c54823dbc298a7f50be62347b1459bbf88d75525"
 }

@@ -122,6 +122,12 @@ jobs:
               ;;
           esac
 
+      - name: Install validation tools
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes jq shellcheck python3-yaml python3-pytest
+
       - name: Validate reviewed repository state
         run: ./scripts/validate.sh
 
@@ -412,7 +418,14 @@ jobs:
         if: ${{ inputs.mode == 'apply' }}
         run: |
           set -Eeuo pipefail
-          mapfile -t clients < <(jq -r '.clients[]' config/policy/managed-clients.json)
+          # Rollback evidence covers exactly the clients the reviewed plan manages in this
+          # environment, the same set apply-plan.sh accepts.
+          mapfile -t clients < <(
+            jq -r --arg environment "$DEPLOY_ENVIRONMENT" \
+              --slurpfile scopes config/policy/environment-scoped-clients.json '
+                .clients[] | select((($scopes[0].clients[.] // [$environment]) | index($environment)) != null)
+              ' config/policy/managed-clients.json
+          )
           ./scripts/export-client.sh \
             --output "$RUNNER_TEMP/keycloak-before" \
             "${clients[@]}"
@@ -443,6 +456,8 @@ jobs:
           KC_CLIENT_SECRET_MIDDLEWARE_API: ${{ secrets.KC_CLIENT_SECRET_MIDDLEWARE_API }}
           KC_CLIENT_SECRET_MIDDLEWARE_WORKER: ${{ secrets.KC_CLIENT_SECRET_MIDDLEWARE_WORKER }}
           KC_CLIENT_SECRET_ODOO_INTEGRATION: ${{ secrets.KC_CLIENT_SECRET_ODOO_INTEGRATION }}
+          KC_CLIENT_SECRET_ODOO_EMAIL: ${{ secrets.KC_CLIENT_SECRET_ODOO_EMAIL }}
+          KC_CLIENT_SECRET_PRODUCTION_OPERATOR: ${{ secrets.KC_CLIENT_SECRET_PRODUCTION_OPERATOR }}
           KC_CLIENT_SECRET_N8N_AUTOMATION: ${{ secrets.KC_CLIENT_SECRET_N8N_AUTOMATION }}
           KC_CLIENT_SECRET_VICIDIAL_ADAPTER: ${{ secrets.KC_CLIENT_SECRET_VICIDIAL_ADAPTER }}
           KC_CLIENT_SECRET_TELNEXA_GATEWAY: ${{ secrets.KC_CLIENT_SECRET_TELNEXA_GATEWAY }}

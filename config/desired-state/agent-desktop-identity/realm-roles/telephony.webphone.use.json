@@ -1,0 +1,13 @@
+{
+  "name": "telephony.webphone.use",
+  "description": "Codestra agent desktop: lets a human agent use the browser webphone and the Middleware realtime gateway, with client role codestra-agent-desktop:realtime.agent.connect. Non-composite, never default, assigned per agent.",
+  "composite": false,
+  "clientRole": false,
+  "attributes": {
+    "codestra.role.family": ["agent-desktop"],
+    "codestra.actor.kind": ["user"],
+    "codestra.default_role": ["false"],
+    "codestra.cross_family_grant": ["false"],
+    "codestra.consumer": ["middleware-websocket-gateway"]
+  }
+}

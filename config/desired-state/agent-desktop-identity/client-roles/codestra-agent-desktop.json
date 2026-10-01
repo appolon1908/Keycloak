@@ -1,0 +1,17 @@
+{
+  "clientId": "codestra-agent-desktop",
+  "roles": [
+    {
+      "name": "realtime.agent.connect",
+      "description": "Connect an authenticated agent desktop to the Middleware realtime gateway.",
+      "composite": false,
+      "clientRole": true,
+      "attributes": {
+        "codestra.role.family": ["agent-desktop"],
+        "codestra.actor.kind": ["user"],
+        "codestra.default_role": ["false"],
+        "codestra.consumer": ["middleware-websocket-gateway"]
+      }
+    }
+  ]
+}

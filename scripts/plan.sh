@@ -183,7 +183,28 @@ for client_id in "${creatable_client_ids[@]}"; do
   creatable_clients["$client_id"]=1
 done
 
+# A client listed in the environment-scope policy is planned only in the environments it
+# names; anywhere else it is recorded as excluded and never created or updated.
+environment_policy="$ROOT_DIR/config/policy/environment-scoped-clients.json"
+excluded_ndjson="$tmp_dir/excluded.ndjson"
+: >"$excluded_ndjson"
+declare -A scoped_environments=()
+while IFS=$'\t' read -r client_id allowed_environments; do
+  scoped_environments["$client_id"]="$allowed_environments"
+done < <(jq -er '.clients | to_entries[] | [.key, (.value | join(","))] | @tsv' "$environment_policy")
+
 for client_id in "${managed_clients[@]}"; do
+  allowed_environments="${scoped_environments[$client_id]:-}"
+  if [[ -n "$allowed_environments" && ",${allowed_environments}," != *",${DEPLOY_ENVIRONMENT},"* ]]; then
+    jq -c -n --arg client_id "$client_id" --arg allowed "$allowed_environments" '
+      {
+        clientId: $client_id,
+        reason: "environment_scoped",
+        allowedEnvironments: ($allowed | split(","))
+      }
+    ' >>"$excluded_ndjson"
+    continue
+  fi
   mapfile -t matching_files < <(
     while IFS= read -r file; do
       [[ "$(jq -er '.clientId' "$file")" == "$client_id" ]] && printf '%s\n' "$file"
@@ -276,6 +297,7 @@ for client_id in "${managed_clients[@]}"; do
 done
 
 endpoint_file="$(keycloak_endpoint_file)"
+excluded_clients_json="$(jq -S -s 'sort_by(.clientId)' "$excluded_ndjson")"
 
 plan_file="$OUTPUT_DIR/plan.json"
 canonical_plan_file="$OUTPUT_DIR/plan.canonical.json"
@@ -286,7 +308,8 @@ jq -S -s \
   --arg environment "$DEPLOY_ENVIRONMENT" \
   --arg target_realm "$KC_TARGET_REALM" \
   --slurpfile api "$endpoint_file" \
-  --slurpfile realm_policy "$realm_resource_file" '
+  --slurpfile realm_policy "$realm_resource_file" \
+  --argjson excluded "$excluded_clients_json" '
     sort_by(.clientId) as $clients
     | {
         schemaVersion: 1,
@@ -296,6 +319,8 @@ jq -S -s \
         api: $api[0],
         realmPolicy: $realm_policy[0],
         clients: $clients,
+        excludedClients: $excluded,
+        excludedCount: ($excluded | length),
         driftCount: (
           ($clients | map(select(.action != "noop")) | length)
           + (if $realm_policy[0].action == "update" then 1 else 0 end)
@@ -318,6 +343,7 @@ drift_count="$(jq -er '.driftCount' "$plan_file")"
 blocked_count="$(jq -er '.blockedCount' "$plan_file")"
 create_count="$(jq -er '.createCount' "$plan_file")"
 update_count="$(jq -er '.updateCount' "$plan_file")"
+excluded_count="$(jq -er '.excludedCount' "$plan_file")"
 
 printf 'PLAN_FILE=%s\n' "$plan_file"
 printf 'PLAN_CANONICAL_FILE=%s\n' "$canonical_plan_file"
@@ -326,4 +352,5 @@ printf 'DRIFT_COUNT=%s\n' "$drift_count"
 printf 'BLOCKED_COUNT=%s\n' "$blocked_count"
 printf 'CREATE_COUNT=%s\n' "$create_count"
 printf 'UPDATE_COUNT=%s\n' "$update_count"
+printf 'EXCLUDED_COUNT=%s\n' "$excluded_count"
 printf 'PLAN=READY_FOR_REVIEW\n'

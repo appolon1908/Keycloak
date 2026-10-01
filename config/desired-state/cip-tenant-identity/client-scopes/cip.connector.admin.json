@@ -1,0 +1,10 @@
+{
+  "name": "cip.connector.admin",
+  "description": "CIP optional scope (connector administration): Install, configure, enable and disable connectors for the token tenant and bind OpenBao credential references. Never reads secret values. Per-token, role-gated, tenant-bound; never a default.",
+  "protocol": "openid-connect",
+  "attributes": {
+    "display.on.consent.screen": "false",
+    "include.in.token.scope": "true"
+  },
+  "protocolMappers": []
+}

@@ -1,0 +1,32 @@
+{
+  "name": "cip-connector-admin",
+  "description": "CIP human user role: obtains cip.connector.admin for its own tenant only. Non-composite, never default, not in the access token; prepared only.",
+  "composite": false,
+  "clientRole": false,
+  "attributes": {
+    "codestra.role.family": [
+      "cip-product"
+    ],
+    "codestra.actor.kind": [
+      "user"
+    ],
+    "codestra.grants.scopes": [
+      "cip.connector.admin"
+    ],
+    "codestra.tenant.bound": [
+      "true"
+    ],
+    "codestra.mfa.required": [
+      "true"
+    ],
+    "codestra.default_role": [
+      "false"
+    ],
+    "codestra.cross_family_grant": [
+      "false"
+    ],
+    "codestra.activation": [
+      "PREPARED_DISABLED"
+    ]
+  }
+}

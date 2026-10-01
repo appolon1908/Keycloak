@@ -44,6 +44,8 @@ jq -e \
     and .targetRealm == "codestra"
     and .blockedCount == 0
     and (.clients | length > 0)
+    and (.excludedClients | type == "array")
+    and all(.excludedClients[]; .reason == "environment_scoped")
     and all(.clients[]; .action == "noop" or .action == "create" or .action == "update")
   ' "$PLAN_FILE" >/dev/null || die "plan is not eligible for review"
 
@@ -72,6 +74,12 @@ jq -S -c -n \
           action,
           beforeSha256,
           desiredSha256
+        }
+      ],
+      reviewedExclusions: [
+        $plan[0].excludedClients[] | {
+          clientId,
+          reason
         }
       ],
       reviewedRealmPolicy: ($plan[0].realmPolicy | {

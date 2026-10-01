@@ -325,7 +325,7 @@ def markdown(report: Mapping[str, Any]) -> str:
 
 def parser() -> argparse.ArgumentParser:
     value = argparse.ArgumentParser()
-    value.add_argument("--repository", default=os.environ.get("GITHUB_REPOSITORY", "appolon1908-hue/Keycloak"))
+    value.add_argument("--repository", default=os.environ.get("GITHUB_REPOSITORY", "appolon1908/Keycloak"))
     value.add_argument("--json-output", type=Path, default=Path("artifacts/keycloak-pr-audit.json"))
     value.add_argument("--markdown-output", type=Path, default=Path("artifacts/keycloak-pr-audit.md"))
     return value
