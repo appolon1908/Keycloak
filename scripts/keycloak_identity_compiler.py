@@ -15,6 +15,8 @@ SCOPES = ROOT / "config" / "client-scopes"
 CONTRACTS = ROOT / "config" / "contracts"
 DESIRED_STATE = ROOT / "config" / "desired-state"
 ENVIRONMENT_SCOPES = ROOT / "config" / "policy" / "environment-scoped-clients.json"
+OWNERSHIP_CONFLICTS = ROOT / "config" / "policy" / "staged-client-ownership-conflicts.json"
+OWNERSHIP_CONFLICTS_SCHEMA = "codestra.keycloak.staged-client-ownership-conflicts.v1"
 OUT = ROOT / "generated" / "keycloak-identity-authority.v1.json"
 ENVIRONMENT_SCOPES_SCHEMA = "codestra.keycloak.environment-scoped-clients.v1"
 # Every environment a protected client may be planned into. A client absent from the
@@ -466,6 +468,32 @@ def validate_column_limits(label: str, document: dict[str, Any]) -> None:
             raise IdentityModelError(f"keycloak_column_too_long:{label}:{field}:{len(value)}")
 
 
+def validate_staged_client_owners(staged: list[dict[str, Any]]) -> None:
+    """A staged clientId belongs to one authority group unless a recorded conflict says otherwise.
+
+    Keycloak keeps one client per clientId, so two family reconcilers declaring the
+    same id overwrite each other. Known conflicts are recorded until their owners
+    decide, and a recorded conflict that no longer exists must be removed.
+    """
+    groups: dict[str, set[str]] = {}
+    for item in staged:
+        groups.setdefault(str(item["client"]["clientId"]), set()).add(str(item["authorityGroup"]))
+    actual = {client_id: owners for client_id, owners in groups.items() if len(owners) > 1}
+    policy = load_json(OWNERSHIP_CONFLICTS)
+    if policy.get("schema") != OWNERSHIP_CONFLICTS_SCHEMA or not isinstance(policy.get("conflicts"), list):
+        raise IdentityModelError("ownership_conflicts_policy_invalid")
+    recorded: dict[str, set[str]] = {}
+    for entry in policy["conflicts"]:
+        if not entry.get("decisionOwner") or not entry.get("requiredDecision"):
+            raise IdentityModelError(f"ownership_conflict_unowned:{entry.get('clientId')}")
+        recorded[str(entry.get("clientId"))] = set(entry.get("groups") or [])
+    for client_id, owners in sorted(actual.items()):
+        if recorded.get(client_id) != owners:
+            raise IdentityModelError(f"staged_client_multiple_owners:{client_id}:{','.join(sorted(owners))}")
+    for client_id in sorted(set(recorded) - set(actual)):
+        raise IdentityModelError(f"ownership_conflict_resolved_remove_entry:{client_id}")
+
+
 def _unique_by_path(
     documents: list[tuple[Path, dict[str, Any]]],
     key: str,
@@ -567,6 +595,7 @@ def compile_identity() -> dict[str, Any]:
             }
         )
     staged_with_provenance.sort(key=lambda item: (item["authorityGroup"], item["client"]["clientId"]))
+    validate_staged_client_owners(staged_with_provenance)
 
     known_client_ids = protected_ids | {item["client"]["clientId"] for item in staged_with_provenance}
     clients_by_id: dict[str, dict[str, Any]] = {}
