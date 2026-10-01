@@ -1,13 +1,5 @@
 {
   "schema": "codestra.keycloak.staged-client-ownership-conflicts.v1",
   "rule": "A clientId may belong to one authority group only. Each entry records an existing conflict that needs an external owner decision; the compiler rejects any unrecorded conflict and any entry that no longer conflicts.",
-  "conflicts": [
-    {
-      "clientId": "superset-analytics",
-      "groups": ["observability", "openbao-workload-identity"],
-      "reason": "observability declares Superset's browser login client and openbao-workload-identity declares a service-account machine identity under the same clientId; Keycloak keeps one client per clientId, so whichever staging reconciler runs second overwrites the other.",
-      "decisionOwner": "identity owner with the OpenBao and observability owners",
-      "requiredDecision": "rename one identity: the OpenBao azp binding lives in the pinned OpenBao workload-secret authority, the browser clientId in Superset's runtime login configuration"
-    }
-  ]
+  "conflicts": []
 }

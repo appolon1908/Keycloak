@@ -29,7 +29,7 @@ CLIENTS = {
         "maximum": "14400",
         "secret_file": "/run/secrets/grafana_oidc_client_secret",
     },
-    "superset-analytics": {
+    "superset-observability": {
         "origin": "https://supe.codestra.media",
         "redirects": ["https://supe.codestra.media/oauth-authorized/keycloak"],
         "roles": ["observability-viewer", "observability-operator", "observability-admin"],

@@ -36,10 +36,10 @@ class ObservabilityDesiredStateTests(unittest.TestCase):
             validate_client("grafana-observability", client)
 
     def test_password_grant_is_rejected(self) -> None:
-        client = copy.deepcopy(load_json(DESIRED_ROOT / "clients" / "superset-analytics.json"))
+        client = copy.deepcopy(load_json(DESIRED_ROOT / "clients" / "superset-observability.json"))
         client["directAccessGrantsEnabled"] = True
         with self.assertRaises(DesiredStateError):
-            validate_client("superset-analytics", client)
+            validate_client("superset-observability", client)
 
     def test_cross_family_role_is_rejected(self) -> None:
         role = copy.deepcopy(load_json(DESIRED_ROOT / "realm-roles" / "secrets-admin.json"))

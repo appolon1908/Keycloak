@@ -19,7 +19,7 @@
   ],
   "clientBindings": [
     "grafana-observability",
-    "superset-analytics",
+    "superset-observability",
     "openbao-secrets"
   ],
   "sessionReuseWithoutMfaAllowed": false,

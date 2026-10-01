@@ -2941,7 +2941,7 @@
       ]
     },
     {
-      "clientId": "superset-analytics",
+      "clientId": "superset-observability",
       "crossFamilyRolesAllowed": false,
       "fullScopeAllowed": false,
       "realmRoles": [
@@ -2952,7 +2952,7 @@
     }
   ],
   "serviceAccountRoles": [],
-  "sourceSha256": "7328daa7f5b64fc213a8f5d8fe3b8ae3f9658a872f9cdbe72132429e25a8fb4a",
+  "sourceSha256": "469cf9ea42de8826166eb61b844dcdd12ff1d14cb7cf55e1be0bd3d2f041533a",
   "stagedClients": [
     {
       "authorityGroup": "cip-tenant-identity",
@@ -3972,7 +3972,7 @@
         "baseUrl": "https://supe.codestra.media/",
         "bearerOnly": false,
         "clientAuthenticatorType": "client-secret",
-        "clientId": "superset-analytics",
+        "clientId": "superset-observability",
         "consentRequired": false,
         "defaultClientScopes": [
           "web-origins",
@@ -4016,7 +4016,7 @@
           "https://supe.codestra.media"
         ]
       },
-      "sourcePath": "config/desired-state/observability/clients/superset-analytics.json"
+      "sourcePath": "config/desired-state/observability/clients/superset-observability.json"
     },
     {
       "authorityGroup": "openbao-workload-identity",

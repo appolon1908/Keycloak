@@ -1,5 +1,5 @@
 {
-  "clientId": "superset-analytics",
+  "clientId": "superset-observability",
   "name": "Codestra Superset",
   "description": "Superset browser client for the Codestra analytics portal.",
   "enabled": true,

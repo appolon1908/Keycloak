@@ -131,7 +131,7 @@ def test_compiler_includes_explicit_scope_mappings():
     from keycloak_identity_compiler import compile_identity
     d=compile_identity()
     ids={x["clientId"] for x in d["scopeMappings"]}
-    assert {"grafana-observability","openbao-secrets","superset-analytics"} <= ids
+    assert {"grafana-observability","openbao-secrets","superset-observability"} <= ids
 
 def test_scope_mapping_authority_is_explicit_and_fail_closed():
     from keycloak_identity_compiler import compile_identity
