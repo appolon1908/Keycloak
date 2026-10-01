@@ -215,10 +215,11 @@ APPLY and ROLLBACK records are never pruned by the evidence store.
 
 | HTTP | Code |
 |---|---|
-| 400 | `idempotency_key_required`, `invalid_request`, `invalid_json`, `invalid_query` |
+| 400 | `idempotency_key_required`, `invalid_request` (including a malformed `promotionId`), `invalid_json`, `invalid_query` |
 | 403 | `apply_disabled` |
-| 404 | `execution_not_found`, `rollback_not_found`, `promotion_not_found`, `not_found` |
-| 409 | `apply_in_progress`, `environment_unknown`, `environment_issuer_mismatch`, `environment_mismatch`, `rollback_not_available`, `rollback_already_applied` |
+| 404 | `execution_not_found`, `rollback_not_found`, `promotion_not_found`, `not_found` (also for any path deeper than a record route) |
+| 405 | `method_not_allowed` for PUT, DELETE, PATCH and OPTIONS, with `Allow: GET, POST` |
+| 409 | `apply_in_progress`, `environment_unknown`, `environment_issuer_mismatch`, `environment_mismatch`, `rollback_not_available`, `rollback_already_applied`, `promotion_exists` |
 | 413 | `request_too_large` |
 | 503 | `admin_not_configured`, `admin_transport_error`, upstream `admin_http_error` keeps its status |
 | 500 | `internal_error`; the class and message are logged to stderr with the correlation id |

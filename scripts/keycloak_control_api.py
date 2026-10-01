@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse, json, os, sys, threading, uuid
+import argparse, json, os, re, sys, threading, uuid
 from pathlib import Path
 from urllib.parse import parse_qs,urlsplit
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
@@ -15,6 +15,9 @@ from keycloak_environment_promotion import POLICY as PROMOTION_POLICY,promotion_
 HOST="127.0.0.1"
 PORT=8785
 MUTATION_ENVIRONMENTS={"production","staging","test-syn"}
+# A caller-chosen promotion id names an evidence file, so it is held to a strict shape.
+PROMOTION_ID=re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}")
+ALLOWED_METHODS="GET, POST"
 IN_FLIGHT_STATUSES={"IN_PROGRESS","APPLIED_PENDING_READBACK"}
 READBACK_FAILURE_STATUSES={"READBACK_MISMATCH","READBACK_UNAVAILABLE"}
 
@@ -205,7 +208,16 @@ class Service:
         return event_metrics(events,configuration_drift=st["configurationDrift"],readback_failures=self.readback_failures())
 
     def promotion(self,body):
-        result=promotion_plan(self.desired(),body); self.store.put("promotions",result["promotionId"],result); return result
+        pid=body.get("promotionId")
+        if pid is not None and (not isinstance(pid,str) or not PROMOTION_ID.fullmatch(pid)):
+            raise KeycloakAdminError("invalid_request","promotionId must be 1-128 letters, digits, '.', '_' or '-', starting with a letter or digit",400)
+        result=promotion_plan(self.desired(),body)
+        try: self.store.put("promotions",result["promotionId"],result)
+        except EvidenceStoreError as exc:
+            # Promotion plans are evidence: an existing plan is never replaced.
+            if str(exc)=="duplicate_record": raise KeycloakAdminError("promotion_exists","a promotion plan with this id already exists",409) from exc
+            raise
+        return result
     def promotion_get(self,pid):
         try:return self.store.get("promotions",pid)["payload"]
         except EvidenceStoreError as exc: raise KeycloakAdminError("promotion_not_found","promotion plan not found",404) from exc
@@ -220,9 +232,10 @@ class Handler(BaseHTTPRequestHandler):
     def rid(self):
         return (self.headers.get("X-Correlation-ID") or str(uuid.uuid4()))[:128]
 
-    def send_json(self,status:int,body:dict,rid:str):
+    def send_json(self,status:int,body:dict,rid:str,headers:dict|None=None):
         raw=json.dumps(body,sort_keys=True,separators=(",",":")).encode()
         self.send_response(status)
+        for name,value in (headers or {}).items(): self.send_header(name,value)
         self.send_header("Content-Type","application/json; charset=utf-8")
         self.send_header("Content-Length",str(len(raw)))
         self.send_header("Cache-Control","no-store")
@@ -273,14 +286,28 @@ class Handler(BaseHTTPRequestHandler):
             return self.runfn(lambda:{"events":self.service.events(self.bounded_int(q,"limit",100,1,500))})
         if p=="/platform/v1/keycloak/observability/metrics": return self.runfn(lambda:{"metrics":self.service.metrics(self.bounded_int(q,"limit",100,1,500))})
         if p=="/platform/v1/keycloak/promotion/policy": return self.runfn(lambda:{"policy":PROMOTION_POLICY})
-        if p.startswith("/platform/v1/keycloak/promotion/plans/"): return self.runfn(lambda:{"promotion":self.service.promotion_get(p.rsplit("/",1)[-1])})
-        if p.startswith("/platform/v1/keycloak/reconcile/rollbacks/"):
-            return self.runfn(lambda:{"evidence":self.service.rollback_evidence(p.rsplit("/",1)[-1])})
-        if p.startswith("/platform/v1/keycloak/reconcile/executions/"):
-            evidence=p.endswith("/evidence"); eid=p.split("/reconcile/executions/",1)[1].split("/",1)[0]
-            return self.runfn(lambda:{"evidence":self.service.evidence(eid)} if evidence else {"execution":self.service.execution(eid)})
+        # Record routes take exactly one id segment; anything deeper is not a route.
+        pid=self.record_id(p,"/platform/v1/keycloak/promotion/plans/")
+        if pid: return self.runfn(lambda:{"promotion":self.service.promotion_get(pid)})
+        rbid=self.record_id(p,"/platform/v1/keycloak/reconcile/rollbacks/")
+        if rbid: return self.runfn(lambda:{"evidence":self.service.rollback_evidence(rbid)})
+        eid=self.record_id(p,"/platform/v1/keycloak/reconcile/executions/")
+        if eid: return self.runfn(lambda:{"execution":self.service.execution(eid)})
+        if p.endswith("/evidence"):
+            evid=self.record_id(p[:-len("/evidence")],"/platform/v1/keycloak/reconcile/executions/")
+            if evid: return self.runfn(lambda:{"evidence":self.service.evidence(evid)})
         if p in {"/platform/v1/keycloak/health","/health"}: return self.runfn(self.service.health)
         self.send_json(404,{"ok":False,"error":{"code":"not_found","message":"route not found"}},self.rid())
+
+    @staticmethod
+    def record_id(path,prefix):
+        if not path.startswith(prefix): return None
+        rest=path[len(prefix):]
+        return rest if rest and "/" not in rest else None
+
+    def method_not_allowed(self):
+        self.send_json(405,{"ok":False,"error":{"code":"method_not_allowed","message":"only GET and POST are supported"}},self.rid(),{"Allow":ALLOWED_METHODS})
+    do_PUT=do_DELETE=do_PATCH=do_OPTIONS=method_not_allowed
 
     def do_POST(self):
         p=urlsplit(self.path).path
