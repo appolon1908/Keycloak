@@ -1,7 +1,7 @@
 # Keycloak — Architecture Charts
 
-> Repository: `appolon1908/Keycloak`  
-> Baseline branch: `main`  
+> Repository: `appolon1908/Keycloak`
+> Baseline branch: `main`
 > Repository-local visual architecture. Keep these diagrams aligned with source, contracts and deployment.
 
 ## 1. System context
