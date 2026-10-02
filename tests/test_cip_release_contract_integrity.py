@@ -162,43 +162,55 @@ def test_unbound_scopes_stay_unbound_until_middleware_routes_exist():
 
 # --- one owner per identity object --------------------------------------------
 
-RECORDED_CONFLICTS = {c["clientId"]: set(c["groups"]) for c in load(ROOT / "config" / "policy" / "staged-client-ownership-conflicts.json")["conflicts"]}
-
-
 def _owners(pattern: str, key: str) -> dict[str, set[str]]:
     owners: dict[str, set[str]] = {}
     for path in sorted(ROOT.glob(pattern)):
-        parts = path.relative_to(ROOT).parts
-        group = parts[2] if parts[1] == "desired-state" else "protected"
-        owners.setdefault(load(path).get(key), set()).add(group)
+        owners.setdefault(load(path).get(key), set()).add(path.relative_to(ROOT).as_posix())
     return owners
 
 
 @pytest.mark.parametrize("pattern,key", [
+    ("config/**/clients/*.json", "clientId"),
     ("config/**/client-scopes/*.json", "name"),
     ("config/**/realm-roles/*.json", "name"),
 ])
 def test_identity_authority_single_owner(pattern, key):
-    files: dict[str, int] = {}
-    for path in ROOT.glob(pattern):
-        value = load(path).get(key)
-        files[value] = files.get(value, 0) + 1
-    assert [value for value, count in files.items() if count > 1] == []
+    assert {value: files for value, files in _owners(pattern, key).items() if len(files) > 1} == {}
 
 
-def test_each_client_has_one_owner_except_recorded_conflicts():
-    multiple = {client_id: groups for client_id, groups in _owners("config/**/clients/*.json", "clientId").items() if len(groups) > 1}
-    assert multiple == RECORDED_CONFLICTS
-    assert all("protected" not in groups for groups in multiple.values())
+def test_ownership_registry_traces_every_compiled_object_to_one_source():
+    model = compile_identity()
+    registry = {(e["resourceType"], e["resourceId"]): e for e in model["ownership"]}
+    assert len(registry) == len(model["ownership"])
+    for client in model["clients"]:
+        assert registry[("client", client["clientId"])]["authorityGroup"] == "protected"
+        for mapper in client.get("protocolMappers") or []:
+            assert ("protocol_mapper", f"client:{client['clientId']}/{mapper['name']}") in registry
+    for staged in model["stagedClients"]:
+        entry = registry[("client", staged["client"]["clientId"])]
+        assert (entry["authorityGroup"], entry["source"]) == (staged["authorityGroup"], staged["sourcePath"])
+    for scope in model["clientScopes"]:
+        assert ("client_scope", scope["name"]) in registry
+    for role in model["realmRoles"]:
+        assert ("realm_role", role["name"]) in registry
+    for attribute in model["userProfileAttributes"]:
+        assert registry[("user_profile_attribute", attribute["name"])]["authorityGroup"] == "realm-security"
+    for entry in model["ownership"]:
+        assert (ROOT / entry["source"]).is_file()
 
 
-def test_an_unrecorded_cross_group_client_fails_compilation(monkeypatch):
+@pytest.mark.parametrize("directory,document,error", [
+    ("clients", "test-syn-cip-portal", "identity_multiple_owners:client:test-syn-cip-portal"),
+    ("client-scopes", "cip.user.context", "duplicate_scope:cip.user.context"),
+    ("realm-roles", "cip-audit-viewer", "duplicate_realm_role:cip-audit-viewer"),
+])
+def test_a_second_owner_anywhere_fails_compilation(monkeypatch, directory, document, error):
     import keycloak_identity_compiler as compiler
+    source = CIP / directory / f"{document}.json"
+    copy_path = ROOT / "config" / "desired-state" / "edge-integration-certification" / directory / source.name
     original = compiler._nested_documents
-    duplicate = load(CIP / "clients" / "test-syn-cip-portal.json")
-    path = ROOT / "config" / "desired-state" / "edge-integration-certification" / "clients" / "test-syn-cip-portal.json"
-    monkeypatch.setattr(compiler, "_nested_documents", lambda name: original(name) + ([(path, duplicate)] if name == "clients" else []))
-    with pytest.raises(compiler.IdentityModelError, match="staged_client_multiple_owners:test-syn-cip-portal"):
+    monkeypatch.setattr(compiler, "_nested_documents", lambda name: original(name) + ([(copy_path, load(source))] if name == directory else []))
+    with pytest.raises(compiler.IdentityModelError, match=error):
         compile_identity()
 
 

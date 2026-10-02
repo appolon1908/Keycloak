@@ -6,7 +6,7 @@ from urllib.parse import parse_qs,urlsplit
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from keycloak_admin_api import KeycloakAdminAPI,KeycloakAdminError
 from keycloak_identity_compiler import OUT as GENERATED_AUTHORITY,compile_identity,scoped_for_environment
-from keycloak_reconciliation import DEFAULT_ROLE_PREFIX,plan,apply_plan,verify_readback,rollback_plan,rollback_attribute_removals,created_inventory,mutation_performed,normalize_environment,digest
+from keycloak_reconciliation import DEFAULT_ROLE_PREFIX,normalize_state,plan,apply_plan,verify_readback,rollback_plan,rollback_attribute_removals,created_inventory,mutation_performed,normalize_environment,digest
 from keycloak_execution_store import EvidenceStore,EvidenceStoreError,redact_secret_material
 from keycloak_recovery_controller import RecoveryController
 from keycloak_observability import normalize_events,metrics as event_metrics,status as observability_status,ObservabilityError
@@ -112,13 +112,16 @@ class Service:
         self._require_mutation_enabled()
         if not idempotency_key: raise KeycloakAdminError("idempotency_key_required","X-Idempotency-Key is required",400)
         with self._lock:
+            desired=self.desired(); env=self._mutation_environment(desired)
+            desired=scoped_for_environment(desired,env); desired_digest=digest(normalize_state(desired))
             for row in self.store.list("executions"):
                 old=row["payload"]
                 if old.get("idempotencyKey")!=idempotency_key or old.get("mode")!="APPLY": continue
                 if old.get("status") in IN_FLIGHT_STATUSES: raise KeycloakAdminError("apply_in_progress","an apply with this idempotency key has not finalized; inspect its evidence before retrying",409)
+                # A key replays only the desired state it was first used for.
+                if old.get("desiredStateDigest")!=desired_digest: raise KeycloakAdminError("idempotency_key_conflict","this idempotency key was used for a different desired state",409)
                 return old
-            desired=self.desired(); env=self._mutation_environment(desired); api=self._api()
-            desired=scoped_for_environment(desired,env)
+            api=self._api()
             pre=self.live(); p=plan(desired,pre,environment=env)
             execution_id=str(uuid.uuid4()); pre_state,redacted=redact_secret_material(pre)
             record={"executionId":execution_id,"idempotencyKey":idempotency_key,"mode":"APPLY","environment":env,"status":"IN_PROGRESS","mutationPerformed":False,"desiredStateDigest":p["desiredSha256"],"preStateDigest":p["liveSha256"],"plan":p,"actionJournal":[],"preState":pre_state,"preStateRedactedPaths":redacted,"rollbackStatus":"NOT_RUN"}

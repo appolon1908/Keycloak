@@ -172,6 +172,14 @@ attributes, replaces a declared attribute whose declared fields drift, and keeps
 every other attribute, the groups and the unmanaged-attribute policy. A rollback
 deletes only attributes its apply created and restores replaced ones exactly.
 
+## Integrity and ownership
+
+- Every plan carries `desiredSha256`, `liveSha256` and `planSha256`. Apply recomputes all three and refuses, before any write, a plan whose contents no longer match its hash (`plan_integrity_mismatch`) or that was computed from a different desired or live state (`plan_stale_desired_state`, `plan_stale_live_state`).
+- An idempotency key replays only the desired state it was first used for; reusing it for a different desired state is `409 idempotency_key_conflict`.
+- The compiled authority carries an `ownership` registry: every client, client scope, realm role, client role, scope mapping, service-account grant, user-profile attribute and protocol mapper with its authority group and source file. A second declaration of any of them, identical or not and in any authority group, fails compilation (`identity_multiple_owners`, `duplicate_<type>`).
+- `config/policy/identity-emitters.json` lists every script that can write to the Admin API. `keycloak_admin_api.py` is the only canonical adapter; the shell deploy path and the family staging reconcilers are recorded with their scope and retirement note, and a new writer fails CI until it is classified.
+- The source digest is computed last, over the complete compiled model, and the committed authority must equal a fresh compilation byte for byte.
+
 ## Apply evidence and statuses
 
 An apply writes its execution record before the first mutation. The record
@@ -219,7 +227,7 @@ APPLY and ROLLBACK records are never pruned by the evidence store.
 | 403 | `apply_disabled` |
 | 404 | `execution_not_found`, `rollback_not_found`, `promotion_not_found`, `not_found` (also for any path deeper than a record route) |
 | 405 | `method_not_allowed` for PUT, DELETE, PATCH and OPTIONS, with `Allow: GET, POST` |
-| 409 | `apply_in_progress`, `environment_unknown`, `environment_issuer_mismatch`, `environment_mismatch`, `rollback_not_available`, `rollback_already_applied`, `promotion_exists` |
+| 409 | `idempotency_key_conflict`, `apply_in_progress`, `environment_unknown`, `environment_issuer_mismatch`, `environment_mismatch`, `rollback_not_available`, `rollback_already_applied`, `promotion_exists` |
 | 413 | `request_too_large` |
 | 503 | `admin_not_configured`, `admin_transport_error`, upstream `admin_http_error` keeps its status |
 | 500 | `internal_error`; the class and message are logged to stderr with the correlation id |

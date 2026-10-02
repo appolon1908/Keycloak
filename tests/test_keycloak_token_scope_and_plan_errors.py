@@ -5,6 +5,7 @@ import pytest
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"scripts")); sys.path.insert(0,str(ROOT/"tests"))
+from plan_seal import sealed
 import keycloak_identity_compiler as compiler
 from keycloak_identity_compiler import IdentityModelError,compile_identity
 from keycloak_reconciliation import apply_plan,plan,verify_readback
@@ -81,10 +82,10 @@ def test_client_role_declarations_fail_closed(monkeypatch):
     def with_docs(docs):
         monkeypatch.setattr(compiler,"_nested_documents",lambda name: docs if name=="client-roles" else original(name))
     duplicate=copy.deepcopy(good); duplicate["roles"].append(copy.deepcopy(good["roles"][0])); with_docs([(base,duplicate)])
-    with pytest.raises(IdentityModelError,match="duplicate_client_role:codestra-agent-desktop:realtime.agent.connect"): compile_identity()
+    with pytest.raises(IdentityModelError,match="identity_multiple_owners:client_role:codestra-agent-desktop:realtime.agent.connect"): compile_identity()
     other=copy.deepcopy(good); other["roles"][0]["description"]="a second, conflicting declaration"
     with_docs([(base,good),(base.with_name("other.json"),other)])
-    with pytest.raises(IdentityModelError,match="conflicting_client_roles:codestra-agent-desktop"): compile_identity()
+    with pytest.raises(IdentityModelError,match="identity_multiple_owners:client_role:codestra-agent-desktop:realtime.agent.connect"): compile_identity()
     realm_kind=copy.deepcopy(good); realm_kind["roles"][0]["clientRole"]=False; with_docs([(base,realm_kind)])
     with pytest.raises(IdentityModelError,match="role_kind_mismatch"): compile_identity()
     secret=copy.deepcopy(good); secret["roles"][0]["attributes"]["password"]=["x"]; with_docs([(base,secret)])
@@ -123,7 +124,7 @@ def test_error_actions_are_never_applied_even_when_validation_is_bypassed():
         def __getattr__(self,name): return lambda *a,**k: self.calls.append(name)
     api=API(); desired={"clients":[{"clientId":"a","enabled":True}]}; live={"clients":[{"id":"1","clientId":"a","enabled":False}]}
     forged={"environment":"staging","actions":[{"kind":"ERROR","resource_type":"client","resource_id":"a","reason":"missing_internal_id:a","managed":True}]}
-    out=apply_plan(forged,desired,live,api,enabled=True,environment="staging")
+    out=apply_plan(sealed(forged,desired,live),desired,live,api,enabled=True,environment="staging")
     assert out["status"]=="REJECTED" and out["error"]=="missing_internal_id:a" and api.calls==[]
 
 def test_control_api_surfaces_error_in_drift_and_rejects_apply_without_mutation(tmp_path,monkeypatch):

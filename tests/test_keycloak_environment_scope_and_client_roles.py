@@ -5,6 +5,7 @@ import pytest
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"scripts")); sys.path.insert(0,str(ROOT/"tests"))
+from plan_seal import sealed
 import keycloak_identity_compiler as compiler
 from keycloak_identity_compiler import IdentityModelError,compile_identity,scoped_for_environment
 from keycloak_reconciliation import apply_plan,plan,verify_readback
@@ -109,7 +110,7 @@ def test_client_role_for_absent_client_is_rejected_before_mutation():
     out=apply_plan(plan(desired,live,environment="staging"),desired,live,api,enabled=True,environment="staging")
     assert out["status"]=="REJECTED" and out["error"]=="client_role_client_missing:ghost:r" and api.calls==[]
     malformed={"environment":"staging","actions":[{"kind":"CREATE","resource_type":"client_role","resource_id":"no-separator","managed":True}]}
-    out=apply_plan(malformed,desired,live,api,enabled=True,environment="staging")
+    out=apply_plan(sealed(malformed,desired,live),desired,live,api,enabled=True,environment="staging")
     assert out["status"]=="REJECTED" and out["error"]=="invalid_client_role_id:no-separator"
 
 # --- control API -----------------------------------------------------------------

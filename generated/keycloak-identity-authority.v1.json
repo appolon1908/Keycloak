@@ -2392,6 +2392,1370 @@
       "staging"
     ]
   },
+  "ownership": [
+    {
+      "authorityGroup": "protected",
+      "resourceId": "ai-provider-adapter",
+      "resourceType": "client",
+      "source": "config/clients/ai-provider-adapter.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "alertmanager",
+      "resourceType": "client",
+      "source": "config/clients/alertmanager.json"
+    },
+    {
+      "authorityGroup": "openbao-workload-identity",
+      "resourceId": "alloy-collector",
+      "resourceType": "client",
+      "source": "config/desired-state/openbao-workload-identity/clients/alloy-collector.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "beyvra-backend",
+      "resourceType": "client",
+      "source": "config/clients/beyvra-backend.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "breero-backend",
+      "resourceType": "client",
+      "source": "config/clients/breero-backend.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "codestra-agent-desktop",
+      "resourceType": "client",
+      "source": "config/clients/codestra-agent-desktop.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "codestra-ai",
+      "resourceType": "client",
+      "source": "config/clients/codestra-ai.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "codestra-communication",
+      "resourceType": "client",
+      "source": "config/clients/codestra-communication.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "codestra-marketing",
+      "resourceType": "client",
+      "source": "config/clients/codestra-marketing.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "codestra-provisioning-service",
+      "resourceType": "client",
+      "source": "config/clients/codestra-provisioning-service.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "codestra-social",
+      "resourceType": "client",
+      "source": "config/clients/codestra-social.json"
+    },
+    {
+      "authorityGroup": "observability",
+      "resourceId": "grafana-observability",
+      "resourceType": "client",
+      "source": "config/desired-state/observability/clients/grafana-observability.json"
+    },
+    {
+      "authorityGroup": "openbao-workload-identity",
+      "resourceId": "grafana-runtime",
+      "resourceType": "client",
+      "source": "config/desired-state/openbao-workload-identity/clients/grafana-runtime.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "klyrow-gateway",
+      "resourceType": "client",
+      "source": "config/clients/klyrow-gateway.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "klyrow-portal",
+      "resourceType": "client",
+      "source": "config/clients/klyrow-portal.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "klyrow-staging-portal",
+      "resourceType": "client",
+      "source": "config/clients/klyrow-staging-portal.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "kong-gateway",
+      "resourceType": "client",
+      "source": "config/clients/kong-gateway.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "kyqra-gateway",
+      "resourceType": "client",
+      "source": "config/clients/kyqra-gateway.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "larim-a-backend",
+      "resourceType": "client",
+      "source": "config/clients/larim-a-backend.json"
+    },
+    {
+      "authorityGroup": "openbao-workload-identity",
+      "resourceId": "loki-runtime",
+      "resourceType": "client",
+      "source": "config/desired-state/openbao-workload-identity/clients/loki-runtime.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "marketing-provider-adapter",
+      "resourceType": "client",
+      "source": "config/clients/marketing-provider-adapter.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "middleware-api",
+      "resourceType": "client",
+      "source": "config/clients/middleware-api.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "middleware-worker",
+      "resourceType": "client",
+      "source": "config/clients/middleware-worker.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "moneybee-admin",
+      "resourceType": "client",
+      "source": "config/clients/moneybee-admin.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "moneybee-backend",
+      "resourceType": "client",
+      "source": "config/clients/moneybee-backend.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "moneybee-borrower",
+      "resourceType": "client",
+      "source": "config/clients/moneybee-borrower.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "moneybee-lender",
+      "resourceType": "client",
+      "source": "config/clients/moneybee-lender.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "monitoring-readonly",
+      "resourceType": "client",
+      "source": "config/clients/monitoring-readonly.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "n8n-automation",
+      "resourceType": "client",
+      "source": "config/clients/n8n-automation.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "n8n-editor-gateway",
+      "resourceType": "client",
+      "source": "config/clients/n8n-editor-gateway.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "odoo-email",
+      "resourceType": "client",
+      "source": "config/clients/odoo-email.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "odoo-integration",
+      "resourceType": "client",
+      "source": "config/clients/odoo-integration.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "odoo-web",
+      "resourceType": "client",
+      "source": "config/clients/odoo-web.json"
+    },
+    {
+      "authorityGroup": "observability",
+      "resourceId": "openbao-secrets",
+      "resourceType": "client",
+      "source": "config/desired-state/observability/clients/openbao-secrets.json"
+    },
+    {
+      "authorityGroup": "openbao-workload-identity",
+      "resourceId": "otel-gateway",
+      "resourceType": "client",
+      "source": "config/desired-state/openbao-workload-identity/clients/otel-gateway.json"
+    },
+    {
+      "authorityGroup": "openbao-workload-identity",
+      "resourceId": "postgres-exporter",
+      "resourceType": "client",
+      "source": "config/desired-state/openbao-workload-identity/clients/postgres-exporter.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "postly-adapter",
+      "resourceType": "client",
+      "source": "config/clients/postly-adapter.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "production-operator",
+      "resourceType": "client",
+      "source": "config/clients/production-operator.json"
+    },
+    {
+      "authorityGroup": "openbao-workload-identity",
+      "resourceId": "prometheus-openbao",
+      "resourceType": "client",
+      "source": "config/desired-state/openbao-workload-identity/clients/prometheus-openbao.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "provisioning-service",
+      "resourceType": "client",
+      "source": "config/clients/provisioning-service.json"
+    },
+    {
+      "authorityGroup": "openbao-workload-identity",
+      "resourceId": "redis-exporter",
+      "resourceType": "client",
+      "source": "config/desired-state/openbao-workload-identity/clients/redis-exporter.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "sdk-intake",
+      "resourceType": "client",
+      "source": "config/clients/sdk-intake.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "social-codestra",
+      "resourceType": "client",
+      "source": "config/clients/social-codestra.json"
+    },
+    {
+      "authorityGroup": "openbao-workload-identity",
+      "resourceId": "superset-analytics",
+      "resourceType": "client",
+      "source": "config/desired-state/openbao-workload-identity/clients/superset-analytics.json"
+    },
+    {
+      "authorityGroup": "observability",
+      "resourceId": "superset-observability",
+      "resourceType": "client",
+      "source": "config/desired-state/observability/clients/superset-observability.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "telnexa-gateway",
+      "resourceType": "client",
+      "source": "config/clients/telnexa-gateway.json"
+    },
+    {
+      "authorityGroup": "openbao-workload-identity",
+      "resourceId": "tempo-runtime",
+      "resourceType": "client",
+      "source": "config/desired-state/openbao-workload-identity/clients/tempo-runtime.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "test-syn-cip-portal",
+      "resourceType": "client",
+      "source": "config/desired-state/cip-tenant-identity/clients/test-syn-cip-portal.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "test-syn-cip-tenant-a-auditor",
+      "resourceType": "client",
+      "source": "config/desired-state/cip-tenant-identity/clients/test-syn-cip-tenant-a-auditor.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "test-syn-cip-tenant-a-automation",
+      "resourceType": "client",
+      "source": "config/desired-state/cip-tenant-identity/clients/test-syn-cip-tenant-a-automation.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "test-syn-cip-tenant-b-automation",
+      "resourceType": "client",
+      "source": "config/desired-state/cip-tenant-identity/clients/test-syn-cip-tenant-b-automation.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "test-syn-n8n-read",
+      "resourceType": "client",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-n8n-read.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "test-syn-n8n-submit",
+      "resourceType": "client",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-n8n-submit.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "test-syn-odoo-reader",
+      "resourceType": "client",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-odoo-reader.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "test-syn-wrong-audience",
+      "resourceType": "client",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-wrong-audience.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "test-syn-wrong-tenant",
+      "resourceType": "client",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-wrong-tenant.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "transportation-backend",
+      "resourceType": "client",
+      "source": "config/clients/transportation-backend.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "vicidial-adapter",
+      "resourceType": "client",
+      "source": "config/clients/vicidial-adapter.json"
+    },
+    {
+      "authorityGroup": "agent-desktop-identity",
+      "resourceId": "codestra-agent-desktop:realtime.agent.connect",
+      "resourceType": "client_role",
+      "source": "config/desired-state/agent-desktop-identity/client-roles/codestra-agent-desktop.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "cip.audit.read",
+      "resourceType": "client_scope",
+      "source": "config/desired-state/cip-tenant-identity/client-scopes/cip.audit.read.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "cip.connector.admin",
+      "resourceType": "client_scope",
+      "source": "config/desired-state/cip-tenant-identity/client-scopes/cip.connector.admin.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "cip.tenant.admin",
+      "resourceType": "client_scope",
+      "source": "config/desired-state/cip-tenant-identity/client-scopes/cip.tenant.admin.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "cip.usage.read",
+      "resourceType": "client_scope",
+      "source": "config/desired-state/cip-tenant-identity/client-scopes/cip.usage.read.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "cip.user.context",
+      "resourceType": "client_scope",
+      "source": "config/desired-state/cip-tenant-identity/client-scopes/cip.user.context.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "health.read",
+      "resourceType": "client_scope",
+      "source": "config/client-scopes/health.read.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "metrics.read",
+      "resourceType": "client_scope",
+      "source": "config/client-scopes/metrics.read.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "n8n.results.read",
+      "resourceType": "client_scope",
+      "source": "config/desired-state/edge-integration-certification/client-scopes/n8n.results.read.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "n8n.results.submit",
+      "resourceType": "client_scope",
+      "source": "config/desired-state/edge-integration-certification/client-scopes/n8n.results.submit.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "odoo.campaigns.read",
+      "resourceType": "client_scope",
+      "source": "config/desired-state/edge-integration-certification/client-scopes/odoo.campaigns.read.json"
+    },
+    {
+      "authorityGroup": "openbao-workload-identity",
+      "resourceId": "openbao.workload",
+      "resourceType": "client_scope",
+      "source": "config/desired-state/openbao-workload-identity/client-scopes/openbao.workload.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "platform.command",
+      "resourceType": "client_scope",
+      "source": "config/client-scopes/platform.command.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "platform.command.read",
+      "resourceType": "client_scope",
+      "source": "config/client-scopes/platform.command.read.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "platform.command.replay",
+      "resourceType": "client_scope",
+      "source": "config/client-scopes/platform.command.replay.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:ai-provider-adapter/audience-ai-provider-adapter",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/ai-provider-adapter.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:ai-provider-adapter/reviewed-service-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/ai-provider-adapter.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:alertmanager/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/alertmanager.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:alertmanager/reviewed-service-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/alertmanager.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:beyvra-backend/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/beyvra-backend.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:beyvra-backend/reviewed-product-middleware-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/beyvra-backend.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:beyvra-backend/tenant-id-from-service-account",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/beyvra-backend.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:breero-backend/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/breero-backend.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:breero-backend/reviewed-product-middleware-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/breero-backend.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:breero-backend/tenant-id-from-service-account",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/breero-backend.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:codestra-agent-desktop/audience-codestra-agent-desktop",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/codestra-agent-desktop.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:codestra-agent-desktop/tenant-ids-from-user-attribute",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/codestra-agent-desktop.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:codestra-ai/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/codestra-ai.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:codestra-ai/reviewed-service-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/codestra-ai.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:codestra-communication/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/codestra-communication.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:codestra-communication/reviewed-service-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/codestra-communication.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:codestra-marketing/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/codestra-marketing.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:codestra-marketing/reviewed-service-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/codestra-marketing.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:codestra-provisioning-service/audience-codestra-provisioning-service",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/codestra-provisioning-service.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:codestra-provisioning-service/realm-management-read-roles",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/codestra-provisioning-service.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:codestra-provisioning-service/reviewed-service-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/codestra-provisioning-service.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:codestra-social/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/codestra-social.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:codestra-social/reviewed-service-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/codestra-social.json"
+    },
+    {
+      "authorityGroup": "observability",
+      "resourceId": "client:grafana-observability/codestra-realm-roles",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/observability/clients/grafana-observability.json"
+    },
+    {
+      "authorityGroup": "openbao-workload-identity",
+      "resourceId": "client:grafana-runtime/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/openbao-workload-identity/clients/grafana-runtime.json"
+    },
+    {
+      "authorityGroup": "openbao-workload-identity",
+      "resourceId": "client:grafana-runtime/reviewed-service-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/openbao-workload-identity/clients/grafana-runtime.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:klyrow-gateway/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/klyrow-gateway.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:klyrow-gateway/reviewed-service-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/klyrow-gateway.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:klyrow-staging-portal/audience-klyrow-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/klyrow-staging-portal.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:kong-gateway/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/kong-gateway.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:kong-gateway/reviewed-service-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/kong-gateway.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:kyqra-gateway/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/kyqra-gateway.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:kyqra-gateway/reviewed-service-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/kyqra-gateway.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:larim-a-backend/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/larim-a-backend.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:larim-a-backend/reviewed-product-middleware-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/larim-a-backend.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:larim-a-backend/tenant-id-from-service-account",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/larim-a-backend.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:marketing-provider-adapter/audience-marketing-provider-adapter",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/marketing-provider-adapter.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:marketing-provider-adapter/reviewed-service-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/marketing-provider-adapter.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:middleware-api/audience-kyqra-gateway",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/middleware-api.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:middleware-api/audience-n8n-automation",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/middleware-api.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:middleware-api/audience-odoo-integration",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/middleware-api.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:middleware-api/audience-vicidial-adapter",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/middleware-api.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:middleware-api/reviewed-service-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/middleware-api.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:middleware-worker/audience-ai-provider-adapter",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/middleware-worker.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:middleware-worker/audience-klyrow-gateway",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/middleware-worker.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:middleware-worker/audience-marketing-provider-adapter",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/middleware-worker.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:middleware-worker/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/middleware-worker.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:middleware-worker/audience-postly-adapter",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/middleware-worker.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:middleware-worker/audience-telnexa-gateway",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/middleware-worker.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:middleware-worker/reviewed-service-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/middleware-worker.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:moneybee-admin/moneybee-api-audience",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/moneybee-admin.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:moneybee-backend/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/moneybee-backend.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:moneybee-backend/reviewed-product-middleware-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/moneybee-backend.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:moneybee-backend/tenant-id-from-service-account",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/moneybee-backend.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:moneybee-borrower/moneybee-api-audience",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/moneybee-borrower.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:moneybee-lender/moneybee-api-audience",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/moneybee-lender.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:monitoring-readonly/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/monitoring-readonly.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:n8n-automation/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/n8n-automation.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:n8n-automation/reviewed-service-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/n8n-automation.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:odoo-email/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/odoo-email.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:odoo-email/reviewed-product-middleware-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/odoo-email.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:odoo-email/tenant-id-from-service-account",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/odoo-email.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:odoo-integration/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/odoo-integration.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:odoo-integration/reviewed-service-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/odoo-integration.json"
+    },
+    {
+      "authorityGroup": "observability",
+      "resourceId": "client:openbao-secrets/codestra-realm-roles",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/observability/clients/openbao-secrets.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:postly-adapter/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/postly-adapter.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:postly-adapter/reviewed-service-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/postly-adapter.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:production-operator/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/production-operator.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:production-operator/reviewed-product-middleware-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/production-operator.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:production-operator/tenant-id-from-service-account",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/production-operator.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:provisioning-service/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/provisioning-service.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:provisioning-service/reviewed-service-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/provisioning-service.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:sdk-intake/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/sdk-intake.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:sdk-intake/reviewed-service-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/sdk-intake.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:social-codestra/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/social-codestra.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:social-codestra/reviewed-product-middleware-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/social-codestra.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:social-codestra/tenant-id-from-service-account",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/social-codestra.json"
+    },
+    {
+      "authorityGroup": "observability",
+      "resourceId": "client:superset-observability/codestra-realm-roles",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/observability/clients/superset-observability.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:telnexa-gateway/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/telnexa-gateway.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:telnexa-gateway/reviewed-service-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/telnexa-gateway.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:telnexa-gateway/tenant-ids-from-service-account",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/telnexa-gateway.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "client:test-syn-cip-portal/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/cip-tenant-identity/clients/test-syn-cip-portal.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "client:test-syn-cip-portal/claim-codestra-actor-kind",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/cip-tenant-identity/clients/test-syn-cip-portal.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "client:test-syn-cip-tenant-a-auditor/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/cip-tenant-identity/clients/test-syn-cip-tenant-a-auditor.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "client:test-syn-cip-tenant-a-auditor/claim-codestra-actor-kind",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/cip-tenant-identity/clients/test-syn-cip-tenant-a-auditor.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "client:test-syn-cip-tenant-a-auditor/claim-tenant-id",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/cip-tenant-identity/clients/test-syn-cip-tenant-a-auditor.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "client:test-syn-cip-tenant-a-automation/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/cip-tenant-identity/clients/test-syn-cip-tenant-a-automation.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "client:test-syn-cip-tenant-a-automation/claim-codestra-actor-kind",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/cip-tenant-identity/clients/test-syn-cip-tenant-a-automation.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "client:test-syn-cip-tenant-a-automation/claim-project-ids",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/cip-tenant-identity/clients/test-syn-cip-tenant-a-automation.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "client:test-syn-cip-tenant-a-automation/claim-tenant-id",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/cip-tenant-identity/clients/test-syn-cip-tenant-a-automation.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "client:test-syn-cip-tenant-b-automation/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/cip-tenant-identity/clients/test-syn-cip-tenant-b-automation.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "client:test-syn-cip-tenant-b-automation/claim-codestra-actor-kind",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/cip-tenant-identity/clients/test-syn-cip-tenant-b-automation.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "client:test-syn-cip-tenant-b-automation/claim-project-ids",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/cip-tenant-identity/clients/test-syn-cip-tenant-b-automation.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "client:test-syn-cip-tenant-b-automation/claim-tenant-id",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/cip-tenant-identity/clients/test-syn-cip-tenant-b-automation.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "client:test-syn-n8n-read/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-n8n-read.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "client:test-syn-n8n-read/claim-business-units",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-n8n-read.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "client:test-syn-n8n-read/claim-campaigns",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-n8n-read.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "client:test-syn-n8n-read/claim-environment",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-n8n-read.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "client:test-syn-n8n-read/claim-tenant-id",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-n8n-read.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "client:test-syn-n8n-submit/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-n8n-submit.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "client:test-syn-n8n-submit/claim-business-units",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-n8n-submit.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "client:test-syn-n8n-submit/claim-campaigns",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-n8n-submit.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "client:test-syn-n8n-submit/claim-environment",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-n8n-submit.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "client:test-syn-n8n-submit/claim-tenant-id",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-n8n-submit.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "client:test-syn-odoo-reader/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-odoo-reader.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "client:test-syn-odoo-reader/claim-business-units",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-odoo-reader.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "client:test-syn-odoo-reader/claim-campaigns",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-odoo-reader.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "client:test-syn-odoo-reader/claim-environment",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-odoo-reader.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "client:test-syn-odoo-reader/claim-tenant-id",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-odoo-reader.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "client:test-syn-wrong-audience/audience-test-syn-wrong-audience",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-wrong-audience.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "client:test-syn-wrong-audience/claim-business-units",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-wrong-audience.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "client:test-syn-wrong-audience/claim-campaigns",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-wrong-audience.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "client:test-syn-wrong-audience/claim-environment",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-wrong-audience.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "client:test-syn-wrong-audience/claim-tenant-id",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-wrong-audience.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "client:test-syn-wrong-tenant/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-wrong-tenant.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "client:test-syn-wrong-tenant/claim-business-units",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-wrong-tenant.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "client:test-syn-wrong-tenant/claim-campaigns",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-wrong-tenant.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "client:test-syn-wrong-tenant/claim-environment",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-wrong-tenant.json"
+    },
+    {
+      "authorityGroup": "edge-integration-certification",
+      "resourceId": "client:test-syn-wrong-tenant/claim-tenant-id",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/edge-integration-certification/clients/test-syn-wrong-tenant.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:transportation-backend/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/transportation-backend.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:transportation-backend/reviewed-product-middleware-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/transportation-backend.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:transportation-backend/tenant-id-from-service-account",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/transportation-backend.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:vicidial-adapter/audience-middleware-api",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/vicidial-adapter.json"
+    },
+    {
+      "authorityGroup": "protected",
+      "resourceId": "client:vicidial-adapter/reviewed-service-scopes",
+      "resourceType": "protocol_mapper",
+      "source": "config/clients/vicidial-adapter.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "scope:cip.user.context/amr",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/cip-tenant-identity/client-scopes/cip.user.context.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "scope:cip.user.context/project-ids-from-admin-attribute",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/cip-tenant-identity/client-scopes/cip.user.context.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "scope:cip.user.context/tenant-id-from-admin-attribute",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/cip-tenant-identity/client-scopes/cip.user.context.json"
+    },
+    {
+      "authorityGroup": "openbao-workload-identity",
+      "resourceId": "scope:openbao.workload/audience-openbao",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/openbao-workload-identity/client-scopes/openbao.workload.json"
+    },
+    {
+      "authorityGroup": "openbao-workload-identity",
+      "resourceId": "scope:openbao.workload/claim-codestra-environment",
+      "resourceType": "protocol_mapper",
+      "source": "config/desired-state/openbao-workload-identity/client-scopes/openbao.workload.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "cip-audit-viewer",
+      "resourceType": "realm_role",
+      "source": "config/desired-state/cip-tenant-identity/realm-roles/cip-audit-viewer.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "cip-command-operator",
+      "resourceType": "realm_role",
+      "source": "config/desired-state/cip-tenant-identity/realm-roles/cip-command-operator.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "cip-command-viewer",
+      "resourceType": "realm_role",
+      "source": "config/desired-state/cip-tenant-identity/realm-roles/cip-command-viewer.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "cip-connector-admin",
+      "resourceType": "realm_role",
+      "source": "config/desired-state/cip-tenant-identity/realm-roles/cip-connector-admin.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "cip-svc-audit-reader",
+      "resourceType": "realm_role",
+      "source": "config/desired-state/cip-tenant-identity/realm-roles/cip-svc-audit-reader.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "cip-svc-command-reader",
+      "resourceType": "realm_role",
+      "source": "config/desired-state/cip-tenant-identity/realm-roles/cip-svc-command-reader.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "cip-svc-command-submitter",
+      "resourceType": "realm_role",
+      "source": "config/desired-state/cip-tenant-identity/realm-roles/cip-svc-command-submitter.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "cip-svc-usage-reader",
+      "resourceType": "realm_role",
+      "source": "config/desired-state/cip-tenant-identity/realm-roles/cip-svc-usage-reader.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "cip-tenant-admin",
+      "resourceType": "realm_role",
+      "source": "config/desired-state/cip-tenant-identity/realm-roles/cip-tenant-admin.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "cip-usage-viewer",
+      "resourceType": "realm_role",
+      "source": "config/desired-state/cip-tenant-identity/realm-roles/cip-usage-viewer.json"
+    },
+    {
+      "authorityGroup": "observability",
+      "resourceId": "observability-admin",
+      "resourceType": "realm_role",
+      "source": "config/desired-state/observability/realm-roles/observability-admin.json"
+    },
+    {
+      "authorityGroup": "observability",
+      "resourceId": "observability-operator",
+      "resourceType": "realm_role",
+      "source": "config/desired-state/observability/realm-roles/observability-operator.json"
+    },
+    {
+      "authorityGroup": "observability",
+      "resourceId": "observability-viewer",
+      "resourceType": "realm_role",
+      "source": "config/desired-state/observability/realm-roles/observability-viewer.json"
+    },
+    {
+      "authorityGroup": "platform-kernel",
+      "resourceId": "platform-operator",
+      "resourceType": "realm_role",
+      "source": "config/desired-state/platform-kernel/realm-roles/platform-operator.json"
+    },
+    {
+      "authorityGroup": "observability",
+      "resourceId": "secrets-admin",
+      "resourceType": "realm_role",
+      "source": "config/desired-state/observability/realm-roles/secrets-admin.json"
+    },
+    {
+      "authorityGroup": "observability",
+      "resourceId": "secrets-operator",
+      "resourceType": "realm_role",
+      "source": "config/desired-state/observability/realm-roles/secrets-operator.json"
+    },
+    {
+      "authorityGroup": "agent-desktop-identity",
+      "resourceId": "telephony.webphone.use",
+      "resourceType": "realm_role",
+      "source": "config/desired-state/agent-desktop-identity/realm-roles/telephony.webphone.use.json"
+    },
+    {
+      "authorityGroup": "agent-desktop-identity",
+      "resourceId": "codestra-agent-desktop",
+      "resourceType": "scope_mapping",
+      "source": "config/desired-state/agent-desktop-identity/scope-mappings/codestra-agent-desktop.json"
+    },
+    {
+      "authorityGroup": "observability",
+      "resourceId": "grafana-observability",
+      "resourceType": "scope_mapping",
+      "source": "config/desired-state/observability/scope-mappings/grafana-observability.json"
+    },
+    {
+      "authorityGroup": "observability",
+      "resourceId": "openbao-secrets",
+      "resourceType": "scope_mapping",
+      "source": "config/desired-state/observability/scope-mappings/openbao-secrets.json"
+    },
+    {
+      "authorityGroup": "observability",
+      "resourceId": "superset-observability",
+      "resourceType": "scope_mapping",
+      "source": "config/desired-state/observability/scope-mappings/superset-observability.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "codestra_project_ids",
+      "resourceType": "user_profile_attribute",
+      "source": "config/desired-state/cip-tenant-identity/user-profile/cip-tenant-attributes.json"
+    },
+    {
+      "authorityGroup": "cip-tenant-identity",
+      "resourceId": "codestra_tenant_id",
+      "resourceType": "user_profile_attribute",
+      "source": "config/desired-state/cip-tenant-identity/user-profile/cip-tenant-attributes.json"
+    },
+    {
+      "authorityGroup": "realm-security",
+      "resourceId": "tenant_id",
+      "resourceType": "user_profile_attribute",
+      "source": "config/security/user-profile.json"
+    },
+    {
+      "authorityGroup": "realm-security",
+      "resourceId": "tenant_ids",
+      "resourceType": "user_profile_attribute",
+      "source": "config/security/user-profile.json"
+    }
+  ],
   "realm": {
     "accessTokenLifespan": 300,
     "bruteForceProtected": true,
@@ -2952,7 +4316,7 @@
     }
   ],
   "serviceAccountRoles": [],
-  "sourceSha256": "469cf9ea42de8826166eb61b844dcdd12ff1d14cb7cf55e1be0bd3d2f041533a",
+  "sourceSha256": "bb5f5f2f8742cb90d7369311e666104e0aafec72ef30f051f5f8a92ebb47197f",
   "stagedClients": [
     {
       "authorityGroup": "cip-tenant-identity",

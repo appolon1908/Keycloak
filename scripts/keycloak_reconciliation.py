@@ -230,6 +230,14 @@ def _role_payload(row:dict[str,Any],*,client_role:bool)->dict[str,Any]:
     payload["clientRole"]=client_role
     return payload
 
+def plan_integrity_error(plan_doc:dict[str,Any],desired:dict[str,Any],live:dict[str,Any])->str|None:
+    """A plan applies only as computed and only to the exact states it was computed from."""
+    sealed={k:v for k,v in plan_doc.items() if k!="planSha256"}
+    if plan_doc.get("planSha256")!=digest(sealed): return "plan_integrity_mismatch"
+    if plan_doc.get("desiredSha256")!=digest(normalize_state(desired)): return "plan_stale_desired_state"
+    if plan_doc.get("liveSha256")!=digest(normalize_state(live)): return "plan_stale_live_state"
+    return None
+
 def validate_plan(plan_doc:dict[str,Any],desired:dict[str,Any],live:dict[str,Any],*,allow_delete:bool=False)->None:
     """Reject the whole plan before any mutation when one action could not execute."""
     maps={k:_rows(desired,k) for k in STATE_KEYS}
@@ -278,6 +286,8 @@ def apply_plan(plan_doc:dict[str,Any],desired:dict[str,Any],live:dict[str,Any],a
     env=normalize_environment(environment)
     if not env or env=="unknown": raise RuntimeError("environment_unknown")
     if normalize_environment(plan_doc.get("environment"))!=env: raise RuntimeError("environment_mismatch")
+    integrity=plan_integrity_error(plan_doc,desired,live)
+    if integrity: return {"schema":"codestra.keycloak.reconciliation-execution.v2","applied":False,"status":"REJECTED","journal":[],"error":integrity}
     try: validate_plan(plan_doc,desired,live,allow_delete=allow_delete)
     except RuntimeError as exc:
         return {"schema":"codestra.keycloak.reconciliation-execution.v2","applied":False,"status":"REJECTED","journal":[],"error":str(exc)}

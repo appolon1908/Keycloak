@@ -2,7 +2,8 @@ from __future__ import annotations
 import hashlib,json,sys,time
 from pathlib import Path
 import pytest
-ROOT=Path(__file__).resolve().parents[1]; sys.path.insert(0,str(ROOT/"scripts"))
+ROOT=Path(__file__).resolve().parents[1]; sys.path.insert(0,str(ROOT/"scripts")); sys.path.insert(0,str(ROOT/"tests"))
+from plan_seal import sealed
 from keycloak_execution_store import EvidenceStore,EvidenceStoreError
 from keycloak_recovery_controller import RecoveryController
 from keycloak_event_redaction import redact_event
@@ -63,7 +64,7 @@ def test_partial_failure_journals_completed_actions():
         def create_client(self,p): raise RuntimeError("boom")
     desired={"clients":[{"clientId":"x","enabled":True}]}; live={"clients":[]}
     p={"environment":"test","actions":[{"kind":"CREATE","resource_type":"client","resource_id":"x","managed":True}]}
-    out=apply_plan(p,desired,live,API(),enabled=True,environment="test")
+    out=apply_plan(sealed(p,desired,live),desired,live,API(),enabled=True,environment="test")
     assert out["status"]=="PARTIAL_FAILURE" and out["applied"] is False
 
 def test_api_recovery_promotion_and_oversize(tmp_path):
@@ -162,7 +163,7 @@ def test_scope_mapping_apply_adds_and_removes_exact_roles():
     desired={"scopeMappings":[{"clientId":"grafana","realmRoles":["viewer"],"fullScopeAllowed":False,"crossFamilyRolesAllowed":False}]}
     live={"scopeMappings":[{"clientId":"grafana","realmRoles":["old"],"fullScopeAllowed":False,"crossFamilyRolesAllowed":False}]}
     p={"environment":"test","actions":[{"kind":"UPDATE","resource_type":"scope_mapping","resource_id":"grafana","managed":True}]}
-    out=apply_plan(p,desired,live,api,enabled=True,environment="test")
+    out=apply_plan(sealed(p,desired,live),desired,live,api,enabled=True,environment="test")
     assert out["status"]=="APPLIED"
     assert [x["name"] for x in api.added]==["viewer"] and [x["name"] for x in api.removed]==["old"]
 
