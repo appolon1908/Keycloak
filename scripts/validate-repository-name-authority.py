@@ -18,28 +18,28 @@ MANIFEST = ROOT / "config" / "policy" / "repository-name-aliases.v1.json"
 RUNTIME_PREFLIGHT = ROOT / ".github" / "workflows" / "runtime-preflight.yml"
 EXPECTED = {
     1221155447: (
-        "appolon1908-hue/Frontend-Resturant-",
-        "appolon1908-hue/restaurant-frontend",
+        "appolon1908/Frontend-Resturant-",
+        "appolon1908/restaurant-frontend",
     ),
     1343761049: (
-        "appolon1908-hue/transportaion-Frontend",
-        "appolon1908-hue/freight-platform-frontend",
+        "appolon1908/transportaion-Frontend",
+        "appolon1908/freight-platform-frontend",
     ),
     1343962199: (
-        "appolon1908-hue/LARIM-A-Fornt-end",
-        "appolon1908-hue/LARIM-A-Frontend",
+        "appolon1908/LARIM-A-Fornt-end",
+        "appolon1908/LARIM-A-Frontend",
     ),
     1351353723: (
-        "appolon1908-hue/Codesrea-Social-",
-        "appolon1908-hue/Codestra-Social-Control-Plane",
+        "appolon1908/Codesrea-Social-",
+        "appolon1908/Codestra-Social-Control-Plane",
     ),
     1350724356: (
-        "appolon1908-hue/documentaions",
-        "appolon1908-hue/Codestra-Documentation",
+        "appolon1908/documentaions",
+        "appolon1908/Codestra-Documentation",
     ),
     1350724865: (
-        "appolon1908-hue/Infustruction-repo",
-        "appolon1908-hue/Codestra-Infrastructure",
+        "appolon1908/Infustruction-repo",
+        "appolon1908/Codestra-Infrastructure",
     ),
 }
 
@@ -208,9 +208,9 @@ def validate(*, require_live: bool = False) -> None:
             fail("repository alias contains an invalid stable ID")
         if repository_id in actual:
             fail(f"repository alias contains duplicate stable ID: {repository_id}")
-        if not isinstance(current, str) or not current.startswith("appolon1908-hue/"):
+        if not isinstance(current, str) or not current.startswith("appolon1908/"):
             fail(f"invalid current repository for ID {repository_id}")
-        if not isinstance(target, str) or not target.startswith("appolon1908-hue/"):
+        if not isinstance(target, str) or not target.startswith("appolon1908/"):
             fail(f"invalid target repository for ID {repository_id}")
         if current in current_names or target in target_names:
             fail("repository alias contains duplicate current or target names")

@@ -46,7 +46,7 @@ git -C "$test_root/repository" config user.name 'Runtime Preflight Test'
 git -C "$test_root/repository" config user.email 'runtime-preflight@example.invalid'
 git -C "$test_root/repository" add compose.yaml
 git -C "$test_root/repository" commit --quiet -m 'test fixture'
-git -C "$test_root/repository" remote add origin git@github.com:appolon1908-hue/Keycloak.git
+git -C "$test_root/repository" remote add origin git@github.com:appolon1908/Keycloak.git
 expected_sha="$(git -C "$test_root/repository" rev-parse HEAD)"
 
 printf 'TEST_FIXTURE=not-a-secret\n' >"$test_root/runtime/keycloak.env"
@@ -65,7 +65,7 @@ export RUNTIME_ENV_FILE="$test_root/runtime/keycloak.env"
 export RUNTIME_CADDY_FILE="$test_root/runtime/auth.codestra.co.caddy"
 export RUNTIME_GIT_SSH_KEY="$test_root/runtime/github-keycloak-readonly"
 export RUNTIME_GIT_KNOWN_HOSTS="$test_root/runtime/github-known-hosts"
-export RUNTIME_GIT_REMOTE='git@github.com:appolon1908-hue/Keycloak.git'
+export RUNTIME_GIT_REMOTE='git@github.com:appolon1908/Keycloak.git'
 export RUNTIME_GIT_BRANCH='main'
 
 report_file="$test_root/reports/runtime-preflight.txt"

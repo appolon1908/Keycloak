@@ -153,7 +153,7 @@ def validate_contract(contract: dict[str, Any]) -> None:
         raise DesiredStateError("contract: ingress scopes must not include outbound or forbidden scopes")
 
     edge = contract.get("edgeContract") or {}
-    if edge.get("repository") != "appolon1908-hue/Middleware-" or edge.get("path") != "deploy/public-api-route-contract.json":
+    if edge.get("repository") != "appolon1908/Middleware-" or edge.get("path") != "deploy/public-api-route-contract.json":
         raise DesiredStateError("contract: edgeContract must reference the Middleware public API route contract")
     if not isinstance(edge.get("sha256"), str) or not SHA256_PATTERN.fullmatch(edge["sha256"]):
         raise DesiredStateError("contract: edgeContract.sha256 must be a lowercase SHA-256 digest")

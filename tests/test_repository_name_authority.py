@@ -18,26 +18,26 @@ SPEC.loader.exec_module(AUTHORITY)
 class LiveRepositoryIdentityTests(unittest.TestCase):
     def test_matching_live_ids_pass(self) -> None:
         mappings = {
-            1: ("appolon1908-hue/example-one", "appolon1908-hue/example-one-new"),
-            2: ("appolon1908-hue/example-two", "appolon1908-hue/example-two-new"),
+            1: ("appolon1908/example-one", "appolon1908/example-one-new"),
+            2: ("appolon1908/example-two", "appolon1908/example-two-new"),
         }
         observed = {
-            "appolon1908-hue/example-one": 1,
-            "appolon1908-hue/example-two": 2,
+            "appolon1908/example-one": 1,
+            "appolon1908/example-two": 2,
         }
         AUTHORITY.validate_live_repository_ids(mappings, observed.__getitem__)
 
     def test_recreated_slug_with_wrong_id_is_rejected(self) -> None:
         mappings = {
-            1: ("appolon1908-hue/example-one", "appolon1908-hue/example-one-new"),
+            1: ("appolon1908/example-one", "appolon1908/example-one-new"),
         }
         with self.assertRaises(SystemExit):
             AUTHORITY.validate_live_repository_ids(mappings, lambda _repo: 99)
 
 
 class InfrastructureCheckoutTests(unittest.TestCase):
-    CURRENT = "appolon1908-hue/Infustruction-repo"
-    TARGET = "appolon1908-hue/Codestra-Infrastructure"
+    CURRENT = "appolon1908/Infustruction-repo"
+    TARGET = "appolon1908/Codestra-Infrastructure"
     SHA = "a" * 40
 
     def workflow(self, infrastructure_credentials: str = "false") -> str:
