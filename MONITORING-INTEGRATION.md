@@ -2,9 +2,9 @@
 
 This repository is included in the shared design for **63 repositories and 17 monitoring components**. Its assigned profile is `runtime-or-website`. Runtime coverage is **unverified** until release and telemetry evidence are recorded.
 
-- [Complete architecture and rollout design](https://github.com/appolon1908-hue/Infustruction-repo/blob/afeea11b86d296874ec12ce6e8615400240bc72f/INTEGRATED-MONITORING-DESIGN.md)
-- [36-operation Middleware implementation](https://github.com/appolon1908-hue/Middleware-/tree/039c3aeb61853a18ad5d8629ba5494364a77dd1a/app/monitoring)
-- [Executable API contract](https://raw.githubusercontent.com/appolon1908-hue/Middleware-/039c3aeb61853a18ad5d8629ba5494364a77dd1a/contracts/observability/integrated-monitoring.openapi.json)
+- [Complete architecture and rollout design](https://github.com/appolon1908/Infustruction-repo/blob/afeea11b86d296874ec12ce6e8615400240bc72f/INTEGRATED-MONITORING-DESIGN.md)
+- [36-operation Middleware implementation](https://github.com/appolon1908/Middleware-/tree/039c3aeb61853a18ad5d8629ba5494364a77dd1a/app/monitoring)
+- [Executable API contract](https://raw.githubusercontent.com/appolon1908/Middleware-/039c3aeb61853a18ad5d8629ba5494364a77dd1a/contracts/observability/integrated-monitoring.openapi.json)
 - Local machine-readable onboarding record: [monitoring-integration.v1.json](monitoring-integration.v1.json)
 
 The Middleware references above are pinned to the protected merge commit for PR #226 rather than a feature-branch revision, so the onboarding contract follows the merged source authority.

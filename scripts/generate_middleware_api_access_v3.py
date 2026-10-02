@@ -18,7 +18,7 @@ SOURCE_SCHEMA = "codestra.middleware.public-api-route-contract.v2"
 OUTPUT_SCHEMA = "codestra.keycloak.middleware-api-access.v3"
 ISSUER = "https://auth.codestra.co/realms/codestra"
 MIDDLEWARE_AUDIENCE = "middleware-api"
-SOURCE_REPOSITORY = "ingtrader21-spec/Middleware-"
+SOURCE_REPOSITORY = "appolon1908/Middleware-"
 SOURCE_PATH = "deploy/public-api-route-contract.json"
 
 PLATFORM_SCOPE_FILES = {

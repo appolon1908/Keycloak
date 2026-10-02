@@ -3,7 +3,7 @@
 ## Security model
 
 `65.109.65.169` receives a repository-scoped Ed25519 deploy key for
-`appolon1908-hue/Keycloak`. GitHub write access must remain disabled. The server
+`appolon1908/Keycloak`. GitHub write access must remain disabled. The server
 must not receive a personal GitHub key, broad token, or write-enabled deploy key.
 
 The runtime preflight proves repository **read access**. It cannot prove the
@@ -67,7 +67,7 @@ It makes no live Keycloak, Docker, or Caddy change.
 ## Self-hosted runner and Docker authorization
 
 The reviewed runner service identity is
-`actions.runner.appolon1908-hue-Keycloak.kazan555.service`, running as the
+`actions.runner.appolon1908-Keycloak.kazan555.service`, running as the
 dedicated non-root `keycloak-deploy` account. The manual runtime preflight runs
 `systemctl list-units`, `systemctl cat`, and `systemctl show` against that exact
 unit, confirms the workflow process has the same Unix identity, and then proves

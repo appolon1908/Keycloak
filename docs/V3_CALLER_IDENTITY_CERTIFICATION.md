@@ -40,7 +40,7 @@ The validator refuses wildcard caller/scopes, privileged scopes leaked into defa
 
 PAS-157 targets the final Middleware V3 public route contract:
 
-- repository: `ingtrader21-spec/Middleware-`
+- repository: `appolon1908/Middleware-`
 - contract: `deploy/public-api-route-contract.json`
 - route count: `117`
 - digest: `9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b`

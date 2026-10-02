@@ -36,7 +36,7 @@ done
   exit 2
 }
 
-expected_unit='actions.runner.appolon1908-hue-Keycloak.kazan555.service'
+expected_unit='actions.runner.appolon1908-Keycloak.kazan555.service'
 expected_user='keycloak-deploy'
 for command_name in systemctl getent getfacl docker realpath readlink find findmnt sort cat awk grep sed id stat; do
   command -v "$command_name" >/dev/null 2>&1 || {

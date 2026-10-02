@@ -4,7 +4,7 @@
 
 PAS-156 pins Keycloak source authority to the canonical Middleware V3 route contract:
 
-- repository: `ingtrader21-spec/Middleware-`
+- repository: `appolon1908/Middleware-`
 - source: `deploy/public-api-route-contract.json`
 - schema: `codestra.middleware.public-api-route-contract.v2`
 - canonical digest: `9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b`

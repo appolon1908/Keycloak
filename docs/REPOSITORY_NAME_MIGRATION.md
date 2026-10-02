@@ -15,7 +15,7 @@ LIVE_REPOSITORY_IDENTITY=REQUIRED_BEFORE_CUTOVER
 
 Machine-readable mappings are in [`../config/policy/repository-name-aliases.v1.json`](../config/policy/repository-name-aliases.v1.json).
 
-The account-wide authority remains `appolon1908-hue/documentaions:repository-name-migration.v1.json` until that repository completes its own controlled rename.
+The account-wide authority remains `appolon1908/documentaions:repository-name-migration.v1.json` until that repository completes its own controlled rename.
 
 ## Offline pull-request validation
 
@@ -53,12 +53,12 @@ REPOSITORIES_VERIFIED=6/6
 The existing Stage 6 workflow checks out:
 
 ```text
-appolon1908-hue/Infustruction-repo
+appolon1908/Infustruction-repo
 ```
 
 at an exact `INFRASTRUCTURE_SHA`. That current name remains correct before cutover. The validator identifies the specific checkout step and requires that same step—not an unrelated checkout—to contain `persist-credentials: false` and the exact `INFRASTRUCTURE_SHA` ref.
 
-The future target `appolon1908-hue/Codestra-Infrastructure` must not be used by Keycloak Actions until all of the following are true:
+The future target `appolon1908/Codestra-Infrastructure` must not be used by Keycloak Actions until all of the following are true:
 
 1. the protected live gate reports repository ID `1350724865` at the target full name;
 2. the default and selected exact SHAs are unchanged;

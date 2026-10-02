@@ -5,7 +5,7 @@
 This is the Keycloak half of the staging certification that proves the real
 deployed path **Keycloak token → Caddy → Kong → Middleware `integration_api`
 handler** for campaign `TEST_SYN`. Middleware owns the certification runner
-(`scripts/certify_edge_integration.py` in `appolon1908-hue/Middleware-`) and
+(`scripts/certify_edge_integration.py` in `appolon1908/Middleware-`) and
 the edge-route contract; Caddy and Kong own their route sources. This
 repository owns the identities, the ingress scopes, and the claim contract
 those tokens must carry, and it pins the same edge-contract SHA-256 the other

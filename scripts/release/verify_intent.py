@@ -44,8 +44,8 @@ def validate_plan(plan, repo, requested_sha, expected_hash):
     require(plan.get('deploy_production') is False, 'Deployment forbidden')
     require(plan.get('external_effects') is False, 'External effects forbidden')
     require(plan.get('sbom_required') is True and plan.get('provenance_required') is True, 'Attestations required')
-    expected_image = {'appolon1908-hue/Keycloak': 'ghcr.io/appolon1908-hue/codestra-keycloak',
-                      'appolon1908-hue/codestra-server-c': 'ghcr.io/appolon1908-hue/codestra-server-c'}
+    expected_image = {'appolon1908/Keycloak': 'ghcr.io/appolon1908/codestra-keycloak',
+                      'appolon1908/codestra-server-c': 'ghcr.io/appolon1908/codestra-server-c'}
     require(repo in expected_image, 'Unrecognized repository')
     require(plan.get('image_repository') == expected_image.get(repo), 'Registry mismatch')
 

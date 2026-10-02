@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines `appolon1908-hue/Keycloak` as the principal identity authority for the unified communications platform.
+This document defines `appolon1908/Keycloak` as the principal identity authority for the unified communications platform.
 
 ## Permanent ownership
 
