@@ -8,6 +8,10 @@
   "clients": {
     "klyrow-staging-portal": [
       "staging"
+    ],
+    "monitoring-readonly": [
+      "production",
+      "test-syn"
     ]
   }
 }

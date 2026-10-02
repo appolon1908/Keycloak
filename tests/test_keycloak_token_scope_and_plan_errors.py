@@ -9,7 +9,7 @@ from plan_seal import sealed
 import keycloak_identity_compiler as compiler
 from keycloak_identity_compiler import IdentityModelError,compile_identity
 from keycloak_reconciliation import apply_plan,plan,verify_readback
-from test_pas237_keycloak_control_plane import DESIRED,enable_staging_mutation,live_fixture,make_service
+from test_pas237_keycloak_control_plane import DESIRED,enable_staging_mutation,live_fixture,make_service,enable_test_syn_mutation
 from test_keycloak_environment_scope_and_client_roles import DESK,RoleAPI,desk_desired
 
 # --- token scope, mapper and scope-mapping fail-closed rules --------------------
@@ -159,7 +159,7 @@ class MappingAPI(RoleAPI):
         super().delete_client(internal_id); self.state["clientScopeMappings"].pop(internal_id,None)
 
 def test_agent_desktop_style_contract_is_provisioned_end_to_end_and_rolled_back(tmp_path,monkeypatch):
-    enable_staging_mutation(monkeypatch)
+    enable_test_syn_mutation(monkeypatch)
     desired=desk_desired()
     desired["realmRoles"]=[{"name":"telephony.webphone.use","description":"webphone","composite":False,
                             "attributes":{"codestra.role.family":["agent-desktop"]}}]

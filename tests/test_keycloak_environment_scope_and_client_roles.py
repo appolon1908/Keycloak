@@ -9,7 +9,7 @@ from plan_seal import sealed
 import keycloak_identity_compiler as compiler
 from keycloak_identity_compiler import IdentityModelError,compile_identity,scoped_for_environment
 from keycloak_reconciliation import apply_plan,plan,verify_readback
-from test_pas237_keycloak_control_plane import DESIRED,FakeAdminAPI,enable_staging_mutation,live_fixture,make_service
+from test_pas237_keycloak_control_plane import DESIRED,FakeAdminAPI,enable_staging_mutation,live_fixture,make_service,enable_test_syn_mutation
 
 POLICY_SCHEMA="codestra.keycloak.environment-scoped-clients.v1"
 ALL_ENVIRONMENTS=["production","staging","test-syn"]
@@ -18,7 +18,7 @@ ALL_ENVIRONMENTS=["production","staging","test-syn"]
 
 def test_compiler_scopes_staging_portal_and_provisions_agent_desktop_roles():
     model=compile_identity()
-    assert model["environmentScopes"]=={"klyrow-staging-portal":["staging"]}
+    assert model["environmentScopes"]=={"klyrow-staging-portal":["staging"],"monitoring-readonly":["production","test-syn"]}
     roles={entry["clientId"]:{role["name"] for role in entry["roles"]} for entry in model["clientRoles"]}
     assert roles=={"codestra-agent-desktop":{"realtime.agent.connect"}}
     realm_roles={role["name"] for role in model["realmRoles"]}
@@ -142,7 +142,7 @@ def desk_desired():
     return desired
 
 def test_apply_provisions_client_roles_and_rollback_removes_them_with_their_client(tmp_path,monkeypatch):
-    enable_staging_mutation(monkeypatch)
+    enable_test_syn_mutation(monkeypatch)
     api=RoleAPI(live_fixture()); service=make_service(tmp_path,api,desk_desired())
     record=service.apply("roles-1")
     assert record["status"]=="COMPLETED" and record["readback"]["equal"] is True and record["mutationPerformed"] is True
@@ -178,24 +178,24 @@ def test_apply_adds_a_role_to_an_existing_client_and_rollback_deletes_only_that_
     assert next(r for r in api.state["clientRoles"]["id-desk"] if r["name"]=="legacy")["description"]=="keep me"
 
 def test_apply_and_drift_exclude_environment_scoped_clients_outside_their_environments(tmp_path,monkeypatch):
-    enable_staging_mutation(monkeypatch)
+    enable_test_syn_mutation(monkeypatch)
     desired=copy.deepcopy(DESIRED)
-    desired["clients"].append({**copy.deepcopy(DESK),"clientId":"staging-only","redirectUris":["https://staging.example/cb"],"webOrigins":["https://staging.example"]})
-    desired["environmentScopes"]={"staging-only":["staging"]}
+    desired["clients"].append({**copy.deepcopy(DESK),"clientId":"scoped-only","redirectUris":["https://scoped.example/cb"],"webOrigins":["https://scoped.example"]})
+    desired["environmentScopes"]={"scoped-only":["test-syn"]}
     api=FakeAdminAPI(live_fixture()); service=make_service(tmp_path,api,desired)
-    assert any(a["resource_id"]=="staging-only" and a["kind"]=="CREATE" for a in service.drift()["actions"])
-    assert service.apply("staging-apply")["status"]=="COMPLETED" and ("create_client","staging-only") in api.calls
-    # The same authority in production never plans, creates, updates or deletes the scoped client.
+    assert any(a["resource_id"]=="scoped-only" and a["kind"]=="CREATE" for a in service.drift()["actions"])
+    assert service.apply("scoped-apply")["status"]=="COMPLETED" and ("create_client","scoped-only") in api.calls
+    # In production the scoped client is not planned at all, and every other client
+    # write belongs to the governed deploy pipeline, so the control plane holds it.
     monkeypatch.setenv("KEYCLOAK_ENVIRONMENT","production"); monkeypatch.setenv("KEYCLOAK_ADMIN_BASE_URL","https://auth.codestra.co")
     production=FakeAdminAPI(live_fixture())
-    production.state["clients"].append({"id":"id-staging-only","clientId":"staging-only","enabled":False,"publicClient":True,"attributes":{},"protocolMappers":[]})
+    production.state["clients"].append({"id":"id-scoped-only","clientId":"scoped-only","enabled":False,"publicClient":True,"attributes":{},"protocolMappers":[]})
     production_service=make_service(tmp_path/"production",production,desired)
     actions={a["resource_id"]:a for a in production_service.drift()["actions"] if a["resource_type"]=="client"}
-    assert actions["staging-only"]["kind"]=="KEEP" and actions["staging-only"]["managed"] is False and actions["svc-a"]["kind"]=="CREATE"
+    assert actions["scoped-only"]["kind"]=="KEEP" and actions["scoped-only"]["managed"] is False
+    assert (actions["svc-a"]["kind"],actions["svc-a"]["reason"])==("HOLD","owned_by:governed-deploy-pipeline")
     record=production_service.apply("production-apply")
     assert record["status"]=="COMPLETED" and record["environment"]=="production"
-    assert not any(call[0] in {"create_client","update_client","delete_client"} and call[1] in {"staging-only","id-staging-only"} for call in production.calls)
+    assert not any(call[0] in {"create_client","update_client","delete_client","update_realm"} for call in production.calls)
     assert production_service.observability_status()["configurationDrift"] is False
-    monkeypatch.delenv("KEYCLOAK_ENVIRONMENT")
-    assert not any(a["resource_id"]=="staging-only" and a["kind"]!="KEEP" for a in production_service.drift()["actions"])
-    assert production_service.validate()["environmentScopedClients"]==["klyrow-staging-portal"]
+    assert production_service.validate()["environmentScopedClients"]==["klyrow-staging-portal","monitoring-readonly"]

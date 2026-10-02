@@ -180,6 +180,28 @@ deletes only attributes its apply created and restores replaced ones exactly.
 - `config/policy/identity-emitters.json` lists every script that can write to the Admin API. `keycloak_admin_api.py` is the only canonical adapter; the shell deploy path and the family staging reconcilers are recorded with their scope and retirement note, and a new writer fails CI until it is classified.
 - The source digest is computed last, over the complete compiled model, and the committed authority must equal a fresh compilation byte for byte.
 
+## Writer authority
+
+`config/policy/reconciler-authority.json` gives every Keycloak object exactly one writer per
+environment. In production and staging the governed deploy pipeline (`deploy.yml`, reviewed
+plan and independent drift review) owns the realm and the protected clients, and in staging the
+Stage 6 monitoring reconciler owns `health.read` and `metrics.read`. The control plane plans an
+object owned by another writer as `HOLD` with reason `owned_by:<writer>`: it is never written,
+never deleted, and never counted as drift or unconverged readback. TEST_SYN holds nothing, so
+the disposable realm exercises every write path. `monitoring-readonly` is environment-scoped to
+production and TEST_SYN, leaving the Stage 6 reconciler as its only staging writer.
+
+## Service identities
+
+The compiled authority carries `serviceIdentities`: one entry per protected service client,
+built only from canonical sources. Owners come from the CODEOWNERS entry for `/config/`;
+purpose from the service access matrix (kind and granted scopes), the product client contract,
+or the client's own specific description; credentials from the machine secret destinations with
+the rotation limit in `config/policy/service-identity-policy.json`; Keycloak admin access from
+the matrix's administrative boundaries or a sourced policy override; risk from a fixed rule
+(admin access, any non-read scope or a declared privilege is high; read-only scopes medium;
+none low). A service client with no purpose source or no secret destination fails compilation.
+
 ## Apply evidence and statuses
 
 An apply writes its execution record before the first mutation. The record

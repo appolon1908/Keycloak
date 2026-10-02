@@ -1,0 +1,20 @@
+{
+  "schema": "codestra.keycloak.service-identity-policy.v1",
+  "rule": "Every protected service client is compiled into an inventory entry. Owner comes from the CODEOWNERS entry for /config/, purpose from the service access matrix or the product client contract or the client's own description, credentials from the machine secret destinations, admin capability from the matrix's administrative boundaries, and risk from the rules below. Missing owner, purpose or credential destination fails compilation.",
+  "credential": {
+    "type": "client-secret",
+    "maxSecretAgeDays": 90,
+    "decision": "D5: confidential service secrets rotate at least every 90 days; owners may set a shorter interval per client."
+  },
+  "riskRules": {
+    "high": "any Keycloak admin access (read-only included), any granted scope that is not read-only, or a description that declares the identity privileged",
+    "medium": "only read-only scopes granted",
+    "low": "no scopes granted"
+  },
+  "keycloakAdminAccess": {
+    "codestra-provisioning-service": {
+      "level": "read-only",
+      "source": "config/clients/codestra-provisioning-service.json description: read-only Keycloak user lookup"
+    }
+  }
+}

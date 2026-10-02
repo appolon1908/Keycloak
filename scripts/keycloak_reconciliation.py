@@ -192,7 +192,19 @@ def _plan_required_actions(actions:list[Action],desired_rows:list[dict[str,Any]]
 def unregistered_providers(state:dict[str,Any])->set[str]:
     return {str(r.get("providerId")) for r in state.get("unregisteredRequiredActions",[]) or [] if r.get("providerId")}
 
-def plan(desired:dict[str,Any],live:dict[str,Any],*,managed_inventory:dict[str,list[str]]|None=None,environment:str="unknown")->dict[str,Any]:
+def apply_holds(actions:list[Action],holds:list[dict[str,Any]]|None)->list[Action]:
+    """Turn every write or error on an object another writer owns into HOLD.
+
+    In-sync objects stay KEEP so readback still shows them converged; a held object
+    is never written, never counted as unconverged and never deleted.
+    """
+    owners={}
+    for hold in holds or []:
+        for rid in hold.get("resourceIds") or []: owners[(str(hold.get("resourceType")),str(rid))]=str(hold.get("owner"))
+    def owner(a:Action)->str|None: return owners.get((a.resource_type,a.resource_id)) or owners.get((a.resource_type,"*"))
+    return [Action("HOLD",a.resource_type,a.resource_id,f"owned_by:{owner(a)}",False) if a.kind in UNCONVERGED_KINDS and owner(a) else a for a in actions]
+
+def plan(desired:dict[str,Any],live:dict[str,Any],*,managed_inventory:dict[str,list[str]]|None=None,environment:str="unknown",holds:list[dict[str,Any]]|None=None)->dict[str,Any]:
     actions:list[Action]=[]; managed_inventory=managed_inventory or {}
     if canonical(projection(desired.get("realm") or {},REALM_FIELDS))!=canonical(projection(live.get("realm") or {},REALM_FIELDS)):
         actions.append(Action("UPDATE","realm",str((desired.get("realm") or {}).get("realm") or "codestra"),"managed_fields_drift"))
@@ -217,6 +229,7 @@ def plan(desired:dict[str,Any],live:dict[str,Any],*,managed_inventory:dict[str,l
     # fail against a client that no longer exists.
     deleting_clients={a.resource_id for a in actions if a.resource_type=="client" and a.kind=="DELETE"}
     actions=[Action("KEEP",a.resource_type,a.resource_id,"deleted_with_client") if a.resource_type=="client_role" and a.kind=="DELETE" and a.resource_id.partition(":")[0] in deleting_clients else a for a in actions]
+    actions=apply_holds(actions,holds)
     actions.sort(key=lambda a:(RESOURCE_ORDER.index(a.resource_type),a.resource_id,a.kind))
     payload={"schema":"codestra.keycloak.reconciliation-plan.v2","environment":environment,"desiredSha256":digest(normalize_state(desired)),"liveSha256":digest(normalize_state(live)),"actions":[a.__dict__ for a in actions],"mutationEnabled":False}
     payload["planSha256"]=digest(payload); return payload
@@ -245,7 +258,7 @@ def validate_plan(plan_doc:dict[str,Any],desired:dict[str,Any],live:dict[str,Any
     mappings=_index(desired.get("scopeMappings",[]),"clientId")
     for action in plan_doc.get("actions",[]):
         kind=action.get("kind"); rt=action.get("resource_type"); rid=str(action.get("resource_id") or "")
-        if kind=="KEEP": continue
+        if kind in {"KEEP","HOLD"}: continue
         if kind=="ERROR": raise RuntimeError(str(action.get("reason") or f"plan_error:{rt}:{rid}"))
         if kind not in MUTATION_KINDS: raise RuntimeError(f"unsupported_action:{kind}")
         if kind=="DELETE" and (not allow_delete or not action.get("managed",False)): raise RuntimeError(f"delete_not_authorized:{rt}:{rid}")
@@ -297,7 +310,7 @@ def apply_plan(plan_doc:dict[str,Any],desired:dict[str,Any],live:dict[str,Any],a
     try:
         for action in plan_doc["actions"]:
             kind=action["kind"]; rt=action["resource_type"]; rid=action["resource_id"]
-            if kind=="KEEP": journal.append({"kind":kind,"resourceType":rt,"resourceId":rid}); continue
+            if kind in {"KEEP","HOLD"}: journal.append({"kind":kind,"resourceType":rt,"resourceId":rid}); continue
             if kind not in MUTATION_KINDS: raise RuntimeError(str(action.get("reason") or f"unsupported_action:{kind}"))
             if kind=="DELETE" and (not allow_delete or not action.get("managed",False)): raise RuntimeError(f"delete_not_authorized:{rt}:{rid}")
             if rt=="realm":
@@ -409,11 +422,11 @@ def apply_plan(plan_doc:dict[str,Any],desired:dict[str,Any],live:dict[str,Any],a
 def mutation_performed(journal:list[dict[str,Any]]|None)->bool:
     return any(entry.get("kind") in MUTATION_KINDS for entry in journal or [])
 
-def verify_readback(desired:dict[str,Any],live_after:dict[str,Any])->dict[str,Any]:
+def verify_readback(desired:dict[str,Any],live_after:dict[str,Any],*,holds:list[dict[str,Any]]|None=None)->dict[str,Any]:
     # Readback is converged when no managed resource still needs a mutation or cannot be
     # reconciled; live built-ins that desired state never declares are unmanaged.
     expected=normalize_state(desired); actual=normalize_state(live_after)
-    pending=[a for a in plan(desired,live_after)["actions"] if a["kind"] in UNCONVERGED_KINDS]
+    pending=[a for a in plan(desired,live_after,holds=holds)["actions"] if a["kind"] in UNCONVERGED_KINDS]
     return {"equal":not pending,"desiredDigest":digest(expected),"liveDigest":digest(actual),"pendingActions":pending}
 
 def created_inventory(journal:list[dict[str,Any]]|None)->dict[str,list[str]]:
@@ -438,11 +451,11 @@ def rollback_attribute_removals(pre_state:dict[str,Any],desired:dict[str,Any],jo
         if removals: out[rid]=removals
     return out
 
-def rollback_plan(pre_state:dict[str,Any],current_state:dict[str,Any],*,created_inventory:dict[str,list[str]]|None=None,attribute_removals:dict[str,list[str]]|None=None,environment:str="unknown")->dict[str,Any]:
+def rollback_plan(pre_state:dict[str,Any],current_state:dict[str,Any],*,created_inventory:dict[str,list[str]]|None=None,attribute_removals:dict[str,list[str]]|None=None,environment:str="unknown",holds:list[dict[str,Any]]|None=None)->dict[str,Any]:
     # Only resources the original apply created may be deleted; anything that appeared
     # since is unmanaged and is preserved.
     inventory={k:[str(x) for x in v] for k,v in (created_inventory or {}).items()}
-    payload=plan(pre_state,current_state,managed_inventory=inventory,environment=environment)
+    payload=plan(pre_state,current_state,managed_inventory=inventory,environment=environment,holds=holds)
     live=_rows(current_state,"clients")
     for action in payload["actions"]:
         # Pre-state comparison only sees declared attributes, so an attribute the apply
