@@ -8,7 +8,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"scripts")); sys.path.insert(0,str(ROOT/"tests"))
 import keycloak_identity_compiler as compiler
 from keycloak_identity_compiler import IdentityModelError,compile_identity,scoped_for_environment,sha
-from keycloak_reconciliation import RESOURCE_ORDER,apply_plan,digest,normalize_state,plan
+from keycloak_reconciliation import RESOURCE_ORDER,apply_plan,digest,normalize_state,plan,rollback_plan
 from test_pas237_keycloak_control_plane import FakeAdminAPI,enable_staging_mutation,live_fixture,make_service
 
 def load(path): return json.loads(Path(path).read_text(encoding="utf-8"))
@@ -234,6 +234,18 @@ def test_a_held_object_is_never_written_even_with_deletes_authorized():
     assert [(a["kind"],a["resource_id"]) for a in doc["actions"] if a["resource_type"]=="client"]==[("HOLD","created-earlier")]
     api=Recorder(); out=apply_plan(doc,desired,live,api,enabled=True,allow_delete=True,environment="production")
     assert out["status"]=="APPLIED" and api.calls==[]
+
+def test_rollback_never_promotes_a_held_client_to_an_attribute_removal():
+    client={"id":"1","clientId":"held-client","attributes":{"kept":"x"}}
+    current={"clients":[{**client,"attributes":{"kept":"x","added":"y"}}],"realmRoles":[]}
+    pre={"clients":[client],"realmRoles":[]}
+    holds=[{"resourceType":"client","resourceIds":["*"],"owner":"governed-deploy-pipeline"}]
+    held=rollback_plan(pre,current,attribute_removals={"held-client":["added"]},environment="production",holds=holds)
+    assert [(a["kind"],a["reason"],a["managed"]) for a in held["actions"] if a["resource_type"]=="client"]==[("HOLD","owned_by:governed-deploy-pipeline",False)]
+    api=Recorder(); out=apply_plan(held,pre,current,api,enabled=True,environment="production")
+    assert out["status"]=="APPLIED" and api.calls==[]
+    free=rollback_plan(pre,current,attribute_removals={"held-client":["added"]},environment="test-syn",holds=[])
+    assert [a["kind"] for a in free["actions"] if a["resource_type"]=="client"]==["UPDATE"]
 
 def test_monitoring_identity_has_one_staging_writer():
     scopes=load(ROOT/"config"/"policy"/"environment-scoped-clients.json")["clients"]

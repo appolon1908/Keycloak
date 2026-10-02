@@ -198,11 +198,14 @@ def apply_holds(actions:list[Action],holds:list[dict[str,Any]]|None)->list[Actio
     In-sync objects stay KEEP so readback still shows them converged; a held object
     is never written, never counted as unconverged and never deleted.
     """
+    def owner(a:Action)->str|None: return hold_owner(holds,a.resource_type,a.resource_id)
+    return [Action("HOLD",a.resource_type,a.resource_id,f"owned_by:{owner(a)}",False) if a.kind in UNCONVERGED_KINDS and owner(a) else a for a in actions]
+
+def hold_owner(holds:list[dict[str,Any]]|None,resource_type:str,resource_id:str)->str|None:
     owners={}
     for hold in holds or []:
         for rid in hold.get("resourceIds") or []: owners[(str(hold.get("resourceType")),str(rid))]=str(hold.get("owner"))
-    def owner(a:Action)->str|None: return owners.get((a.resource_type,a.resource_id)) or owners.get((a.resource_type,"*"))
-    return [Action("HOLD",a.resource_type,a.resource_id,f"owned_by:{owner(a)}",False) if a.kind in UNCONVERGED_KINDS and owner(a) else a for a in actions]
+    return owners.get((resource_type,resource_id)) or owners.get((resource_type,"*"))
 
 def plan(desired:dict[str,Any],live:dict[str,Any],*,managed_inventory:dict[str,list[str]]|None=None,environment:str="unknown",holds:list[dict[str,Any]]|None=None)->dict[str,Any]:
     actions:list[Action]=[]; managed_inventory=managed_inventory or {}
@@ -462,5 +465,6 @@ def rollback_plan(pre_state:dict[str,Any],current_state:dict[str,Any],*,created_
         # added still needs an UPDATE to be removed.
         rid=action["resource_id"]; extra=(attribute_removals or {}).get(rid,[])
         if action["resource_type"]=="client" and action["kind"]=="KEEP" and action.get("managed",True) and any(k in ((live.get(rid) or {}).get("attributes") or {}) for k in extra):
-            action.update({"kind":"UPDATE","reason":"apply_added_attributes"})
+            owner=hold_owner(holds,"client",rid)
+            action.update({"kind":"HOLD","reason":f"owned_by:{owner}","managed":False} if owner else {"kind":"UPDATE","reason":"apply_added_attributes"})
     payload.pop("planSha256",None); payload["planSha256"]=digest(payload); return payload
