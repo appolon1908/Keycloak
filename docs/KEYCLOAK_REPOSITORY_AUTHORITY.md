@@ -156,4 +156,4 @@ The repository is not considered fully production-certified until all of the fol
 
 ## Authority statement
 
-`appolon1908-hue/Keycloak` is the authoritative independent repository for Codestra Keycloak identity configuration and its protected change process. Cross-system mission documents may reference this repository, but they do not supersede this repository's identity authority or permit another repository to mutate Keycloak directly.
+`appolon1908/Keycloak` is the authoritative independent repository for Codestra Keycloak identity configuration and its protected change process. Cross-system mission documents may reference this repository, but they do not supersede this repository's identity authority or permit another repository to mutate Keycloak directly.

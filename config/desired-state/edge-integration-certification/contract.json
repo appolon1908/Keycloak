@@ -27,7 +27,7 @@
     "odoo.campaign.control.write"
   ],
   "edgeContract": {
-    "repository": "appolon1908-hue/Middleware-",
+    "repository": "appolon1908/Middleware-",
     "path": "deploy/public-api-route-contract.json",
     "pinnedIn": "deploy/public-api-route-contract.sha256",
     "schema": "codestra.middleware.public-api-route-contract.v2",
