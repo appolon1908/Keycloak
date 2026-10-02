@@ -45,8 +45,11 @@ def test_production_rollback_export_excludes_staging_only_clients():
     assert production == [c for c in managed if "production" in scoped.get(c, ["production"])]
 
 
-def test_staging_rollback_export_keeps_every_managed_client():
-    assert exported("staging") == policy("managed-clients.json")["clients"]
+def test_staging_rollback_export_keeps_every_managed_client_allowed_in_staging():
+    scopes = policy("environment-scoped-clients.json")["clients"]
+    allowed = [c for c in policy("managed-clients.json")["clients"] if "staging" in scopes.get(c, ["staging"])]
+    assert exported("staging") == allowed
+    assert "klyrow-staging-portal" in allowed and "monitoring-readonly" not in allowed
 
 
 def test_unknown_environment_exports_no_scoped_client():

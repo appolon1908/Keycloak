@@ -293,11 +293,12 @@ plan_dir="$test_root/plan"
 [[ "$(jq -er '.api.adminApiBaseUrl' "$plan_dir/plan.json")" == "https://auth-staging.codestra.co" ]]
 [[ "$(jq -er '.api.issuer' "$plan_dir/plan.json")" == "https://auth-staging.codestra.co/realms/codestra" ]]
 
-# 37 managed clients: klyrow-portal pre-exists in the mock (update), the other 36 are created,
-# and the realm policy drifts (update).
-[[ "$(jq -er '.driftCount' "$plan_dir/plan.json")" -eq 38 ]]
+# 37 managed clients: monitoring-readonly is not planned in staging (its staging writer is
+# the Stage 6 reconciler), klyrow-portal pre-exists in the mock (update), the other 35 are
+# created, and the realm policy drifts (update).
+[[ "$(jq -er '.driftCount' "$plan_dir/plan.json")" -eq 37 ]]
 [[ "$(jq -er '.blockedCount' "$plan_dir/plan.json")" -eq 0 ]]
-[[ "$(jq -er '.createCount' "$plan_dir/plan.json")" -eq 36 ]]
+[[ "$(jq -er '.createCount' "$plan_dir/plan.json")" -eq 35 ]]
 [[ "$(jq -er '.updateCount' "$plan_dir/plan.json")" -eq 2 ]]
 [[ "$(jq -er '.realmPolicy.action' "$plan_dir/plan.json")" == "update" ]]
 [[ "$(jq -er '.clients[] | select(.clientId == "klyrow-portal") | .action' "$plan_dir/plan.json")" == "update" ]]
@@ -313,8 +314,15 @@ for client_id in codestra-provisioning-service odoo-web moneybee-admin moneybee-
   ' "$plan_dir/plan.json" >/dev/null
 done
 
-[[ "$(jq -er '.excludedCount' "$plan_dir/plan.json")" -eq 0 ]]
-[[ "$(jq -er '.excludedClients | length' "$plan_dir/plan.json")" -eq 0 ]]
+[[ "$(jq -er '.excludedCount' "$plan_dir/plan.json")" -eq 1 ]]
+jq -e '
+  ([.clients[] | select(.clientId == "monitoring-readonly")] | length == 0)
+  and .excludedClients == [{
+    clientId: "monitoring-readonly",
+    reason: "environment_scoped",
+    allowedEnvironments: ["production", "test-syn"]
+  }]
+' "$plan_dir/plan.json" >/dev/null
 
 # The staging-only Klyrow portal is excluded from a production plan instead of being
 # created in the production realm with staging redirect URIs.
