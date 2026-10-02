@@ -1,0 +1,69 @@
+{
+  "schema": "codestra.keycloak.identity-emitters.v1",
+  "rule": "Every script that can write to the Keycloak Admin API is listed here with its role. Exactly one canonical adapter exists; any other listed script is a recorded legacy, staging-family or test path with a retirement or scope note. A new writer fails CI until it is classified here.",
+  "canonicalCompiler": "scripts/keycloak_identity_compiler.py",
+  "canonicalReconciler": "scripts/keycloak_reconciliation.py",
+  "emitters": [
+    {
+      "path": "scripts/keycloak_admin_api.py",
+      "role": "canonical_adapter",
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "note": "Typed Admin API adapter used by the canonical reconciler and the control API."
+    },
+    {
+      "path": "scripts/apply-plan.sh",
+      "role": "legacy_production_reconciler",
+      "environments": [
+        "production",
+        "staging"
+      ],
+      "note": "Shell deploy path behind deploy.yml and the reviewed plan-hash gate. It plans from config/clients separately from the canonical compiler. Retire by moving deploy.yml onto the control plane once an equivalent reviewed-plan gate is proven in staging."
+    },
+    {
+      "path": "scripts/reconcile_edge_certification_staging.py",
+      "role": "family_staging_reconciler",
+      "environments": [
+        "staging"
+      ],
+      "note": "Applies the edge-certification family's TEST_SYN clients to staging only."
+    },
+    {
+      "path": "scripts/reconcile_monitoring_readonly_staging.py",
+      "role": "family_staging_reconciler",
+      "environments": [
+        "staging"
+      ],
+      "note": "Applies the monitoring read-only identity to staging only."
+    },
+    {
+      "path": "scripts/reconcile_openbao_workload_identity_staging.py",
+      "role": "family_staging_reconciler",
+      "environments": [
+        "staging"
+      ],
+      "note": "Applies the OpenBao workload-identity family to staging only."
+    },
+    {
+      "path": "scripts/password-reset-e2e.py",
+      "role": "read_only_probe",
+      "environments": [
+        "staging",
+        "production"
+      ],
+      "note": "Password-recovery acceptance test; it POSTs only to the login and token endpoints and never writes through the Admin API."
+    },
+    {
+      "path": "scripts/certify_disabled_client.py",
+      "role": "read_only_probe",
+      "environments": [
+        "staging",
+        "production"
+      ],
+      "note": "Reads a client through the Admin API and proves a disabled client's token request is rejected; its POSTs go only to token endpoints."
+    }
+  ]
+}

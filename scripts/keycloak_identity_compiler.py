@@ -15,8 +15,6 @@ SCOPES = ROOT / "config" / "client-scopes"
 CONTRACTS = ROOT / "config" / "contracts"
 DESIRED_STATE = ROOT / "config" / "desired-state"
 ENVIRONMENT_SCOPES = ROOT / "config" / "policy" / "environment-scoped-clients.json"
-OWNERSHIP_CONFLICTS = ROOT / "config" / "policy" / "staged-client-ownership-conflicts.json"
-OWNERSHIP_CONFLICTS_SCHEMA = "codestra.keycloak.staged-client-ownership-conflicts.v1"
 OUT = ROOT / "generated" / "keycloak-identity-authority.v1.json"
 ENVIRONMENT_SCOPES_SCHEMA = "codestra.keycloak.environment-scoped-clients.v1"
 # Every environment a protected client may be planned into. A client absent from the
@@ -179,12 +177,9 @@ def _client_roles(
         roles = document.get("roles")
         if not isinstance(roles, list) or not roles:
             raise IdentityModelError(f"client_roles_empty:{client_id}")
-        names: set[str] = set()
+        # Duplicate role names are rejected by the ownership registry.
         for role in roles:
             validate_role(role, label, client_role=True)
-            if role["name"] in names:
-                raise IdentityModelError(f"duplicate_client_role:{client_id}:{role['name']}")
-            names.add(role["name"])
         output.append(
             {
                 "clientId": client_id,
@@ -437,14 +432,10 @@ def _user_profile_attributes(token_owners: dict[str, set[str]]) -> list[dict[str
             raise IdentityModelError(f"user_profile_attribute_fields_invalid:{name}")
         if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9_.-]{1,64}", name):
             raise IdentityModelError(f"user_profile_attribute_name_invalid:{name}")
-        if any(row["name"] == name for row in output):
-            raise IdentityModelError(f"duplicate_user_profile_attribute:{name}")
+        # Duplicates, including a family's own attribute declared here as well, are
+        # rejected by the ownership registry before this point.
         if name in BUILT_IN_PROFILE_ATTRIBUTES:
             raise IdentityModelError(f"user_profile_attribute_built_in:{name}")
-        # A family reconciler owns its own attributes; declaring them here as well
-        # would make two reconcilers write the same attribute.
-        if name in family:
-            raise IdentityModelError(f"user_profile_attribute_family_owned:{name}")
         if not _admin_edit_only(attribute):
             raise IdentityModelError(f"user_profile_attribute_user_editable:{name}")
         if _contains_secret(attribute):
@@ -468,30 +459,56 @@ def validate_column_limits(label: str, document: dict[str, Any]) -> None:
             raise IdentityModelError(f"keycloak_column_too_long:{label}:{field}:{len(value)}")
 
 
-def validate_staged_client_owners(staged: list[dict[str, Any]]) -> None:
-    """A staged clientId belongs to one authority group unless a recorded conflict says otherwise.
+def authority_group(path: Path) -> str:
+    """The authority group owning a source document: its desired-state family, or the protected root."""
+    try:
+        return path.relative_to(DESIRED_STATE).parts[0]
+    except ValueError:
+        return "realm-security" if path.parent == SECURITY else "protected"
 
-    Keycloak keeps one client per clientId, so two family reconcilers declaring the
-    same id overwrite each other. Known conflicts are recorded until their owners
-    decide, and a recorded conflict that no longer exists must be removed.
+
+def _mapper_ids(owner: str, document: dict[str, Any]) -> list[str]:
+    return [f"{owner}/{mapper.get('name')}" for mapper in document.get("protocolMappers") or []]
+
+
+def ownership_registry(sources: dict[str, list[tuple[Path, dict[str, Any]]]]) -> list[dict[str, str]]:
+    """Trace every managed identity object to exactly one source document.
+
+    Keycloak keeps one object per identity, so a second declaration anywhere, in
+    any authority group, would make two sources (and possibly two reconcilers)
+    write the same object. Any identity with owner_count != 1 fails compilation.
     """
-    groups: dict[str, set[str]] = {}
-    for item in staged:
-        groups.setdefault(str(item["client"]["clientId"]), set()).add(str(item["authorityGroup"]))
-    actual = {client_id: owners for client_id, owners in groups.items() if len(owners) > 1}
-    policy = load_json(OWNERSHIP_CONFLICTS)
-    if policy.get("schema") != OWNERSHIP_CONFLICTS_SCHEMA or not isinstance(policy.get("conflicts"), list):
-        raise IdentityModelError("ownership_conflicts_policy_invalid")
-    recorded: dict[str, set[str]] = {}
-    for entry in policy["conflicts"]:
-        if not entry.get("decisionOwner") or not entry.get("requiredDecision"):
-            raise IdentityModelError(f"ownership_conflict_unowned:{entry.get('clientId')}")
-        recorded[str(entry.get("clientId"))] = set(entry.get("groups") or [])
-    for client_id, owners in sorted(actual.items()):
-        if recorded.get(client_id) != owners:
-            raise IdentityModelError(f"staged_client_multiple_owners:{client_id}:{','.join(sorted(owners))}")
-    for client_id in sorted(set(recorded) - set(actual)):
-        raise IdentityModelError(f"ownership_conflict_resolved_remove_entry:{client_id}")
+    identify = {
+        "client": lambda d: [str(d.get("clientId"))],
+        "client_scope": lambda d: [str(d.get("name"))],
+        "realm_role": lambda d: [str(d.get("name"))],
+        "client_role": lambda d: [f"{d.get('clientId')}:{r.get('name')}" for r in d.get("roles") or []],
+        "scope_mapping": lambda d: [str(d.get("clientId"))],
+        "service_account_roles": lambda d: [str(d.get("clientId"))],
+        "user_profile_attribute": lambda d: [str(a.get("name")) for a in d.get("attributes") or []],
+    }
+    entries: list[dict[str, str]] = []
+    for resource_type, documents in sources.items():
+        for path, document in documents:
+            group, source = authority_group(path), path.relative_to(ROOT).as_posix()
+            ids = identify[resource_type](document)
+            if resource_type == "client":
+                ids_mappers = _mapper_ids(f"client:{document.get('clientId')}", document)
+            elif resource_type == "client_scope":
+                ids_mappers = _mapper_ids(f"scope:{document.get('name')}", document)
+            else:
+                ids_mappers = []
+            for resource_id in ids:
+                entries.append({"resourceType": resource_type, "resourceId": resource_id, "authorityGroup": group, "source": source})
+            for resource_id in ids_mappers:
+                entries.append({"resourceType": "protocol_mapper", "resourceId": resource_id, "authorityGroup": group, "source": source})
+    owners: dict[tuple[str, str], list[str]] = {}
+    for entry in entries:
+        owners.setdefault((entry["resourceType"], entry["resourceId"]), []).append(entry["source"])
+    for (resource_type, resource_id), sources_for in sorted(owners.items()):
+        if len(sources_for) != 1:
+            raise IdentityModelError(f"identity_multiple_owners:{resource_type}:{resource_id}:{','.join(sorted(sources_for))}")
+    return sorted(entries, key=lambda e: (e["resourceType"], e["resourceId"]))
 
 
 def _unique_by_path(
@@ -505,12 +522,10 @@ def _unique_by_path(
         resource_id = str(document.get(key) or "")
         if not resource_id:
             raise IdentityModelError(f"{label}_missing_id:{path.relative_to(ROOT).as_posix()}")
-        fingerprint = canonical(document)
-        if resource_id in seen and seen[resource_id] != fingerprint:
-            raise IdentityModelError(f"conflicting_{label}:{resource_id}")
+        # A second declaration is an error even when identical: it is a second owner.
         if resource_id in seen:
-            continue
-        seen[resource_id] = fingerprint
+            raise IdentityModelError(f"duplicate_{label}:{resource_id}")
+        seen[resource_id] = path.relative_to(ROOT).as_posix()
         output.append((path, document))
     return output
 
@@ -526,12 +541,9 @@ def _unique_by(
         resource_id = str(document.get(key) or "")
         if not resource_id:
             raise IdentityModelError(f"{label}_missing_id:{path.relative_to(ROOT).as_posix()}")
-        fingerprint = canonical(document)
-        if resource_id in seen and seen[resource_id] != fingerprint:
-            raise IdentityModelError(f"conflicting_{label}:{resource_id}")
         if resource_id in seen:
-            continue
-        seen[resource_id] = fingerprint
+            raise IdentityModelError(f"duplicate_{label}:{resource_id}")
+        seen[resource_id] = path.relative_to(ROOT).as_posix()
         output.append(document)
     return sorted(output, key=lambda item: str(item.get(key) or ""))
 
@@ -595,7 +607,15 @@ def compile_identity() -> dict[str, Any]:
             }
         )
     staged_with_provenance.sort(key=lambda item: (item["authorityGroup"], item["client"]["clientId"]))
-    validate_staged_client_owners(staged_with_provenance)
+    ownership = ownership_registry({
+        "client": protected_client_docs + staged_client_docs,
+        "client_scope": top_scope_docs + nested_scope_docs,
+        "realm_role": role_docs,
+        "client_role": client_role_docs,
+        "scope_mapping": scope_mapping_docs,
+        "service_account_roles": service_account_role_docs,
+        "user_profile_attribute": [(USER_PROFILE, load_json(USER_PROFILE))] + _nested_documents("user-profile"),
+    })
 
     known_client_ids = protected_ids | {item["client"]["clientId"] for item in staged_with_provenance}
     clients_by_id: dict[str, dict[str, Any]] = {}
@@ -657,6 +677,7 @@ def compile_identity() -> dict[str, Any]:
         "requiredActions": required_actions,
         "userProfileAttributes": user_profile_attributes,
         "environmentScopes": environment_scopes,
+        "ownership": ownership,
         "environmentBoundaries": {
             "production": {"issuer": "https://auth.codestra.co/realms/codestra"},
             "staging": {"issuer": "https://auth-staging.codestra.co/realms/codestra"},
