@@ -40,7 +40,7 @@ class ReleaseContractIdentityTests(unittest.TestCase):
 
     def test_previous_owner_other_name_or_other_id_is_rejected(self):
         base = json.loads(CONTRACT.read_text(encoding="utf-8"))
-        for field, value in [("repository", "appolon1908/Keycloak"), ("repository", "appolon1908/Keycloak"),
+        for field, value in [("repository", "appolon1908-hue/Keycloak"), ("repository", "ingtrader21-spec/Keycloak"),
                              ("repository", "appolon1908/Keycloak-fork"), ("repository_id", 1347523367),
                              ("repository_id", "1347523366")]:
             contract = copy.deepcopy(base)
