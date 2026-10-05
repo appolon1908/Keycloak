@@ -162,6 +162,14 @@ def make_service(tmp_path,api,desired=DESIRED):
         def _api(self): return api
     return Local()
 
+def enable_test_syn_mutation(monkeypatch):
+    # TEST_SYN is the one environment where the control plane owns every object.
+    monkeypatch.setenv("KEYCLOAK_MUTATION_ENABLED","true")
+    monkeypatch.setenv("KEYCLOAK_ENVIRONMENT","test-syn")
+    monkeypatch.setenv("KEYCLOAK_ADMIN_BASE_URL","http://127.0.0.1:8080")
+    monkeypatch.setenv("KEYCLOAK_ADMIN_BEARER","unused-by-fake")
+    monkeypatch.delenv("KEYCLOAK_DELETE_ENABLED",raising=False)
+
 def enable_staging_mutation(monkeypatch):
     monkeypatch.setenv("KEYCLOAK_MUTATION_ENABLED","true")
     monkeypatch.setenv("KEYCLOAK_ENVIRONMENT","staging")
@@ -170,13 +178,13 @@ def enable_staging_mutation(monkeypatch):
     monkeypatch.delenv("KEYCLOAK_DELETE_ENABLED",raising=False)
 
 def test_apply_persists_redacted_evidence_before_any_mutation(tmp_path,monkeypatch):
-    enable_staging_mutation(monkeypatch)
+    enable_test_syn_mutation(monkeypatch)
     api=FakeAdminAPI(live_fixture()); service=make_service(tmp_path,api)
     seen=[]
     api.on_mutate=lambda: seen.append([(r["payload"]["status"],bool(r["payload"].get("preState"))) for r in service.store.list("executions")])
     record=service.apply("apply-key-1")
     assert seen and all(rows==[("IN_PROGRESS",True)] for rows in seen)
-    assert record["status"]=="COMPLETED" and record["mutationPerformed"] is True and record["environment"]=="staging"
+    assert record["status"]=="COMPLETED" and record["mutationPerformed"] is True and record["environment"]=="test-syn"
     assert ("update_realm",) in api.calls and ("create_client","svc-a") in api.calls
     stored=service.evidence(record["executionId"])["payload"]
     assert stored==record and stored["readback"]["equal"] is True and stored["error"] is None
@@ -233,7 +241,7 @@ def test_apply_rejects_unexecutable_plan_before_mutation():
         apply_plan(plan(desired,live),desired,live,api,enabled=True,environment="unknown")
 
 def test_rollback_restores_pre_state_and_deletes_only_what_apply_created(tmp_path,monkeypatch):
-    enable_staging_mutation(monkeypatch)
+    enable_test_syn_mutation(monkeypatch)
     api=FakeAdminAPI(live_fixture()); service=make_service(tmp_path,api)
     record=service.apply("rollback-me")
     api.state["clients"].append({"id":"id-foreign","clientId":"foreign","enabled":True,"publicClient":True,"attributes":{},"protocolMappers":[]})
@@ -281,7 +289,7 @@ def test_control_api_apply_over_http_never_returns_secret_material(tmp_path,monk
 
 def test_apply_journal_survives_readback_failure_and_rollback_uses_it(tmp_path,monkeypatch):
     from keycloak_admin_api import KeycloakAdminError
-    enable_staging_mutation(monkeypatch)
+    enable_test_syn_mutation(monkeypatch)
     api=FakeAdminAPI(live_fixture()); service=make_service(tmp_path,api)
     api.on_mutate=lambda: setattr(api,"fail_reads",True)
     record=service.apply("readback-fails")
@@ -314,7 +322,7 @@ def test_apply_replay_ignores_failed_record_only_by_design_and_is_not_capped_by_
 
 def test_rollback_removes_attributes_the_apply_added_and_refuses_a_second_rollback(tmp_path,monkeypatch):
     from keycloak_admin_api import KeycloakAdminError
-    enable_staging_mutation(monkeypatch)
+    enable_test_syn_mutation(monkeypatch)
     desired=copy.deepcopy(DESIRED)
     desired["clients"].append({"clientId":"account","enabled":True,"publicClient":True,"attributes":{"pkce.code.challenge.method":"S256"},"protocolMappers":[]})
     api=FakeAdminAPI(live_fixture()); service=make_service(tmp_path,api,desired)
@@ -345,7 +353,7 @@ def test_observability_status_reports_managed_drift_only():
 
 def test_rollback_journal_survives_readback_failure_and_can_be_retried(tmp_path,monkeypatch):
     from keycloak_admin_api import KeycloakAdminError
-    enable_staging_mutation(monkeypatch)
+    enable_test_syn_mutation(monkeypatch)
     api=FakeAdminAPI(live_fixture()); service=make_service(tmp_path,api)
     record=service.apply("rollback-readback")
     assert record["status"]=="COMPLETED"

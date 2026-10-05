@@ -1,0 +1,52 @@
+{
+  "schema": "codestra.keycloak.reconciler-authority.v1",
+  "rule": "Exactly one writer owns each Keycloak object in each environment. The control plane plans an object owned by another writer as HOLD and never writes it. A hold names its owner; resourceIds [\"*\"] holds every object of that type.",
+  "environments": {
+    "production": [
+      {
+        "resourceType": "realm",
+        "resourceIds": [
+          "*"
+        ],
+        "owner": "governed-deploy-pipeline"
+      },
+      {
+        "resourceType": "client",
+        "resourceIds": [
+          "*"
+        ],
+        "owner": "governed-deploy-pipeline"
+      }
+    ],
+    "staging": [
+      {
+        "resourceType": "realm",
+        "resourceIds": [
+          "*"
+        ],
+        "owner": "governed-deploy-pipeline"
+      },
+      {
+        "resourceType": "client",
+        "resourceIds": [
+          "*"
+        ],
+        "owner": "governed-deploy-pipeline"
+      },
+      {
+        "resourceType": "client_scope",
+        "resourceIds": [
+          "health.read",
+          "metrics.read"
+        ],
+        "owner": "stage6-monitoring-reconciler"
+      }
+    ],
+    "test-syn": []
+  },
+  "writers": {
+    "control-plane": "scripts/keycloak_admin_api.py",
+    "governed-deploy-pipeline": "scripts/apply-plan.sh",
+    "stage6-monitoring-reconciler": "scripts/reconcile_monitoring_readonly_staging.py"
+  }
+}

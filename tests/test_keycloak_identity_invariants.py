@@ -8,7 +8,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"scripts")); sys.path.insert(0,str(ROOT/"tests"))
 import keycloak_identity_compiler as compiler
 from keycloak_identity_compiler import IdentityModelError,compile_identity,scoped_for_environment,sha
-from keycloak_reconciliation import RESOURCE_ORDER,apply_plan,digest,normalize_state,plan
+from keycloak_reconciliation import RESOURCE_ORDER,apply_plan,digest,normalize_state,plan,rollback_plan
 from test_pas237_keycloak_control_plane import FakeAdminAPI,enable_staging_mutation,live_fixture,make_service
 
 def load(path): return json.loads(Path(path).read_text(encoding="utf-8"))
@@ -194,3 +194,90 @@ def test_every_keycloak_writer_is_registered_and_one_adapter_is_canonical():
     assert {e["role"] for e in registry["emitters"]}<={"canonical_adapter","legacy_production_reconciler","family_staging_reconciler","read_only_probe"}
     for entry in registry["emitters"]:
         if entry["role"]=="family_staging_reconciler": assert entry["environments"]==["staging"],entry["path"]
+
+# --- one writer per object per environment ----------------------------------------
+
+AUTHORITY=load(ROOT/"config"/"policy"/"reconciler-authority.json")
+
+def test_every_hold_owner_is_a_registered_writer():
+    registry={e["path"]:e["role"] for e in load(ROOT/"config"/"policy"/"identity-emitters.json")["emitters"]}
+    writers=AUTHORITY["writers"]
+    assert registry[writers["control-plane"]]=="canonical_adapter"
+    for env,holds in AUTHORITY["environments"].items():
+        for hold in holds:
+            assert writers[hold["owner"]] in registry and hold["owner"]!="control-plane",(env,hold)
+    assert AUTHORITY["environments"]["test-syn"]==[]
+
+@pytest.mark.parametrize("environment,resource,expected",[
+    ("production",("client","middleware-api"),"owned_by:governed-deploy-pipeline"),
+    ("production",("realm","codestra"),"owned_by:governed-deploy-pipeline"),
+    ("staging",("client_scope","health.read"),"owned_by:stage6-monitoring-reconciler"),
+    ("staging",("client","codestra-agent-desktop"),"owned_by:governed-deploy-pipeline"),
+])
+def test_objects_owned_by_another_writer_are_held(environment,resource,expected):
+    desired=scoped_for_environment(compile_identity(),environment)
+    actions={(a["resource_type"],a["resource_id"]):a for a in plan(desired,{"realm":{}},environment=environment,holds=AUTHORITY["environments"][environment])["actions"]}
+    assert (actions[resource]["kind"],actions[resource]["reason"],actions[resource]["managed"])==("HOLD",expected,False)
+
+def test_test_syn_holds_nothing_and_production_writes_only_control_plane_types():
+    model=compile_identity()
+    test_syn=plan(scoped_for_environment(model,"test-syn"),{"realm":{}},environment="test-syn",holds=AUTHORITY["environments"]["test-syn"])
+    assert not [a for a in test_syn["actions"] if a["kind"]=="HOLD"]
+    production=plan(scoped_for_environment(model,"production"),{"realm":{}},environment="production",holds=AUTHORITY["environments"]["production"])
+    writes={a["resource_type"] for a in production["actions"] if a["kind"] in {"CREATE","UPDATE","DELETE"}}
+    assert writes and not writes&{"realm","client"}
+
+def test_a_held_object_is_never_written_even_with_deletes_authorized():
+    desired={"clients":[],"realmRoles":[]}; live={"clients":[{"id":"1","clientId":"created-earlier"}],"realmRoles":[]}
+    holds=[{"resourceType":"client","resourceIds":["*"],"owner":"governed-deploy-pipeline"}]
+    doc=plan(desired,live,managed_inventory={"clients":["created-earlier"]},environment="production",holds=holds)
+    assert [(a["kind"],a["resource_id"]) for a in doc["actions"] if a["resource_type"]=="client"]==[("HOLD","created-earlier")]
+    api=Recorder(); out=apply_plan(doc,desired,live,api,enabled=True,allow_delete=True,environment="production")
+    assert out["status"]=="APPLIED" and api.calls==[]
+
+def test_rollback_never_promotes_a_held_client_to_an_attribute_removal():
+    client={"id":"1","clientId":"held-client","attributes":{"kept":"x"}}
+    current={"clients":[{**client,"attributes":{"kept":"x","added":"y"}}],"realmRoles":[]}
+    pre={"clients":[client],"realmRoles":[]}
+    holds=[{"resourceType":"client","resourceIds":["*"],"owner":"governed-deploy-pipeline"}]
+    held=rollback_plan(pre,current,attribute_removals={"held-client":["added"]},environment="production",holds=holds)
+    assert [(a["kind"],a["reason"],a["managed"]) for a in held["actions"] if a["resource_type"]=="client"]==[("HOLD","owned_by:governed-deploy-pipeline",False)]
+    api=Recorder(); out=apply_plan(held,pre,current,api,enabled=True,environment="production")
+    assert out["status"]=="APPLIED" and api.calls==[]
+    free=rollback_plan(pre,current,attribute_removals={"held-client":["added"]},environment="test-syn",holds=[])
+    assert [a["kind"] for a in free["actions"] if a["resource_type"]=="client"]==["UPDATE"]
+
+def test_monitoring_identity_has_one_staging_writer():
+    scopes=load(ROOT/"config"/"policy"/"environment-scoped-clients.json")["clients"]
+    assert "staging" not in scopes["monitoring-readonly"]
+    assert "monitoring-readonly" not in {c["clientId"] for c in scoped_for_environment(compile_identity(),"staging")["clients"]}
+
+# --- service identity inventory -----------------------------------------------------
+
+def test_every_service_client_has_complete_derived_metadata():
+    model=compile_identity()
+    service_ids={c["clientId"] for c in model["clients"] if c.get("serviceAccountsEnabled")}
+    inventory={row["clientId"]:row for row in model["serviceIdentities"]}
+    assert set(inventory)==service_ids and len(inventory)==29
+    for row in inventory.values():
+        assert row["owners"]==["appolon1908-hue","kazan555"] and row["purpose"] and row["identityType"]=="service"
+        assert row["audiences"] and row["environments"] and row["credential"]["secretFromEnvironment"].startswith("KC_CLIENT_SECRET_")
+        assert row["credential"]["maxSecretAgeDays"]==90 and row["risk"] in {"low","medium","high"}
+        assert row["keycloakAdminAccess"] in {"none","read-only","full"}
+    assert inventory["codestra-provisioning-service"]["keycloakAdminAccess"]=="read-only" and inventory["codestra-provisioning-service"]["risk"]=="high"
+    assert inventory["production-operator"]["risk"]=="high" and inventory["monitoring-readonly"]["risk"]=="medium"
+
+@pytest.mark.parametrize("relative,mutate,error",[
+    ("config/contracts/machine-secret-destinations.json",lambda d: d.update(clients=[c for c in d["clients"] if c["clientId"]!="kong-gateway"]),"service_identity_credential_unknown:kong-gateway"),
+    ("config/contracts/service-access-matrix.json",lambda d: d.update(services=[s for s in d["services"] if s["clientId"]!="kong-gateway"]),"service_identity_purpose_missing:kong-gateway"),
+    ("config/policy/service-identity-policy.json",lambda d: d.update(schema="other"),"service_identity_policy_invalid"),
+])
+def test_unknown_service_identity_metadata_fails_closed(monkeypatch,relative,mutate,error):
+    with pytest.raises(IdentityModelError,match=error): mutated_model(monkeypatch,relative,mutate)
+
+def test_risk_rule_is_deterministic():
+    assert compiler._service_risk("none",[],"")=="low"
+    assert compiler._service_risk("none",["metrics.read"],"")=="medium"
+    assert compiler._service_risk("none",["metrics.read","outbox.dispatch"],"")=="high"
+    assert compiler._service_risk("read-only",[],"")=="high"
+    assert compiler._service_risk("none",[],"Privileged operator")=="high"

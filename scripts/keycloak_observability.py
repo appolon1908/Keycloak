@@ -23,8 +23,8 @@ def metrics(events:list[dict[str,Any]],*,configuration_drift:bool=False,readback
         elif t in {"RESET_PASSWORD","UPDATE_PASSWORD"}: counts["password_resets"]+=1
         elif t=="ADMIN_CHANGE": counts["admin_changes"]+=1
     return counts
-def status(desired:dict[str,Any],live:dict[str,Any])->dict[str,Any]:
+def status(desired:dict[str,Any],live:dict[str,Any],*,holds:list[dict[str,Any]]|None=None)->dict[str,Any]:
     # Drift means a managed resource still needs a mutation; raw digests would always
     # differ because Keycloak serialises ids, secrets and server-populated fields.
-    readback=verify_readback(desired,live)
+    readback=verify_readback(desired,live,holds=holds)
     return {"realm":str((live.get("realm") or {}).get("realm") or desired.get("realm",{}).get("realm") or ""),"desiredStateDigest":readback["desiredDigest"],"liveConfigurationDigest":readback["liveDigest"],"configurationDrift":not readback["equal"],"pendingMutations":len(readback["pendingActions"]),"eventsEnabled":bool((live.get("realm") or {}).get("eventsEnabled",False))}

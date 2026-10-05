@@ -2390,6 +2390,10 @@
   "environmentScopes": {
     "klyrow-staging-portal": [
       "staging"
+    ],
+    "monitoring-readonly": [
+      "production",
+      "test-syn"
     ]
   },
   "ownership": [
@@ -4316,7 +4320,866 @@
     }
   ],
   "serviceAccountRoles": [],
-  "sourceSha256": "bb5f5f2f8742cb90d7369311e666104e0aafec72ef30f051f5f8a92ebb47197f",
+  "serviceIdentities": [
+    {
+      "audiences": [
+        "ai-provider-adapter"
+      ],
+      "clientId": "ai-provider-adapter",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_AI_PROVIDER_ADAPTER",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "adapter service",
+      "risk": "low",
+      "scopes": [],
+      "tenantBinding": "global"
+    },
+    {
+      "audiences": [
+        "middleware-api"
+      ],
+      "clientId": "alertmanager",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_ALERTMANAGER",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "monitoring_writer service granted alerts.write",
+      "risk": "high",
+      "scopes": [
+        "alerts.write"
+      ],
+      "tenantBinding": "global"
+    },
+    {
+      "audiences": [
+        "middleware-api"
+      ],
+      "clientId": "beyvra-backend",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_BEYVRA_BACKEND",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "Confidential product backend identity for Kong -> Middleware command access. Secrets and tenant values remain external to Git.",
+      "risk": "high",
+      "scopes": [
+        "beyvra.middleware.command.write",
+        "beyvra.middleware.status.read"
+      ],
+      "tenantBinding": "tenant_id claim"
+    },
+    {
+      "audiences": [
+        "middleware-api"
+      ],
+      "clientId": "breero-backend",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_BREERO_BACKEND",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "Confidential product backend identity for Kong -> Middleware command access. Secrets and tenant values remain external to Git.",
+      "risk": "high",
+      "scopes": [
+        "breero.middleware.command.write",
+        "breero.middleware.status.read"
+      ],
+      "tenantBinding": "tenant_id claim"
+    },
+    {
+      "audiences": [
+        "middleware-api"
+      ],
+      "clientId": "codestra-ai",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_CODESTRA_AI",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "application service granted ai.inference.request",
+      "risk": "high",
+      "scopes": [
+        "ai.inference.request"
+      ],
+      "tenantBinding": "global"
+    },
+    {
+      "audiences": [
+        "middleware-api"
+      ],
+      "clientId": "codestra-communication",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_CODESTRA_COMMUNICATION",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "application service granted communication.email.request, communication.sms.request",
+      "risk": "high",
+      "scopes": [
+        "communication.email.request",
+        "communication.sms.request"
+      ],
+      "tenantBinding": "global"
+    },
+    {
+      "audiences": [
+        "middleware-api"
+      ],
+      "clientId": "codestra-marketing",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_CODESTRA_MARKETING",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "application service granted marketing.campaign.request",
+      "risk": "high",
+      "scopes": [
+        "marketing.campaign.request"
+      ],
+      "tenantBinding": "global"
+    },
+    {
+      "audiences": [
+        "codestra-provisioning-service"
+      ],
+      "clientId": "codestra-provisioning-service",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_CODESTRA_PROVISIONING_SERVICE",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "read-only",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "Compatibility identity dedicated to the webphone session issuer; read-only Keycloak user lookup.",
+      "risk": "high",
+      "scopes": [],
+      "tenantBinding": "global"
+    },
+    {
+      "audiences": [
+        "middleware-api"
+      ],
+      "clientId": "codestra-social",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_CODESTRA_SOCIAL",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "application service granted social.publish.request",
+      "risk": "high",
+      "scopes": [
+        "social.publish.request"
+      ],
+      "tenantBinding": "global"
+    },
+    {
+      "audiences": [
+        "middleware-api"
+      ],
+      "clientId": "klyrow-gateway",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_KLYROW_GATEWAY",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "provider_gateway service granted email.events.publish, email.inbound.publish",
+      "risk": "high",
+      "scopes": [
+        "email.events.publish",
+        "email.inbound.publish"
+      ],
+      "tenantBinding": "global"
+    },
+    {
+      "audiences": [
+        "middleware-api"
+      ],
+      "clientId": "kong-gateway",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_KONG_GATEWAY",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "edge service granted middleware.request.forward, middleware.status.read",
+      "risk": "high",
+      "scopes": [
+        "middleware.request.forward",
+        "middleware.status.read"
+      ],
+      "tenantBinding": "global"
+    },
+    {
+      "audiences": [
+        "middleware-api"
+      ],
+      "clientId": "kyqra-gateway",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_KYQRA_GATEWAY",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "provider_gateway service granted crawler.progress.publish, crawler.results.publish",
+      "risk": "high",
+      "scopes": [
+        "crawler.progress.publish",
+        "crawler.results.publish"
+      ],
+      "tenantBinding": "global"
+    },
+    {
+      "audiences": [
+        "middleware-api"
+      ],
+      "clientId": "larim-a-backend",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_LARIM_A_BACKEND",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "Confidential product backend identity for Kong -> Middleware command access. Secrets and tenant values remain external to Git.",
+      "risk": "high",
+      "scopes": [
+        "larim-a.middleware.command.write",
+        "larim-a.middleware.status.read"
+      ],
+      "tenantBinding": "tenant_id claim"
+    },
+    {
+      "audiences": [
+        "marketing-provider-adapter"
+      ],
+      "clientId": "marketing-provider-adapter",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_MARKETING_PROVIDER_ADAPTER",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "adapter service",
+      "risk": "low",
+      "scopes": [],
+      "tenantBinding": "global"
+    },
+    {
+      "audiences": [
+        "kyqra-gateway",
+        "n8n-automation",
+        "odoo-integration",
+        "vicidial-adapter"
+      ],
+      "clientId": "middleware-api",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_MIDDLEWARE_API",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "resource_server service granted callbacks.dispatch, crawler.jobs.read, crawler.jobs.submit, crawler.results.read, odoo.activities.write, odoo.leads.read, odoo.leads.write, telephony.commands.write, workflow.status.read, workflow.trigger",
+      "risk": "high",
+      "scopes": [
+        "callbacks.dispatch",
+        "crawler.jobs.read",
+        "crawler.jobs.submit",
+        "crawler.results.read",
+        "odoo.activities.write",
+        "odoo.leads.read",
+        "odoo.leads.write",
+        "telephony.commands.write",
+        "workflow.status.read",
+        "workflow.trigger"
+      ],
+      "tenantBinding": "global"
+    },
+    {
+      "audiences": [
+        "ai-provider-adapter",
+        "klyrow-gateway",
+        "marketing-provider-adapter",
+        "middleware-api",
+        "postly-adapter",
+        "telnexa-gateway"
+      ],
+      "clientId": "middleware-worker",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_MIDDLEWARE_WORKER",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "workload service granted ai.provider.dispatch, ai.provider.status.read, delivery.retry, dlq.replay, email.send, email.status.read, inbox.process, marketing.provider.dispatch, marketing.provider.status.read, outbox.dispatch, sms.send, sms.status.read, social.publish, social.status.read",
+      "risk": "high",
+      "scopes": [
+        "ai.provider.dispatch",
+        "ai.provider.status.read",
+        "delivery.retry",
+        "dlq.replay",
+        "email.send",
+        "email.status.read",
+        "inbox.process",
+        "marketing.provider.dispatch",
+        "marketing.provider.status.read",
+        "outbox.dispatch",
+        "sms.send",
+        "sms.status.read",
+        "social.publish",
+        "social.status.read"
+      ],
+      "tenantBinding": "global"
+    },
+    {
+      "audiences": [
+        "middleware-api"
+      ],
+      "clientId": "moneybee-backend",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_MONEYBEE_BACKEND",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "Confidential product backend identity for Kong -> Middleware command access. Secrets and tenant values remain external to Git.",
+      "risk": "high",
+      "scopes": [
+        "moneybee.middleware.command.write",
+        "moneybee.middleware.status.read"
+      ],
+      "tenantBinding": "tenant_id claim"
+    },
+    {
+      "audiences": [
+        "middleware-api"
+      ],
+      "clientId": "monitoring-readonly",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_MONITORING_READONLY",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "monitoring service granted health.read, metrics.read",
+      "risk": "medium",
+      "scopes": [
+        "health.read",
+        "metrics.read"
+      ],
+      "tenantBinding": "global"
+    },
+    {
+      "audiences": [
+        "middleware-api"
+      ],
+      "clientId": "n8n-automation",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_N8N_AUTOMATION",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "automation service granted middleware.request.forward, middleware.status.read, workflow.result.publish",
+      "risk": "high",
+      "scopes": [
+        "middleware.request.forward",
+        "middleware.status.read",
+        "workflow.result.publish"
+      ],
+      "tenantBinding": "global"
+    },
+    {
+      "audiences": [
+        "middleware-api"
+      ],
+      "clientId": "odoo-email",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_ODOO_EMAIL",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "Confidential Odoo 19 workload identity for tenant-bound transactional email submission and read-back through Middleware only. Secrets and tenant values remain external to Git.",
+      "risk": "high",
+      "scopes": [
+        "odoo.email.command.write",
+        "odoo.email.status.read"
+      ],
+      "tenantBinding": "tenant_id claim"
+    },
+    {
+      "audiences": [
+        "middleware-api"
+      ],
+      "clientId": "odoo-integration",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_ODOO_INTEGRATION",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "adapter service granted odoo.delivery.result.publish, odoo.events.publish",
+      "risk": "high",
+      "scopes": [
+        "odoo.delivery.result.publish",
+        "odoo.events.publish"
+      ],
+      "tenantBinding": "global"
+    },
+    {
+      "audiences": [
+        "middleware-api"
+      ],
+      "clientId": "postly-adapter",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_POSTLY_ADAPTER",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "adapter service granted social.events.publish",
+      "risk": "high",
+      "scopes": [
+        "social.events.publish"
+      ],
+      "tenantBinding": "global"
+    },
+    {
+      "audiences": [
+        "middleware-api"
+      ],
+      "clientId": "production-operator",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_PRODUCTION_OPERATOR",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "Privileged tenant-bound workload identity for reviewed Middleware production-email policy operations only. It has no provider, workflow, or connector-command authority, and its secret remains outside Git.",
+      "risk": "high",
+      "scopes": [
+        "email.production.read",
+        "email.production.write"
+      ],
+      "tenantBinding": "tenant_id claim"
+    },
+    {
+      "audiences": [
+        "middleware-api"
+      ],
+      "clientId": "provisioning-service",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_PROVISIONING_SERVICE",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "workload service granted identity.request, integration.configure, tenant.provision",
+      "risk": "high",
+      "scopes": [
+        "identity.request",
+        "integration.configure",
+        "tenant.provision"
+      ],
+      "tenantBinding": "global"
+    },
+    {
+      "audiences": [
+        "middleware-api"
+      ],
+      "clientId": "sdk-intake",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_SDK_INTAKE",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "workload service granted leads.write, surveys.write",
+      "risk": "high",
+      "scopes": [
+        "leads.write",
+        "surveys.write"
+      ],
+      "tenantBinding": "global"
+    },
+    {
+      "audiences": [
+        "middleware-api"
+      ],
+      "clientId": "social-codestra",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_SOCIAL_CODESTRA",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "Confidential product backend identity for Kong -> Middleware command access. Secrets and tenant values remain external to Git.",
+      "risk": "high",
+      "scopes": [
+        "social.middleware.command.write",
+        "social.middleware.status.read"
+      ],
+      "tenantBinding": "tenant_id claim"
+    },
+    {
+      "audiences": [
+        "middleware-api"
+      ],
+      "clientId": "telnexa-gateway",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_TELNEXA_GATEWAY",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "provider_gateway service granted sms.events.publish, sms.inbound.publish",
+      "risk": "high",
+      "scopes": [
+        "sms.events.publish",
+        "sms.inbound.publish"
+      ],
+      "tenantBinding": "global"
+    },
+    {
+      "audiences": [
+        "middleware-api"
+      ],
+      "clientId": "transportation-backend",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_TRANSPORTATION_BACKEND",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "Confidential product backend identity for Kong -> Middleware command access. Secrets and tenant values remain external to Git.",
+      "risk": "high",
+      "scopes": [
+        "transportation.middleware.command.write",
+        "transportation.middleware.status.read"
+      ],
+      "tenantBinding": "tenant_id claim"
+    },
+    {
+      "audiences": [
+        "middleware-api"
+      ],
+      "clientId": "vicidial-adapter",
+      "credential": {
+        "maxSecretAgeDays": 90,
+        "secretFromEnvironment": "KC_CLIENT_SECRET_VICIDIAL_ADAPTER",
+        "type": "client-secret"
+      },
+      "environments": [
+        "production",
+        "staging",
+        "test-syn"
+      ],
+      "identityType": "service",
+      "keycloakAdminAccess": "none",
+      "owners": [
+        "appolon1908-hue",
+        "kazan555"
+      ],
+      "purpose": "adapter service granted callbacks.update, recordings.metadata.publish, telephony.events.publish",
+      "risk": "high",
+      "scopes": [
+        "callbacks.update",
+        "recordings.metadata.publish",
+        "telephony.events.publish"
+      ],
+      "tenantBinding": "global"
+    }
+  ],
+  "sourceSha256": "62137bd0706043edaa1479bd97fa51f05a78b50619bdf1fb14881dd168d9bcae",
   "stagedClients": [
     {
       "authorityGroup": "cip-tenant-identity",
