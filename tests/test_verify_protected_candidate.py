@@ -250,7 +250,6 @@ class RepositoryIdentityTests(unittest.TestCase):
         cases = [
             {'full_name': 'appolon1908/Keycloak', 'id': 999},
             {'full_name': 'appolon1908/Keycloak', 'id': '1347523366'},
-            {'full_name': 'appolon1908/Keycloak', 'id': 1347523366},
             {'full_name': 'someone-else/Keycloak', 'id': 1347523366},
             {'full_name': 'appolon1908/Keycloak'},
             [],
