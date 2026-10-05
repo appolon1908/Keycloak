@@ -42,6 +42,7 @@ jq -e \
     and .repositorySha == $sha
     and .environment == $environment
     and .targetRealm == "codestra"
+    and (.realmPolicy.action == "noop" or .realmPolicy.action == "create" or .realmPolicy.action == "update")
     and .blockedCount == 0
     and (.clients | length > 0)
     and (.excludedClients | type == "array")

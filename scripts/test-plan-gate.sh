@@ -13,6 +13,8 @@ ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=scripts/lib/keycloak-admin.sh
 source "$ROOT_DIR/scripts/lib/keycloak-admin.sh"
 test_root="$(mktemp -d)"
+export KEYCLOAK_CONTROL_EVIDENCE_DIR="$test_root/control-evidence"
+mkdir -m 700 "$KEYCLOAK_CONTROL_EVIDENCE_DIR"
 server_pid=""
 cleanup() {
   if [[ -n "$server_pid" ]]; then
@@ -104,6 +106,18 @@ def save_state(value: dict[str, dict]) -> None:
     state_path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n")
 
 
+def load_control() -> dict:
+    return json.loads(control_path.read_text())
+
+
+def save_control(value: dict) -> None:
+    control_path.write_text(json.dumps(value, sort_keys=True) + "\n")
+
+
+def realm_exists() -> bool:
+    return not bool(load_control().get("realmMissing", False))
+
+
 def apply_controlled_get_mutation(client_id: str, state: dict[str, dict]) -> dict[str, dict]:
     control = json.loads(control_path.read_text())
     if not control.get("armed") or control.get("clientId") != client_id:
@@ -161,7 +175,23 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/realms/master/protocol/openid-connect/token":
             self.send_json(200, {"access_token": "test-token", "expires_in": 60})
             return
+        if parsed.path == "/admin/realms":
+            control = load_control()
+            if not control.get("realmMissing", False):
+                self.send_json(409, {"error": "realm_exists"})
+                return
+            realm_state_path.write_text(
+                json.dumps(self.read_json(), indent=2, sort_keys=True) + "\n"
+            )
+            control["realmMissing"] = False
+            save_control(control)
+            self.send_response(201)
+            self.end_headers()
+            return
         if parsed.path == "/admin/realms/codestra/clients":
+            if not realm_exists():
+                self.send_json(404, {"error": "realm_not_found"})
+                return
             payload = self.read_json()
             client_id = str(payload.get("clientId") or "")
             state = load_state()
@@ -185,10 +215,16 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
         if parsed.path == "/admin/realms/codestra":
-            self.send_json(200, json.loads(realm_state_path.read_text()))
+            if not realm_exists():
+                self.send_json(404, {"error": "realm_not_found"})
+            else:
+                self.send_json(200, json.loads(realm_state_path.read_text()))
             return
         state = load_state()
         if parsed.path == "/admin/realms/codestra/clients":
+            if not realm_exists():
+                self.send_json(404, {"error": "realm_not_found"})
+                return
             query = parse_qs(parsed.query)
             client_ids = query.get("clientId") or []
             client_id = client_ids[0] if client_ids else ""
@@ -215,6 +251,9 @@ class Handler(BaseHTTPRequestHandler):
     def do_PUT(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
         if parsed.path == "/admin/realms/codestra":
+            if not realm_exists():
+                self.send_json(404, {"error": "realm_not_found"})
+                return
             realm_state_path.write_text(
                 json.dumps(self.read_json(), indent=2, sort_keys=True) + "\n"
             )
@@ -272,12 +311,17 @@ export KC_PUBLIC_URL="https://auth-staging.codestra.co"
 export KC_TARGET_REALM="codestra"
 export KC_ADMIN_REALM="master"
 export KC_ADMIN_CLIENT_ID="test-gitops-client"
-: "${TEST_KC_CLIENT_SECRET:?Set TEST_KC_CLIENT_SECRET for the mock test}"
-export KC_ADMIN_CLIENT_SECRET=$TEST_KC_CLIENT_SECRET
+# The mock accepts any non-empty credential marker; no real credential is used.
+KC_ADMIN_CLIENT_SECRET=$(printf %s ci-only-placeholder)
+export KC_ADMIN_CLIENT_SECRET
 export ALLOW_INSECURE_KC_BASE_URL="true"
 export ALLOW_NONCANONICAL_KC_BASE_URL_FOR_TESTS="true"
 export DEPLOY_ENVIRONMENT="staging"
 export KC_SMTP_CREDENTIAL_VERSION="ci-rotation-v1"
+# Isolated fixture-only SMTP values. These never leave the mock test process
+# and prove that plan/recovery artifacts do not serialize credential material.
+export KC_SMTP_USERNAME="ci-smtp-user"
+export KC_SMTP_PASSWORD="ci-smtp-pass"
 expected_sha="1111111111111111111111111111111111111111"
 
 [[ "$(keycloak_endpoint_file)" == "$ROOT_DIR/config/endpoints/codestra-staging.json" ]]
@@ -482,7 +526,7 @@ printf 'APPLY_PRIVATE_SMTP_ROUTE_FAIL_CLOSED=PASS\n'
   --expected-deploy-sha "$expected_sha" \
   --recovery-dir "$test_root/recovery-success" >/dev/null
 
-expected_operation_count="$(jq -er '.clients | length' "$plan_dir/plan.json")"
+expected_operation_count="$(jq -er '(.clients | length) + 1' "$plan_dir/plan.json")"
 jq -e --argjson expected_operation_count "$expected_operation_count" '
   .partialApply == false
   and (.operations | length == $expected_operation_count)
@@ -620,6 +664,64 @@ jq -e '
     and .rollback.disableFirst == true
     and .rollback.deleteRequiresSeparateReviewedRollback == true
 ' "$missing_dir/plan.json" >/dev/null
+
+# Bootstrap regression: an absent realm is a reviewed CREATE owned by the
+# governed deploy pipeline. No client read occurs before the realm exists.
+printf '{}\n' >"$state_file"
+jq -n '{realmMissing: true}' >"$control_file"
+export KC_SMTP_CREDENTIAL_VERSION="ci-bootstrap-v1"
+bootstrap_plan="$test_root/bootstrap-plan"
+"$ROOT_DIR/scripts/plan.sh" \
+  --output-dir "$bootstrap_plan" \
+  --expected-deploy-sha "$expected_sha" >/dev/null
+[[ "$(jq -er '.realmPolicy.action' "$bootstrap_plan/plan.json")" == "create" ]]
+[[ "$(jq -er '.realmPolicy.before == {}' "$bootstrap_plan/plan.json")" == "true" ]]
+[[ "$(jq -er '.createCount' "$bootstrap_plan/plan.json")" -eq 37 ]]
+[[ "$(jq -er '.updateCount' "$bootstrap_plan/plan.json")" -eq 0 ]]
+[[ "$(jq -er '.driftCount' "$bootstrap_plan/plan.json")" -eq 37 ]]
+jq -e '
+  .realmPolicy.rollback.kind == "disable_then_separate_reviewed_realm_delete"
+  and .realmPolicy.rollback.preApplyState == "absent"
+  and .realmPolicy.rollback.deleteRequiresSeparateReviewedRollback == true
+  and .realmPolicy.rollback.requiresReviewedPlan == true
+' "$bootstrap_plan/plan.json" >/dev/null
+
+bootstrap_hash="$(awk 'NR == 1 {print $1}' "$bootstrap_plan/plan.sha256")"
+bootstrap_review="$test_root/bootstrap-review.json"
+"$ROOT_DIR/scripts/review-plan.sh" \
+  --plan "$bootstrap_plan/plan.json" \
+  --expected-plan-sha "$bootstrap_hash" \
+  --expected-deploy-sha "$expected_sha" \
+  --output "$bootstrap_review" >/dev/null
+bootstrap_review_hash="$(awk 'NR == 1 {print $1}' "${bootstrap_review}.sha256")"
+"$ROOT_DIR/scripts/apply-plan.sh" \
+  --plan "$bootstrap_plan/plan.json" \
+  --expected-plan-sha "$bootstrap_hash" \
+  --review "$bootstrap_review" \
+  --expected-review-sha "$bootstrap_review_hash" \
+  --expected-deploy-sha "$expected_sha" \
+  --recovery-dir "$test_root/recovery-bootstrap" >/dev/null
+
+jq -e '.realm == "codestra" and .enabled == true' "$realm_state_file" >/dev/null
+[[ "$(jq -er 'length' "$state_file")" -eq 36 ]]
+jq -e '
+  .partialApply == false
+  and .operations[0].resourceType == "realm"
+  and .operations[0].action == "create"
+  and .operations[0].state == "created"
+  and ([.operations[] | select(.resourceType == "client")] | length == 36)
+  and all(.operations[] | select(.resourceType == "client"); .state == "created")
+' "$test_root/recovery-bootstrap/recovery-manifest.json" >/dev/null
+
+bootstrap_converged="$test_root/bootstrap-converged"
+"$ROOT_DIR/scripts/plan.sh" \
+  --output-dir "$bootstrap_converged" \
+  --expected-deploy-sha "$expected_sha" >/dev/null
+[[ "$(jq -er '.driftCount' "$bootstrap_converged/plan.json")" -eq 0 ]]
+[[ "$(jq -er '.blockedCount' "$bootstrap_converged/plan.json")" -eq 0 ]]
+[[ "$(jq -er '.createCount' "$bootstrap_converged/plan.json")" -eq 0 ]]
+[[ "$(jq -er '.updateCount' "$bootstrap_converged/plan.json")" -eq 0 ]]
+printf 'REALM_BOOTSTRAP_CREATE_GATE=PASS\n'
 
 printf 'PLAN_GATE_TESTS=PASS\n'
 printf 'INDEPENDENT_DRIFT_REVIEW_GATE=PASS\n'
