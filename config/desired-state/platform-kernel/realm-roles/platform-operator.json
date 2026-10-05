@@ -1,6 +1,6 @@
 {
   "name": "platform-operator",
-  "description": "Middleware V3 kernel operator: with platform.command.replay, may replay an operation. No provider, secret, identity or business rights. Route digest 9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b. Prepared only; unassigned until PAS-157.",
+  "description": "Middleware V3 kernel operator: with platform.command.replay, may replay an operation. No provider, secret, identity or business rights. Prepared only; unassigned until PAS-157.",
   "composite": false,
   "clientRole": false,
   "attributes": {

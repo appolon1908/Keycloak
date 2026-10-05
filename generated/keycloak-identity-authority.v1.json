@@ -213,7 +213,7 @@
         "display.on.consent.screen": "false",
         "include.in.token.scope": "true"
       },
-      "description": "Middleware V3 kernel scope: submit or cancel a command. Explicit per-token request; never a realm default. Route digest 9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b. Attached to no client until PAS-157 resolves the caller.",
+      "description": "Middleware V3 kernel scope: submit or cancel a command. Explicit per-token request; never a realm default. Attached to no client until PAS-157 resolves the caller.",
       "name": "platform.command",
       "protocol": "openid-connect",
       "protocolMappers": []
@@ -223,7 +223,7 @@
         "display.on.consent.screen": "false",
         "include.in.token.scope": "true"
       },
-      "description": "Middleware V3 kernel scope: read operations, timelines and the kernel description. Explicit per-token request; never a realm default. Route digest 9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b. Unattached until PAS-157.",
+      "description": "Middleware V3 kernel scope: read operations, timelines and the kernel description. Explicit per-token request; never a realm default. Unattached until PAS-157.",
       "name": "platform.command.read",
       "protocol": "openid-connect",
       "protocolMappers": []
@@ -233,7 +233,7 @@
         "display.on.consent.screen": "false",
         "include.in.token.scope": "true"
       },
-      "description": "Middleware V3 kernel scope: replay an operation (POST /platform/v1/operations/{operation_id}/replay). Per-token request; never a realm default. Route digest 9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b. Unattached until PAS-157.",
+      "description": "Middleware V3 kernel scope: replay an operation (POST /platform/v1/operations/{operation_id}/replay). Per-token request; never a realm default. Unattached until PAS-157.",
       "name": "platform.command.replay",
       "protocol": "openid-connect",
       "protocolMappers": []
@@ -4184,7 +4184,7 @@
       },
       "clientRole": false,
       "composite": false,
-      "description": "Middleware V3 kernel operator: with platform.command.replay, may replay an operation. No provider, secret, identity or business rights. Route digest 9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b. Prepared only; unassigned until PAS-157.",
+      "description": "Middleware V3 kernel operator: with platform.command.replay, may replay an operation. No provider, secret, identity or business rights. Prepared only; unassigned until PAS-157.",
       "name": "platform-operator"
     },
     {
@@ -5179,7 +5179,7 @@
       "tenantBinding": "global"
     }
   ],
-  "sourceSha256": "62137bd0706043edaa1479bd97fa51f05a78b50619bdf1fb14881dd168d9bcae",
+  "sourceSha256": "330f867e2afe00f98b89d0642b9176314729ae70774729020d0fcfff354ad65b",
   "stagedClients": [
     {
       "authorityGroup": "cip-tenant-identity",

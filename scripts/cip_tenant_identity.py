@@ -31,7 +31,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 DESIRED_ROOT = ROOT / "config" / "desired-state" / "cip-tenant-identity"
 CONTRACT_PATH = DESIRED_ROOT / "contract.json"
-PARITY_RECORD = ROOT / "config" / "certification" / "cip-f3-cross-repo-parity-recertification.v1.json"
+PARITY_RECORD = ROOT / "config" / "certification" / "middleware-145-cross-repo-parity.v1.json"
 ACCESS_V3 = ROOT / "config" / "contracts" / "middleware-api-access.v3.json"
 CALLERS = ROOT / "config" / "contracts" / "middleware-caller-classification.v1.json"
 MANAGED_POLICY = ROOT / "config" / "policy" / "managed-clients.json"
@@ -151,7 +151,7 @@ def validate_contract(contract: dict[str, Any]) -> None:
     _require(route.get("sha256") == parity["frozen"]["routeContractSha256"], "route digest differs from parity record")
     _require(route.get("routeCount") == access["source"]["routeCount"], "route count differs from access v3")
     _require(route.get("parityEvidence") == relative(PARITY_RECORD), "parity evidence pointer drifted")
-    _require(parity["results"]["missionHeads"]["verdict"] == "PASS", "parity re-certification is not PASS")
+    _require(parity["results"]["currentMains"]["verdict"] == "PASS", "parity re-certification is not PASS")
 
     policy = contract.get("tokenPolicy") or {}
     _require(policy.get("signingAlgorithms") == ["RS256"], "only RS256 access tokens are accepted")

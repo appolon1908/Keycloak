@@ -12,7 +12,8 @@ AUTHORITY = ROOT / "config" / "contracts" / "middleware-api-access.v3.json"
 REALM = ROOT / "config" / "realms" / "codestra.json"
 CLIENT_DIR = ROOT / "config" / "clients"
 
-EXPECTED_DIGEST = "9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b"
+EXPECTED_DIGEST = "c48c20d8bc71918699abb03cefe1e3c5075536a9d91d8aea8df4fc031891db21"
+EXPECTED_ROUTE_COUNT = 145
 EXPECTED_SCHEMA = "codestra.keycloak.middleware-api-access.v3"
 PLATFORM_SCOPES = {
     "platform.command": ROOT / "config" / "client-scopes" / "platform.command.json",
@@ -66,11 +67,11 @@ def validate() -> dict[str, int]:
     assert authority["status"] == "PREPARED_DISABLED"
     assert authority["source"]["sha256"] == EXPECTED_DIGEST
     assert authority["source"]["schema"] == "codestra.middleware.public-api-route-contract.v2"
-    assert authority["source"]["routeCount"] == 117
+    assert authority["source"]["routeCount"] == EXPECTED_ROUTE_COUNT
     assert authority["source"]["classificationCounts"] == {
         "denied": 10,
         "private_only": 2,
-        "shared_edge": 105,
+        "shared_edge": 133,
     }
     assert authority["issuer"] == "https://auth.codestra.co/realms/codestra"
     assert authority["targetAudience"] == "middleware-api"
@@ -79,10 +80,10 @@ def validate() -> dict[str, int]:
     assert authority["callerResolutionOwner"] == "PAS-157"
 
     routes = authority["routes"]
-    assert len(routes) == 117
+    assert len(routes) == EXPECTED_ROUTE_COUNT
     assert route_counts(routes) == authority["source"]["classificationCounts"]
-    assert len({row["operationId"] for row in routes}) == 117
-    assert len({(row["method"], row["path"]) for row in routes}) == 117
+    assert len({row["operationId"] for row in routes}) == EXPECTED_ROUTE_COUNT
+    assert len({(row["method"], row["path"]) for row in routes}) == EXPECTED_ROUTE_COUNT
 
     missing_required: list[str] = []
     literal_scopes: set[str] = set()

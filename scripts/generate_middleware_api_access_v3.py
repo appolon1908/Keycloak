@@ -13,12 +13,15 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "config" / "contracts" / "middleware-api-access.v3.json"
 
-PINNED_MIDDLEWARE_DIGEST = "9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b"
+PINNED_MIDDLEWARE_DIGEST = "c48c20d8bc71918699abb03cefe1e3c5075536a9d91d8aea8df4fc031891db21"
+PINNED_MIDDLEWARE_COMMIT = "e873010e0b50e2659ecfc820d86868ffda3a89e5"
+EXPECTED_ROUTE_COUNT = 145
+EXPECTED_CLASSIFICATIONS = {"denied": 10, "private_only": 2, "shared_edge": 133}
 SOURCE_SCHEMA = "codestra.middleware.public-api-route-contract.v2"
 OUTPUT_SCHEMA = "codestra.keycloak.middleware-api-access.v3"
 ISSUER = "https://auth.codestra.co/realms/codestra"
 MIDDLEWARE_AUDIENCE = "middleware-api"
-SOURCE_REPOSITORY = "ingtrader21-spec/Middleware-"
+SOURCE_REPOSITORY = "appolon1908/Middleware-"
 SOURCE_PATH = "deploy/public-api-route-contract.json"
 
 PLATFORM_SCOPE_FILES = {
@@ -120,11 +123,11 @@ def validate_source(document: dict[str, Any]) -> tuple[list[dict[str, Any]], dic
     routes = document.get("routes")
     if not isinstance(routes, list):
         raise ValueError("Middleware route contract has no routes list")
-    if len(routes) != 117:
-        raise ValueError(f"expected 117 Middleware routes, found {len(routes)}")
+    if len(routes) != EXPECTED_ROUTE_COUNT:
+        raise ValueError(f"expected {EXPECTED_ROUTE_COUNT} Middleware routes, found {len(routes)}")
 
     counts = classification_counts(routes)
-    if counts != {"denied": 10, "private_only": 2, "shared_edge": 105}:
+    if counts != EXPECTED_CLASSIFICATIONS:
         raise ValueError(f"unexpected route classification counts: {counts}")
 
     operation_ids: set[str] = set()
@@ -259,6 +262,7 @@ def build_document(source: dict[str, Any]) -> dict[str, Any]:
             "repository": SOURCE_REPOSITORY,
             "path": SOURCE_PATH,
             "schema": source["schema"],
+            "commit": PINNED_MIDDLEWARE_COMMIT,
             "sha256": PINNED_MIDDLEWARE_DIGEST,
             "hashRule": source["hash_rule"],
             "routeCount": len(routes),
@@ -306,7 +310,7 @@ def build_document(source: dict[str, Any]) -> dict[str, Any]:
         "missingRequiredScopes": missing_required,
         "routes": projected_routes,
         "notes": [
-            "All 117 Middleware route rows are represented, including denied and private-only routes.",
+            f"All {EXPECTED_ROUTE_COUNT} Middleware route rows are represented, including denied and private-only routes.",
             "Denied routes remain explicit deny decisions and have no required Keycloak scope.",
             "resolved_from_command_prefix is a Middleware runtime selector, not a literal Keycloak scope.",
             "platform-operator is a protected realm role only for V3 replay; a callingClient value named platform-operator is a separate caller-classification concern owned by PAS-157.",

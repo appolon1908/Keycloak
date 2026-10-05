@@ -8,22 +8,22 @@
   ],
   "audience": "middleware-api",
   "campaign": "TEST_SYN",
-  "configurationChecksum": "95ea0253521828311a7d4108c359bd4eceade2cda72fd633cbc24dc89f845de3",
+  "configurationChecksum": "2aca7e826c3f5d0154ce643ac079a9030857ba15cf69696f77d06991a2424f61",
   "edgeContract": {
     "hashRule": "sha256 over json.dumps(contract, sort_keys=True, separators=(',', ':')).encode('utf-8')",
     "path": "deploy/public-api-route-contract.json",
     "pinnedIn": "deploy/public-api-route-contract.sha256",
-    "repository": "appolon1908-hue/Middleware-",
+    "repository": "appolon1908/Middleware-",
     "schema": "codestra.middleware.public-api-route-contract.v2",
-    "sha256": "9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b",
+    "sha256": "c48c20d8bc71918699abb03cefe1e3c5075536a9d91d8aea8df4fc031891db21",
     "source": {
       "branch": "main",
-      "contractCommit": "0606b0d",
-      "verifiedAtCommit": "0606b0d"
+      "contractCommit": "e873010",
+      "verifiedAtCommit": "e873010"
     },
     "supersedes": {
-      "schema": "codestra.middleware.public-api-route-contract.v1",
-      "sha256": "af984cbaa41d1e3602ceb40be6fe383c0030a3c10cbea772efab7ff95d602d36"
+      "schema": "codestra.middleware.public-api-route-contract.v2",
+      "sha256": "9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b"
     }
   },
   "environment": "staging",
@@ -171,7 +171,7 @@
     },
     {
       "path": "config/desired-state/edge-integration-certification/contract.json",
-      "sha256": "fc1450d3940e8a9dc1e3d178c07072a0620de93be302c97d35d95580263486a8"
+      "sha256": "7d3b3414d07fe24bc8317b6c0bea9a3c0c2a91fa43e66164e49dedfb9b125b1b"
     }
   ]
 }

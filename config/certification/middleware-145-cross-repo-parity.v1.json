@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "kind": "CodestraKeycloakCrossRepoParityRecertification",
+  "mission": "Keycloak corporate production v1 / K8 Middleware 145-route repin",
+  "recordedAt": "2026-10-05",
+  "keycloakBase": {
+    "repository": "appolon1908/Keycloak",
+    "branch": "implementation/keycloak-corporate-production-v1-k8-middleware-145"
+  },
+  "certifier": "scripts/certify_cross_repo_identity_parity.py",
+  "method": "Read-only snapshots via gh api repos/appolon1908/<repo>/contents/<path>?ref=<main sha>. No sibling repository was modified and Keycloak was not contacted.",
+  "supersedes": "config/certification/cip-f3-cross-repo-parity-recertification.v1.json",
+  "frozen": {
+    "routeContractSha256": "c48c20d8bc71918699abb03cefe1e3c5075536a9d91d8aea8df4fc031891db21",
+    "routeCount": 145,
+    "issuer": "https://auth.codestra.co/realms/codestra",
+    "audience": "middleware-api",
+    "middlewareUpstream": "middleware-integration-api:8095"
+  },
+  "inputs": {
+    "middlewareMain": {
+      "repository": "appolon1908/Middleware-",
+      "ref": "main",
+      "commit": "e873010e0b50e2659ecfc820d86868ffda3a89e5",
+      "path": "deploy/public-api-route-contract.json",
+      "fileSha256": "ea94f20135d8792cd31836f18d41bcbd1cfce0b49cd519bfacbcf4dd68ecdf7f",
+      "canonicalSha256": "c48c20d8bc71918699abb03cefe1e3c5075536a9d91d8aea8df4fc031891db21"
+    },
+    "kongMain": {
+      "repository": "appolon1908/Kong",
+      "ref": "main",
+      "commit": "8a0d522fa20e72af1bc466e45a4b336e5be2c5fe",
+      "path": "config/kong-middleware-authority.v2.json",
+      "fileSha256": "33ed6175205d36504840ec8a10d1acb87d8fed6d779ea1a663663a613077147e"
+    },
+    "caddyMain": {
+      "repository": "appolon1908/Caddy",
+      "ref": "main",
+      "commit": "be131c15993e1abf23a63d1e5e9d6fa7183e6dfd",
+      "path": "sites/api.codestra.co.caddy",
+      "fileSha256": "c586e687f83d7fb588a8bb17afefb23b603659ca205e2864e4f5196835132d98"
+    }
+  },
+  "results": {
+    "currentMains": {
+      "verdict": "FAIL",
+      "exitCode": 1,
+      "routeContractSha256": "c48c20d8bc71918699abb03cefe1e3c5075536a9d91d8aea8df4fc031891db21",
+      "routeCount": 145,
+      "sharedEdgeRoutes": 133,
+      "mismatches": {
+        "caddy": 28,
+        "keycloakAccessAuthority": 0,
+        "keycloakEdgeContract": 0,
+        "kong": 29
+      },
+      "problems": {
+        "caddy": [
+          "shared_edge route not routed to kong by caddy: ('POST', '/platform/v1/agent-provisioning/adopt-extension')",
+          "shared_edge route not routed to kong by caddy: ('GET', '/platform/v1/agent-provisioning/requests/{request_id}/history')",
+          "shared_edge route not routed to kong by caddy: ('POST', '/platform/v1/agent-provisioning/reserve-extension')",
+          "shared_edge route not routed to kong by caddy: ('POST', '/platform/v1/agent-provisioning/webrtc/tickets')",
+          "shared_edge route not routed to kong by caddy: ('POST', '/platform/v1/agent-provisioning/{request_id}/disable')",
+          "shared_edge route not routed to kong by caddy: ('GET', '/platform/v1/agent-provisioning/{request_id}/readback')",
+          "shared_edge route not routed to kong by caddy: ('POST', '/platform/v1/agent-provisioning/{request_id}/release-extension')",
+          "shared_edge route not routed to kong by caddy: ('POST', '/platform/v1/agent-provisioning/{request_id}/repair-intents')",
+          "shared_edge route not routed to kong by caddy: ('POST', '/platform/v1/agent-provisioning/{request_id}/sync')",
+          "shared_edge route not routed to kong by caddy: ('POST', '/platform/v1/agent-provisioning/{request_id}/webrtc/revoke')",
+          "shared_edge route not routed to kong by caddy: ('GET', '/platform/v1/commands/{operation_id}')",
+          "shared_edge route not routed to kong by caddy: ('POST', '/platform/v1/commands/{operation_id}/cancel')",
+          "shared_edge route not routed to kong by caddy: ('GET', '/platform/v1/commands/{operation_id}/history')",
+          "shared_edge route not routed to kong by caddy: ('POST', '/platform/v1/commands/{operation_id}/replay')",
+          "shared_edge route not routed to kong by caddy: ('GET', '/platform/v1/commands/{operation_id}/result')",
+          "shared_edge route not routed to kong by caddy: ('POST', '/platform/v1/commands/{operation_id}/retry')",
+          "shared_edge route not routed to kong by caddy: ('GET', '/platform/v1/connectors')",
+          "shared_edge route not routed to kong by caddy: ('GET', '/platform/v1/connectors/{connector_id}')",
+          "shared_edge route not routed to kong by caddy: ('GET', '/platform/v1/connectors/{connector_id}/capabilities')",
+          "shared_edge route not routed to kong by caddy: ('GET', '/platform/v1/connectors/{connector_id}/health')",
+          "shared_edge route not routed to kong by caddy: ('POST', '/platform/v1/connectors/{connector_id}/readback')",
+          "shared_edge route not routed to kong by caddy: ('POST', '/platform/v1/connectors/{connector_id}/reconcile')",
+          "shared_edge route not routed to kong by caddy: ('GET', '/platform/v1/dead-letters')",
+          "shared_edge route not routed to kong by caddy: ('GET', '/platform/v1/dead-letters/{operation_id}')",
+          "shared_edge route not routed to kong by caddy: ('GET', '/platform/v1/operations/{operation_id}/recovery-history')",
+          "shared_edge route not routed to kong by caddy: ('POST', '/platform/v1/rehearsals/no-effect')",
+          "shared_edge route not routed to kong by caddy: ('GET', '/platform/v1/rehearsals/{rehearsal_id}')",
+          "shared_edge route not routed to kong by caddy: ('POST', '/platform/v1/replays/{replay_id}/cancel')"
+        ],
+        "keycloakAccessAuthority": [],
+        "keycloakEdgeContract": [],
+        "kong": [
+          "kong pins a different route contract digest",
+          "shared_edge route missing from kong: ('GET', '/platform/v1/agent-provisioning/requests/{request_id}/history')",
+          "shared_edge route missing from kong: ('GET', '/platform/v1/agent-provisioning/{request_id}/readback')",
+          "shared_edge route missing from kong: ('GET', '/platform/v1/commands/{operation_id}')",
+          "shared_edge route missing from kong: ('GET', '/platform/v1/commands/{operation_id}/history')",
+          "shared_edge route missing from kong: ('GET', '/platform/v1/commands/{operation_id}/result')",
+          "shared_edge route missing from kong: ('GET', '/platform/v1/connectors')",
+          "shared_edge route missing from kong: ('GET', '/platform/v1/connectors/{connector_id}')",
+          "shared_edge route missing from kong: ('GET', '/platform/v1/connectors/{connector_id}/capabilities')",
+          "shared_edge route missing from kong: ('GET', '/platform/v1/connectors/{connector_id}/health')",
+          "shared_edge route missing from kong: ('GET', '/platform/v1/dead-letters')",
+          "shared_edge route missing from kong: ('GET', '/platform/v1/dead-letters/{operation_id}')",
+          "shared_edge route missing from kong: ('GET', '/platform/v1/operations/{operation_id}/recovery-history')",
+          "shared_edge route missing from kong: ('GET', '/platform/v1/rehearsals/{rehearsal_id}')",
+          "shared_edge route missing from kong: ('POST', '/platform/v1/agent-provisioning/adopt-extension')",
+          "shared_edge route missing from kong: ('POST', '/platform/v1/agent-provisioning/reserve-extension')",
+          "shared_edge route missing from kong: ('POST', '/platform/v1/agent-provisioning/webrtc/tickets')",
+          "shared_edge route missing from kong: ('POST', '/platform/v1/agent-provisioning/{request_id}/disable')",
+          "shared_edge route missing from kong: ('POST', '/platform/v1/agent-provisioning/{request_id}/release-extension')",
+          "shared_edge route missing from kong: ('POST', '/platform/v1/agent-provisioning/{request_id}/repair-intents')",
+          "shared_edge route missing from kong: ('POST', '/platform/v1/agent-provisioning/{request_id}/sync')",
+          "shared_edge route missing from kong: ('POST', '/platform/v1/agent-provisioning/{request_id}/webrtc/revoke')",
+          "shared_edge route missing from kong: ('POST', '/platform/v1/commands/{operation_id}/cancel')",
+          "shared_edge route missing from kong: ('POST', '/platform/v1/commands/{operation_id}/replay')",
+          "shared_edge route missing from kong: ('POST', '/platform/v1/commands/{operation_id}/retry')",
+          "shared_edge route missing from kong: ('POST', '/platform/v1/connectors/{connector_id}/readback')",
+          "shared_edge route missing from kong: ('POST', '/platform/v1/connectors/{connector_id}/reconcile')",
+          "shared_edge route missing from kong: ('POST', '/platform/v1/rehearsals/no-effect')",
+          "shared_edge route missing from kong: ('POST', '/platform/v1/replays/{replay_id}/cancel')"
+        ]
+      }
+    }
+  },
+  "blockers": [
+    "Kong main pins the 117-route digest and lacks the 28 added shared_edge routes; Kong must repin to the 145-route contract.",
+    "Caddy main does not route the 28 added shared_edge paths to Kong."
+  ]
+}

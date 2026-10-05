@@ -13,7 +13,7 @@ GENERATOR_PATH = ROOT / "scripts" / "generate_middleware_api_access_v3.py"
 REALM_PATH = ROOT / "config" / "realms" / "codestra.json"
 CLIENT_DIR = ROOT / "config" / "clients"
 
-EXPECTED_DIGEST = "9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b"
+EXPECTED_DIGEST = "c48c20d8bc71918699abb03cefe1e3c5075536a9d91d8aea8df4fc031891db21"
 PLATFORM_SCOPES = {
     "platform.command",
     "platform.command.read",
@@ -50,22 +50,22 @@ class MiddlewareApiAccessV3Tests(unittest.TestCase):
             "codestra.keycloak.middleware-api-access.v3",
         )
         self.assertEqual(source["sha256"], EXPECTED_DIGEST)
-        self.assertEqual(source["routeCount"], 117)
+        self.assertEqual(source["routeCount"], 145)
         self.assertEqual(
             source["classificationCounts"],
-            {"denied": 10, "private_only": 2, "shared_edge": 105},
+            {"denied": 10, "private_only": 2, "shared_edge": 133},
         )
         self.assertFalse(self.authority["runtimeApplyAuthorized"])
         self.assertFalse(self.authority["providerEffectsEnabled"])
         self.assertEqual(self.authority["callerResolutionOwner"], "PAS-157")
 
-    def test_all_117_routes_are_represented_once(self) -> None:
+    def test_all_145_routes_are_represented_once(self) -> None:
         routes = self.authority["routes"]
-        self.assertEqual(len(routes), 117)
-        self.assertEqual(len({row["operationId"] for row in routes}), 117)
+        self.assertEqual(len(routes), 145)
+        self.assertEqual(len({row["operationId"] for row in routes}), 145)
         self.assertEqual(
             len({(row["method"], row["path"]) for row in routes}),
-            117,
+            145,
         )
         classifications = {
             name: sum(row["classification"] == name for row in routes)
@@ -73,7 +73,7 @@ class MiddlewareApiAccessV3Tests(unittest.TestCase):
         }
         self.assertEqual(
             classifications,
-            {"denied": 10, "private_only": 2, "shared_edge": 105},
+            {"denied": 10, "private_only": 2, "shared_edge": 133},
         )
 
     def test_every_active_route_has_scope_or_reviewed_runtime_selector(self) -> None:

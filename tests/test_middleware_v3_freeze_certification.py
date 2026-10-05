@@ -24,8 +24,8 @@ ACCESS_V3 = CONFIG / "contracts" / "middleware-api-access.v3.json"
 CALLERS = CONFIG / "contracts" / "middleware-caller-classification.v1.json"
 PLATFORM_OPERATOR = CONFIG / "desired-state" / "platform-kernel" / "realm-roles" / "platform-operator.json"
 
-FROZEN_SHA256 = "9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b"
-FROZEN_ROUTE_COUNT = 117
+FROZEN_SHA256 = "c48c20d8bc71918699abb03cefe1e3c5075536a9d91d8aea8df4fc031891db21"
+FROZEN_ROUTE_COUNT = 145
 AUDIENCE = "middleware-api"
 PRODUCTION_ISSUER = "https://auth.codestra.co/realms/codestra"
 PLATFORM_SCOPES = {"platform.command", "platform.command.read", "platform.command.replay"}
