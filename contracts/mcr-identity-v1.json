@@ -4,8 +4,8 @@
   "status": "PREPARED_DISABLED",
   "runtimeApplyAuthorized": false,
   "sourcePins": {
-    "config/contracts/middleware-caller-classification.v1.json": "b147b8a2476ecb7a7d415a42232b170cfa48172e7f0104120dd054cc564cab77",
-    "config/contracts/middleware-api-access.v3.json": "fef5d4d8d7562b4c87deba346456f71a03b471321ba3c4961f2e1548b9986303"
+    "config/contracts/middleware-caller-classification.v1.json": "d4e6ff86dbdc80f63a52c604feccb26e6ed49641ff217c6969a8e979e28f1af8",
+    "config/contracts/middleware-api-access.v3.json": "96f338c710a8f3e3c9d505c23512c4ad6b26469a5a495b779a6b70e71b66e198"
   },
   "issuers": {
     "staging": "https://auth-staging.codestra.co/realms/codestra",
