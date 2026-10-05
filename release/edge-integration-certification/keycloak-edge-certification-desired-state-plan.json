@@ -8,7 +8,7 @@
   ],
   "audience": "middleware-api",
   "campaign": "TEST_SYN",
-  "configurationChecksum": "95ea0253521828311a7d4108c359bd4eceade2cda72fd633cbc24dc89f845de3",
+  "configurationChecksum": "04ab213943543ee15b1e74f10b3c368267794aeb1f70071c59d7bbd62f215ad8",
   "edgeContract": {
     "hashRule": "sha256 over json.dumps(contract, sort_keys=True, separators=(',', ':')).encode('utf-8')",
     "path": "deploy/public-api-route-contract.json",
@@ -171,7 +171,7 @@
     },
     {
       "path": "config/desired-state/edge-integration-certification/contract.json",
-      "sha256": "fc1450d3940e8a9dc1e3d178c07072a0620de93be302c97d35d95580263486a8"
+      "sha256": "49c36dd3aff0911938c4a2f6049a31da077c7ac71e5472866b33df40d059e785"
     }
   ]
 }
