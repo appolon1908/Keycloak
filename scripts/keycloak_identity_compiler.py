@@ -15,6 +15,9 @@ SCOPES = ROOT / "config" / "client-scopes"
 CONTRACTS = ROOT / "config" / "contracts"
 DESIRED_STATE = ROOT / "config" / "desired-state"
 ENVIRONMENT_SCOPES = ROOT / "config" / "policy" / "environment-scoped-clients.json"
+SERVICE_IDENTITY_POLICY = ROOT / "config" / "policy" / "service-identity-policy.json"
+SERVICE_IDENTITY_SCHEMA = "codestra.keycloak.service-identity-policy.v1"
+CODEOWNERS = ROOT / ".github" / "CODEOWNERS"
 OUT = ROOT / "generated" / "keycloak-identity-authority.v1.json"
 ENVIRONMENT_SCOPES_SCHEMA = "codestra.keycloak.environment-scoped-clients.v1"
 # Every environment a protected client may be planned into. A client absent from the
@@ -459,6 +462,85 @@ def validate_column_limits(label: str, document: dict[str, Any]) -> None:
             raise IdentityModelError(f"keycloak_column_too_long:{label}:{field}:{len(value)}")
 
 
+def _config_owners() -> list[str]:
+    for line in CODEOWNERS.read_text(encoding="utf-8").splitlines():
+        parts = line.split()
+        if parts and parts[0] == "/config/":
+            return sorted(owner.lstrip("@") for owner in parts[1:])
+    return []
+
+
+def _service_risk(admin: str, scopes: list[str], description: str) -> str:
+    if admin != "none" or "privileged" in description.lower() or any(not scope.endswith(".read") for scope in scopes):
+        return "high"
+    return "medium" if scopes else "low"
+
+
+def service_identities(protected_clients: list[dict[str, Any]], environment_scopes: dict[str, list[str]]) -> list[dict[str, Any]]:
+    """Inventory every protected service client from the contracts that already describe it.
+
+    Nothing here is free text: each field is copied or computed from a canonical
+    source, and an identity with no owner, purpose or credential destination fails.
+    """
+    policy = load_json(SERVICE_IDENTITY_POLICY)
+    if policy.get("schema") != SERVICE_IDENTITY_SCHEMA:
+        raise IdentityModelError("service_identity_policy_invalid")
+    owners = _config_owners()
+    if not owners:
+        raise IdentityModelError("service_identity_owner_missing")
+    contracts = ROOT / "config" / "contracts"
+    destinations = {row["clientId"]: row for row in load_json(contracts / "machine-secret-destinations.json")["clients"]}
+    matrix = load_json(contracts / "service-access-matrix.json")
+    kinds = {row["clientId"]: row["kind"] for row in matrix["services"]}
+    granted: dict[str, set[str]] = {}
+    for grant in matrix["grants"]:
+        granted.setdefault(grant["callerClientId"], set()).update(grant.get("scopes") or [])
+    for row in load_json(contracts / "product-middleware-clients.json")["clients"]:
+        granted.setdefault(row["clientId"], set()).update(row.get("scopes") or [])
+    boundaries = matrix.get("administrativeBoundaries") or {}
+    generic = "Confidential machine identity managed by protected Keycloak GitOps."
+    output: list[dict[str, Any]] = []
+    for client in protected_clients:
+        if client.get("serviceAccountsEnabled") is not True:
+            continue
+        client_id = str(client["clientId"])
+        description = str(client.get("description") or "")
+        scopes = sorted(granted.get(client_id, set()))
+        if client_id in kinds:
+            purpose = f"{kinds[client_id]} service" + (f" granted {', '.join(scopes)}" if scopes else "")
+        elif description and description != generic:
+            purpose = description
+        else:
+            raise IdentityModelError(f"service_identity_purpose_missing:{client_id}")
+        destination = destinations.get(client_id)
+        if not destination or not destination.get("applyEnvironment"):
+            raise IdentityModelError(f"service_identity_credential_unknown:{client_id}")
+        override = (policy.get("keycloakAdminAccess") or {}).get(client_id)
+        if override:
+            admin = str(override["level"])
+        else:
+            admin = "full" if (boundaries.get(client_id) or {}).get("keycloakAdminApiAccess") else "none"
+        mappers = client.get("protocolMappers") or []
+        audiences = sorted({str((m.get("config") or {}).get("included.custom.audience") or (m.get("config") or {}).get("included.client.audience"))
+                            for m in mappers if m.get("protocolMapper") == "oidc-audience-mapper"})
+        tenant_bound = any((m.get("config") or {}).get("claim.name") == "tenant_id" for m in mappers)
+        output.append({
+            "clientId": client_id,
+            "identityType": "service",
+            "owners": owners,
+            "purpose": purpose,
+            "environments": environment_scopes.get(client_id, list(ENVIRONMENTS)),
+            "audiences": audiences,
+            "scopes": scopes,
+            "tenantBinding": "tenant_id claim" if tenant_bound else "global",
+            "keycloakAdminAccess": admin,
+            "credential": {"type": policy["credential"]["type"], "secretFromEnvironment": destination["applyEnvironment"],
+                           "maxSecretAgeDays": policy["credential"]["maxSecretAgeDays"]},
+            "risk": _service_risk(admin, scopes, description),
+        })
+    return sorted(output, key=lambda row: row["clientId"])
+
+
 def authority_group(path: Path) -> str:
     """The authority group owning a source document: its desired-state family, or the protected root."""
     try:
@@ -678,6 +760,7 @@ def compile_identity() -> dict[str, Any]:
         "userProfileAttributes": user_profile_attributes,
         "environmentScopes": environment_scopes,
         "ownership": ownership,
+        "serviceIdentities": service_identities(protected_clients, environment_scopes),
         "environmentBoundaries": {
             "production": {"issuer": "https://auth.codestra.co/realms/codestra"},
             "staging": {"issuer": "https://auth-staging.codestra.co/realms/codestra"},

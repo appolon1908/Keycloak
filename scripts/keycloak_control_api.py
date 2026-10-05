@@ -16,6 +16,7 @@ HOST="127.0.0.1"
 PORT=8785
 MUTATION_ENVIRONMENTS={"production","staging","test-syn"}
 # A caller-chosen promotion id names an evidence file, so it is held to a strict shape.
+RECONCILER_AUTHORITY=Path(__file__).resolve().parents[1]/"config"/"policy"/"reconciler-authority.json"
 PROMOTION_ID=re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}")
 ALLOWED_METHODS="GET, POST"
 IN_FLIGHT_STATUSES={"IN_PROGRESS","APPLIED_PENDING_READBACK"}
@@ -69,12 +70,18 @@ class Service:
         # The whole user profile is read so a rollback can restore any attribute an apply touched.
         profile=api.user_profile() or {}
         return {"realm":api.realm_state(),"clients":clients,"clientScopes":api.client_scopes(),"realmRoles":api.realm_roles(),"clientRoles":client_roles,"scopeMappings":mappings,"serviceAccountRoles":service_roles,"userProfileAttributes":list(profile.get("attributes") or []),"requiredActions":api.required_actions(),"unregisteredRequiredActions":api.unregistered_required_actions()}
+    def holds(self,environment=None):
+        # Objects another writer owns in this environment are planned as HOLD, never written.
+        env=environment if environment is not None else self.environment()
+        policy=json.loads(RECONCILER_AUTHORITY.read_text(encoding="utf-8"))
+        if policy.get("schema")!="codestra.keycloak.reconciler-authority.v1": raise KeycloakAdminError("reconciler_authority_invalid","reconciler authority policy is invalid",500)
+        return list((policy.get("environments") or {}).get(env,[]))
     def scoped_desired(self,environment=None):
         # Only the desired state that may live in this environment is planned; a scoped
         # client (klyrow-staging-portal) never reaches a production or TEST_SYN plan.
         return scoped_for_environment(self.desired(),environment if environment is not None else self.environment())
     def drift(self):
-        env=self.environment(); return plan(self.scoped_desired(env),self.live(),environment=env)
+        env=self.environment(); return plan(self.scoped_desired(env),self.live(),environment=env,holds=self.holds(env))
     def compile(self):
         # Compilation over HTTP is read-only: it reports drift against the checked-in
         # authority but never rewrites repository files.
@@ -122,7 +129,7 @@ class Service:
                 if old.get("desiredStateDigest")!=desired_digest: raise KeycloakAdminError("idempotency_key_conflict","this idempotency key was used for a different desired state",409)
                 return old
             api=self._api()
-            pre=self.live(); p=plan(desired,pre,environment=env)
+            pre=self.live(); p=plan(desired,pre,environment=env,holds=self.holds(env))
             execution_id=str(uuid.uuid4()); pre_state,redacted=redact_secret_material(pre)
             record={"executionId":execution_id,"idempotencyKey":idempotency_key,"mode":"APPLY","environment":env,"status":"IN_PROGRESS","mutationPerformed":False,"desiredStateDigest":p["desiredSha256"],"preStateDigest":p["liveSha256"],"plan":p,"actionJournal":[],"preState":pre_state,"preStateRedactedPaths":redacted,"rollbackStatus":"NOT_RUN"}
             # Evidence is durable before the first mutation; if it cannot be written nothing is applied.
@@ -139,7 +146,7 @@ class Service:
             else:
                 # The journal is durable before readback, so a readback failure can never hide what was applied.
                 record["status"]="APPLIED_PENDING_READBACK"; self.store.put("executions",execution_id,record,replace=True)
-                try: post=self.live(); readback=verify_readback(desired,post); result_digest=digest(post)
+                try: post=self.live(); readback=verify_readback(desired,post,holds=self.holds(env)); result_digest=digest(post)
                 except KeycloakAdminError as exc:
                     record.update({"status":"READBACK_UNAVAILABLE","error":exc.code})
                 else:
@@ -159,7 +166,7 @@ class Service:
             api=self._api(); current=self.live(); pre=original["preState"]; journal_before=original.get("actionJournal")
             removals=original.get("attributeAdditions")
             if removals is None: removals=rollback_attribute_removals(pre,desired,journal_before)
-            p=rollback_plan(pre,current,created_inventory=created_inventory(journal_before),attribute_removals=removals,environment=env)
+            p=rollback_plan(pre,current,created_inventory=created_inventory(journal_before),attribute_removals=removals,environment=env,holds=self.holds(env))
             rollback_id=str(uuid.uuid4())
             record={"executionId":rollback_id,"mode":"ROLLBACK","sourceExecutionId":execution_id,"environment":env,"status":"IN_PROGRESS","mutationPerformed":False,"targetStateDigest":p["desiredSha256"],"preStateDigest":p["liveSha256"],"plan":p,"attributeRemovals":removals,"actionJournal":[],"readback":None,"error":None}
             # The rollback plan is durable before the first mutation, exactly like an apply.
@@ -170,7 +177,7 @@ class Service:
             journal=outcome.get("journal",[])
             record.update({"status":"APPLIED_PENDING_READBACK","actionJournal":journal,"mutationPerformed":mutation_performed(journal),"error":outcome.get("error")})
             self.store.put("rollbacks",rollback_id,record,replace=True)
-            try: after=self.live(); check=verify_readback(pre,after)
+            try: after=self.live(); check=verify_readback(pre,after,holds=self.holds(env))
             except KeycloakAdminError as exc:
                 record.update({"status":"READBACK_UNAVAILABLE","error":exc.code})
             else:
@@ -199,7 +206,7 @@ class Service:
     def recovery_validate(self):
         result=self.recovery().validate(); rid=str(uuid.uuid4()); self.store.put("recovery",rid,result); return {"validationId":rid,**result}
 
-    def observability_status(self): return observability_status(self.scoped_desired(),self.live())
+    def observability_status(self): return observability_status(self.scoped_desired(),self.live(),holds=self.holds())
     def events(self,limit=100):
         api=self._api(); raw=api.events(max_results=limit)
         return normalize_events([{"event_id":e.get("id"),"timestamp":e.get("time"),"event_type":e.get("type"),"outcome":"ERROR" if str(e.get("type","")).endswith("_ERROR") else "SUCCESS","realm":"codestra","client_id":e.get("clientId"),"subject_ref":e.get("userId")} for e in raw],limit=limit)
