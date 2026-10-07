@@ -37,7 +37,7 @@ EXPECTED_WORKFLOWS = (
     LEGACY_WORKFLOWS
     | {AUTHORITY_WORKFLOW, LIVE_AUTHORITY_WORKFLOW, MANUAL_RELEASE_WORKFLOW}
     | PR_AUTHORITY_WORKFLOWS
-    | {"environment-promotion.yml"}
+    | {"environment-promotion.yml", "workstation-governance.yml"}
 )
 
 
