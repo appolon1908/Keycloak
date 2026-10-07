@@ -1,5 +1,4 @@
 {
-  "schema": "keycloak.bootstrap-closure.v1",
   "files": [
     {
       "path": ".github/workflows/keycloak-release-trust-root.yml",
@@ -43,7 +42,7 @@
     },
     {
       "path": "scripts/validate-workflows.py",
-      "sha256": "bdb34c02b8e7a5c5339cb9d1871c9a5fa93f32211a5986a26046481d31eb93d4"
+      "sha256": "1761bcc2b183b4e0991688beeb5814ba3c4a06a2a99efdad5c86c25ff6d92f5e"
     },
     {
       "path": "scripts/validate.sh",
@@ -54,5 +53,6 @@
       "sha256": "f1133e8b04226a854b3484ded27149995d54dfceb8b1ff9dfbf062a9140d33e6"
     }
   ],
-  "manifest_sha256": "282e98b9a9f0bb5fc2140865bd5902a0d9caf0ec9b12cae36c2aedc674045f9d"
+  "manifest_sha256": "a5b96691053cc31919844e40e9b63dc1bb599af7f3c72986c9c5d516e773ce39",
+  "schema": "keycloak.bootstrap-closure.v1"
 }
