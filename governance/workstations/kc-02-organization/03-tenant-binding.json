@@ -1,0 +1,24 @@
+{
+  "workstation": "keycloak::kc-02-organization::03-tenant-binding",
+  "product": "keycloak",
+  "section": "kc-02-organization",
+  "subsection": "03-tenant-binding",
+  "branch": "subsection/kc-02-organization--03-tenant-binding",
+  "parent_branch": "section/kc-02-organization",
+  "order": 3,
+  "worktree": "/srv/codestra/workstations/Keycloak/sections/kc-02-organization/subsections/03-tenant-binding/repo",
+  "depends_on": [
+    "keycloak::kc-01-realm::03-session-policy",
+    "keycloak::kc-02-organization::02-membership"
+  ],
+  "status": "NOT_STARTED",
+  "required_gates": [
+    "lint",
+    "unit",
+    "integration",
+    "contract",
+    "security",
+    "clean_tree",
+    "remote_sha_match"
+  ]
+}

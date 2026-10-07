@@ -1,0 +1,23 @@
+{
+  "workstation": "keycloak::kc-08-release::01-observability",
+  "product": "keycloak",
+  "section": "kc-08-release",
+  "subsection": "01-observability",
+  "branch": "subsection/kc-08-release--01-observability",
+  "parent_branch": "section/kc-08-release",
+  "order": 1,
+  "worktree": "/srv/codestra/workstations/Keycloak/sections/kc-08-release/subsections/01-observability/repo",
+  "depends_on": [
+    "keycloak::kc-07-reconciliation::03-repair"
+  ],
+  "status": "NOT_STARTED",
+  "required_gates": [
+    "lint",
+    "unit",
+    "integration",
+    "contract",
+    "security",
+    "clean_tree",
+    "remote_sha_match"
+  ]
+}
