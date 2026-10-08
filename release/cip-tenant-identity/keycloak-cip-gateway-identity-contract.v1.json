@@ -12,7 +12,7 @@
     "configurationChecksum": "a790de74382dff2ca06bc0cb13c92211234ad856e6eea88e91b2497a26bf1abe",
     "consumptionRule": "Kong imports this file as data only, pins it by sha256 and never edits Keycloak desired state.",
     "contract": "config/desired-state/cip-tenant-identity/contract.json",
-    "contractSha256": "af7dc452969859370f82ac9a3479cd8cd01ed2bcb7b83bf2498f41fca19e978b",
+    "contractSha256": "15fbb879e36c79831265d856de322495e1e234b2ab75a186363b8cf2c00dfc5d",
     "desiredStatePlan": "release/cip-tenant-identity/keycloak-cip-tenant-identity-desired-state-plan.json",
     "desiredStatePlanSha256": "d1a3ddbf1e7f03565343806daa8c06a5996144905a6efbb97fdaf80c47253c3b",
     "hashRule": "contractSha256, tokenMatrixSha256 and parityEvidenceSha256 are sha256 over json.dumps(document, sort_keys=True, separators=(',', ':')).encode('utf-8'); desiredStatePlanSha256 is sha256 over the committed plan file bytes, as recorded in its .sha256 file",
