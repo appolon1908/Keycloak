@@ -1,0 +1,66 @@
+{
+  "schema": "codestra.keycloak.mission-control.staging.v1",
+  "environment": "staging",
+  "source_only": true,
+  "runtime_apply_authorized": false,
+  "issuer": "https://auth-staging.codestra.co/realms/codestra",
+  "realm": "codestra",
+  "clientScope": {
+    "name": "dashboard.read",
+    "protocol": "openid-connect",
+    "attributes": {
+      "include.in.token.scope": "true",
+      "display.on.consent.screen": "false"
+    },
+    "protocolMappers": [
+      {
+        "name": "mission-control-dashboard-audience",
+        "protocol": "openid-connect",
+        "protocolMapper": "oidc-audience-mapper",
+        "consentRequired": false,
+        "config": {
+          "included.custom.audience": "mission-control-backend",
+          "access.token.claim": "true",
+          "id.token.claim": "false"
+        }
+      }
+    ]
+  },
+  "client": {
+    "clientId": "mission-control-ui",
+    "name": "Codestra Mission Control staging UI",
+    "enabled": true,
+    "protocol": "openid-connect",
+    "publicClient": true,
+    "standardFlowEnabled": true,
+    "implicitFlowEnabled": false,
+    "directAccessGrantsEnabled": false,
+    "serviceAccountsEnabled": false,
+    "fullScopeAllowed": false,
+    "redirectUris": [
+      "https://dashboard.staging.internal.codestra.agency/mission-control"
+    ],
+    "webOrigins": [
+      "https://dashboard.staging.internal.codestra.agency"
+    ],
+    "attributes": {
+      "pkce.code.challenge.method": "S256"
+    },
+    "optionalClientScopes": [
+      "dashboard.read"
+    ]
+  },
+  "backend_requirements": {
+    "algorithms": [
+      "RS256"
+    ],
+    "audience": "mission-control-backend",
+    "authorized_party": "mission-control-ui",
+    "authorized_realm_roles": [
+      "Administrator",
+      "Operator",
+      "Reviewer"
+    ],
+    "tenant_viewer_denied": true
+  }
+}
