@@ -10,6 +10,40 @@ trap 'report_error "$?" "$LINENO"' ERR
 umask 077
 
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Real plan/apply entrypoints always execute scripts/validate.sh.
+# This mock gate makes numerous independent plans, so validating the entire
+# repository inside every one would multiply hosted CI time. Validate the
+# unmodified source once; run the mock calls in an ephemeral working copy.
+# No production release script or tracked validation script is weakened.
+if [[ "${CODESTRA_PLAN_GATE_ISOLATED_FIXTURE:-}" != "yes" ]]; then
+  source_root="$ROOT_DIR"
+  stage_root="$(mktemp -d)"
+  source_evidence_dir="$(mktemp -d)"
+  # The trap owns the ephemeral copy and never touches the checkout.
+  trap 'rm -rf -- "$stage_root" "$source_evidence_dir"' EXIT
+  KEYCLOAK_CONTROL_EVIDENCE_DIR="$source_evidence_dir" \
+    "$source_root/scripts/validate.sh"
+  tar -C "$source_root" --exclude='./.git' --exclude='*/__pycache__' \
+    --exclude='*/.pytest_cache' -cf - . | tar -C "$stage_root" -xf -
+  source_digest="$(sha256sum "$source_root/scripts/validate.sh" | awk '{print $1}')"
+  printf '%s\n' "$source_digest" > "$stage_root/.plan-gate-source-validated"
+  cat > "$stage_root/scripts/validate.sh" <<'FIXTURE_ONLY'
+#!/usr/bin/env bash
+set -Eeuo pipefail
+[[ "${CODESTRA_PLAN_GATE_ISOLATED_FIXTURE:-}" == "yes" ]]
+[[ -f "${CODESTRA_PLAN_GATE_FIXTURE_ROOT:?}/.plan-gate-source-validated" ]]
+[[ "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)" == "$CODESTRA_PLAN_GATE_FIXTURE_ROOT" ]]
+[[ "$(cat "$CODESTRA_PLAN_GATE_FIXTURE_ROOT/.plan-gate-source-validated")" == "${CODESTRA_PLAN_GATE_VALIDATOR_DIGEST:?}" ]]
+FIXTURE_ONLY
+  chmod 0700 "$stage_root/scripts/validate.sh"
+  CODESTRA_PLAN_GATE_ISOLATED_FIXTURE=yes \
+  CODESTRA_PLAN_GATE_FIXTURE_ROOT="$stage_root" \
+  CODESTRA_PLAN_GATE_VALIDATOR_DIGEST="$source_digest" \
+    bash "$stage_root/scripts/test-plan-gate.sh"
+  exit
+fi
+
 # shellcheck source=scripts/lib/keycloak-admin.sh
 source "$ROOT_DIR/scripts/lib/keycloak-admin.sh"
 test_root="$(mktemp -d)"
