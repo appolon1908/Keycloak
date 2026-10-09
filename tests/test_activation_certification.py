@@ -68,7 +68,7 @@ class ActivationCertificationTests(unittest.TestCase):
     def test_readback_is_exact_and_credential_free(self):
         evidence, api = self.certify()
         self.assertTrue(evidence["klyrow_projection_matches"])
-        self.assertEqual(evidence["klyrow_redirect_uris"], ["https://klyrow.com/"])
+        self.assertEqual(evidence["klyrow_redirect_uris"], ["https://app.klyrow.com/auth/callback"])
         self.assertFalse(evidence["mutation_attempted"])
         self.assertEqual([call[0] for call in api.calls], ["GET", "GET", "POST", "GET", "GET"])
         serialized = json.dumps(evidence)
