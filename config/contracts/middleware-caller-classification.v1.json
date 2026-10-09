@@ -4,7 +4,7 @@
   "mission": "PAS-157",
   "description": "Caller classification and token-boundary authority for Middleware V3. This file classifies logical callers; it does not create Keycloak clients or grant live access.",
   "middleware": {
-    "repository": "ingtrader21-spec/Middleware-",
+    "repository": "appolon1908/Middleware-",
     "routeContractPath": "deploy/public-api-route-contract.json",
     "targetRouteContractSha256": "9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b",
     "targetRouteCount": 117,

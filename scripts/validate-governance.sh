@@ -40,7 +40,7 @@ for protected_pattern in "${protected_patterns[@]}"; do
       primary_owner = 0
       independent_owner = 0
       for (field = 2; field <= NF; field += 1) {
-        if ($field == "@appolon1908-hue") {
+        if ($field == "@appolon1908") {
           primary_owner = 1
         }
         if ($field == "@kazan555") {
@@ -55,7 +55,7 @@ for protected_pattern in "${protected_patterns[@]}"; do
       exit(matched == 1 ? 0 : 1)
     }
   ' "$codeowners_file" ||
-    fail "CODEOWNERS pattern ${protected_pattern} must include @appolon1908-hue and @kazan555"
+    fail "CODEOWNERS pattern ${protected_pattern} must include @appolon1908 and @kazan555"
 done
 
 validate_ruleset() {
@@ -107,4 +107,8 @@ validate_ruleset "$final_ruleset" "Protect main" true
 printf 'CODEOWNERS_POLICY=PASS\n'
 printf 'BOOTSTRAP_RULESET_POLICY=PASS\n'
 printf 'FINAL_RULESET_POLICY=PASS\n'
+python3 -m unittest discover -s "$ROOT_DIR/tests" -p 'test_workstation_promotion_validator.py' -q
+printf 'WORKSTATION_PROMOTION_MATRIX=PASS\n'
+python3 -m unittest discover -s "$ROOT_DIR/tests" -p 'test_governed_promotion_chain.py' -q
+printf 'GOVERNED_PROMOTION_MATRIX=PASS\n'
 printf 'GOVERNANCE_VALIDATION=PASS\n'

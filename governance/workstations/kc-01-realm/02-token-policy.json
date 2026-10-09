@@ -1,0 +1,23 @@
+{
+  "workstation": "keycloak::kc-01-realm::02-token-policy",
+  "product": "keycloak",
+  "section": "kc-01-realm",
+  "subsection": "02-token-policy",
+  "branch": "subsection/kc-01-realm--02-token-policy",
+  "parent_branch": "section/kc-01-realm",
+  "order": 2,
+  "worktree": "/srv/codestra/workstations/Keycloak/sections/kc-01-realm/subsections/02-token-policy/repo",
+  "depends_on": [
+    "keycloak::kc-01-realm::01-realm-baseline"
+  ],
+  "status": "NOT_STARTED",
+  "required_gates": [
+    "lint",
+    "unit",
+    "integration",
+    "contract",
+    "security",
+    "clean_tree",
+    "remote_sha_match"
+  ]
+}

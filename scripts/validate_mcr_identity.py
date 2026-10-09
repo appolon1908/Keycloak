@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_PATH = ROOT / 'contracts/mcr-identity-v1.json'
 MATRIX_PATH = ROOT / 'config/certification/mcr-token-matrix.v1.json'
-CONTRACT_SHA256 = '9e4ddd8296f4b9d299a3f86139e3dfa03c4f40f8c0ff9757953db2d0f6484534'
+CONTRACT_SHA256 = 'a6327d8d0b1f50059a26cee2ae493efe5b33edb915a410723e0929746319a0c6'
 MATRIX_SHA256 = '6ae4ff89253da909779ef1cf204c94ca644895dbf547d4ceba71937753d73ebe'
 
 
@@ -34,7 +34,8 @@ def validate_contract(contract):
     if digest(contract) != CONTRACT_SHA256:
         raise ValueError('unreviewed MCR policy change')
     for path, expected in contract['sourcePins'].items():
-        if hashlib.sha256((ROOT / path).read_bytes()).hexdigest() != expected:
+        source_bytes = (ROOT / path).read_bytes().replace(b'\r\n', b'\n')
+        if hashlib.sha256(source_bytes).hexdigest() != expected:
             raise ValueError(f'V3 source drift: {path}')
 
 

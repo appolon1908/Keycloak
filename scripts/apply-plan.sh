@@ -154,16 +154,19 @@ jq -e \
     and all(.excludedClients[]; .reason == "environment_scoped")
     and (.realmPolicy.resourceType == "realm")
     and (.realmPolicy.realm == $target_realm)
-    and (.realmPolicy.action == "noop" or .realmPolicy.action == "update")
+    and (.realmPolicy.action == "noop" or .realmPolicy.action == "create" or .realmPolicy.action == "update")
     and (.blockedCount == 0)
-    and (.createCount == ([.clients[] | select(.action == "create")] | length))
+    and (.createCount == (
+      ([.clients[] | select(.action == "create")] | length)
+      + (if .realmPolicy.action == "create" then 1 else 0 end)
+    ))
     and (.updateCount == (
       ([.clients[] | select(.action == "update")] | length)
       + (if .realmPolicy.action == "update" then 1 else 0 end)
     ))
     and (.driftCount == (
       ([.clients[] | select(.action != "noop")] | length)
-      + (if .realmPolicy.action == "update" then 1 else 0 end)
+      + (if .realmPolicy.action == "noop" then 0 else 1 end)
     ))
   ' "$PLAN_FILE" >/dev/null ||
   die "Plan metadata, counters, target environment, or blocked-resource policy is invalid"
@@ -380,22 +383,45 @@ realm_expected_desired_sha256="$(jq -er '.realmPolicy.desiredSha256' "$PLAN_FILE
 realm_action="$(jq -er '.realmPolicy.action' "$PLAN_FILE")"
 [[ "$(canonical_hash "$realm_desired_file")" == "$realm_expected_desired_sha256" ]] ||
   die "Realm desired state changed after plan review"
-jq -e '
-  .realmPolicy.rollback.kind == "restore_managed_realm_overlay"
-  and .realmPolicy.rollback.requiresReviewedPlan == true
-' "$PLAN_FILE" >/dev/null || die "Realm rollback metadata is invalid"
+if [[ "$realm_action" == "create" ]]; then
+  jq -e '
+    .realmPolicy.before == {}
+    and .realmPolicy.rollback.kind == "disable_then_separate_reviewed_realm_delete"
+    and .realmPolicy.rollback.preApplyState == "absent"
+    and .realmPolicy.rollback.deleteRequiresSeparateReviewedRollback == true
+    and .realmPolicy.rollback.requiresReviewedPlan == true
+  ' "$PLAN_FILE" >/dev/null || die "Realm create rollback metadata is invalid"
+else
+  jq -e '
+    .realmPolicy.rollback.kind == "restore_managed_realm_overlay"
+    and .realmPolicy.rollback.preApplyState == "existing"
+    and .realmPolicy.rollback.requiresReviewedPlan == true
+  ' "$PLAN_FILE" >/dev/null || die "Realm rollback metadata is invalid"
+fi
 realm_live_file="$tmp_dir/realm-live.json"
 realm_before_file="$tmp_dir/realm-before.json"
-keycloak_api GET "/admin/realms/$(urlencode "$KC_TARGET_REALM")" >"$realm_live_file"
-project_live_to_desired_shape "$realm_live_file" "$realm_desired_file" "$realm_before_file"
-[[ "$(canonical_hash "$realm_before_file")" == "$realm_expected_before_sha256" ]] ||
-  die "Live realm state changed after plan review"
-if [[ "$realm_action" == "noop" ]]; then
-  jq -e -n --slurpfile before "$realm_before_file" --slurpfile desired "$realm_desired_file" \
-    '$before[0] == $desired[0]' >/dev/null || die "Plan marked realm as noop but drift exists"
+realm_status="$(
+  keycloak_api_get_status \
+    "/admin/realms/$(urlencode "$KC_TARGET_REALM")" \
+    "$realm_live_file"
+)"
+if [[ "$realm_action" == "create" ]]; then
+  [[ "$realm_status" == "404" ]] || die "Reviewed plan recorded an absent realm but it now exists"
+  printf '{}\n' >"$realm_before_file"
+  [[ "$(canonical_hash "$realm_before_file")" == "$realm_expected_before_sha256" ]] ||
+    die "Realm absent-state hash changed after plan review"
 else
-  jq -e -n --slurpfile before "$realm_before_file" --slurpfile desired "$realm_desired_file" \
-    '$before[0] != $desired[0]' >/dev/null || die "Plan marked realm for update but it is synchronized"
+  [[ "$realm_status" == "200" ]] || die "Reviewed realm disappeared after plan review"
+  project_live_to_desired_shape "$realm_live_file" "$realm_desired_file" "$realm_before_file"
+  [[ "$(canonical_hash "$realm_before_file")" == "$realm_expected_before_sha256" ]] ||
+    die "Live realm state changed after plan review"
+  if [[ "$realm_action" == "noop" ]]; then
+    jq -e -n --slurpfile before "$realm_before_file" --slurpfile desired "$realm_desired_file" \
+      '$before[0] == $desired[0]' >/dev/null || die "Plan marked realm as noop but drift exists"
+  else
+    jq -e -n --slurpfile before "$realm_before_file" --slurpfile desired "$realm_desired_file" \
+      '$before[0] != $desired[0]' >/dev/null || die "Plan marked realm for update but it is synchronized"
+  fi
 fi
 
 # Phase 1: validate every resource against the reviewed plan before any write.
@@ -424,9 +450,15 @@ while IFS= read -r resource; do
   encoded_client_id="$(urlencode "$client_id")"
   safe_client_id="$(printf '%s' "$client_id" | LC_ALL=C tr -c '[:alnum:]_.-' '_')"
   client_list_file="$tmp_dir/client-list-${safe_client_id}.json"
-  keycloak_api GET \
-    "/admin/realms/$(urlencode "$KC_TARGET_REALM")/clients?clientId=${encoded_client_id}&exact=true" \
-    >"$client_list_file"
+  if [[ "$realm_action" == "create" ]]; then
+    [[ "$action" == "create" ]] ||
+      die "A missing realm may contain only reviewed client creates"
+    printf '[]\n' >"$client_list_file"
+  else
+    keycloak_api GET \
+      "/admin/realms/$(urlencode "$KC_TARGET_REALM")/clients?clientId=${encoded_client_id}&exact=true" \
+      >"$client_list_file"
+  fi
   client_match_count="$(jq -er 'length' "$client_list_file")"
 
   if [[ "$action" == "create" ]]; then
@@ -519,7 +551,8 @@ done < <(jq -c '.clients[]' "$PLAN_FILE")
 
 # This manifest is written before the first mutation and updated atomically
 # after every state transition. It intentionally contains hashes and artifact
-# references, never client secrets or access tokens.
+# references, never client secrets or access tokens. The realm is sequence 1;
+# client resources follow it so a bootstrap failure is recoverable evidence.
 jq -S -s \
   --arg repository_sha "$EXPECTED_DEPLOY_SHA" \
   --arg environment "$DEPLOY_ENVIRONMENT" \
@@ -527,6 +560,9 @@ jq -S -s \
   --arg workflow_run_id "$WORKFLOW_RUN_ID" \
   --arg timestamp "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
   --arg realm "$KC_TARGET_REALM" \
+  --arg realm_action "$realm_action" \
+  --arg realm_before_sha256 "$realm_expected_before_sha256" \
+  --arg realm_desired_sha256 "$realm_expected_desired_sha256" \
   --arg rollback_artifact "${ROLLBACK_ARTIFACT_REFERENCE:-keycloak-before-${DEPLOY_ENVIRONMENT}-${EXPECTED_DEPLOY_SHA}}" '
     {
       schemaVersion: 1,
@@ -549,42 +585,93 @@ jq -S -s \
       ],
       rollbackArtifactReference: $rollback_artifact,
       operations: (
-        to_entries | map({
-          sequence: (.key + 1),
+        [{
+          sequence: 1,
+          resourceType: "realm",
+          resourceId: $realm,
+          clientId: null,
+          clientUuid: null,
+          action: $realm_action,
+          preStateHash: $realm_before_sha256,
+          expectedPostStateHash: $realm_desired_sha256,
+          rollbackArtifactReference: $rollback_artifact,
+          state: "pending"
+        }]
+        + (to_entries | map({
+          sequence: (.key + 2),
+          resourceType: "client",
+          resourceId: .value.clientId,
           clientId: .value.clientId,
           clientUuid: (.value.clientUuid // null),
           action: .value.action,
           preStateHash: (.value.expectedBeforeSha256 // null),
-          expectedPostStateHash: (
-            .value.clientId as $client_id
-            | $client_id
-          ),
+          expectedPostStateHash: .value.clientId,
           rollbackArtifactReference: $rollback_artifact,
           state: "pending"
-        })
+        }))
       )
     }
   ' "$apply_manifest" >"$recovery_manifest"
 
-# Replace the temporary client-id placeholder with the reviewed desired hash.
+# Replace the temporary client-id placeholders with the reviewed desired hashes.
+# The realm hash is bound directly from realmPolicy above.
 manifest_tmp="$(mktemp "$RECOVERY_DIR/.manifest.XXXXXX")"
 jq --slurpfile plan "$PLAN_FILE" '
   .operations |= map(
-    . as $operation
-    | .expectedPostStateHash = (
-        $plan[0].clients[]
-        | select(.clientId == $operation.clientId)
-        | .desiredSha256
-      )
+    if .resourceType == "realm" then .
+    else
+      . as $operation
+      | .expectedPostStateHash = (
+          $plan[0].clients[]
+          | select(.clientId == $operation.clientId)
+          | .desiredSha256
+        )
+    end
   )
 ' "$recovery_manifest" >"$manifest_tmp"
 chmod 600 "$manifest_tmp"
 mv -f "$manifest_tmp" "$recovery_manifest"
 chmod 600 "$recovery_manifest"
 
-# Phase 2: immediately before the first mutation, re-check every reviewed create
-# target is still absent. Any race or operator-created client invalidates the
-# whole plan before update/create writes begin.
+changed_count=0
+created_count=0
+updated_count=0
+realm_sequence=1
+
+# Phase 2: re-check a reviewed realm CREATE immediately before mutation.
+# The create body is the reviewed, secret-free desired realm. Runtime SMTP
+# credentials are applied later through the existing bounded realm update path.
+if [[ "$realm_action" == "create" ]]; then
+  realm_recheck_file="$tmp_dir/realm-recheck.json"
+  realm_recheck_status="$(
+    keycloak_api_get_status       "/admin/realms/$(urlencode "$KC_TARGET_REALM")"       "$realm_recheck_file"
+  )"
+  [[ "$realm_recheck_status" == "404" ]] ||
+    die "Pre-write absence recheck failed for reviewed realm create"
+
+  active_sequence="$realm_sequence"
+  mutation_started=false
+  record_operation_state "$realm_sequence" started
+  mutation_started=true
+  keycloak_api POST "/admin/realms" "$realm_desired_file" >/dev/null
+  created_count=1
+  changed_count=1
+  mutated_count=$((mutated_count + 1))
+
+  realm_post_file="$tmp_dir/realm-post-create.json"
+  realm_post_projection="$tmp_dir/realm-post-create-projection.json"
+  keycloak_api GET "/admin/realms/$(urlencode "$KC_TARGET_REALM")" >"$realm_post_file"
+  project_live_to_desired_shape "$realm_post_file" "$realm_desired_file" "$realm_post_projection"
+  [[ "$(canonical_hash "$realm_post_projection")" == "$realm_expected_desired_sha256" ]] ||
+    die "Created realm did not match the reviewed desired state"
+  record_operation_state "$realm_sequence" created
+  active_sequence=""
+  mutation_started=false
+  printf 'CREATED=realm:%s\n' "$KC_TARGET_REALM"
+fi
+
+# Re-check every reviewed client create target. If the realm was created above,
+# these reads now execute against the newly established realm.
 while IFS= read -r operation; do
   [[ "$(jq -er '.action' <<<"$operation")" == "create" ]] || continue
   client_id="$(jq -er '.clientId' <<<"$operation")"
@@ -597,9 +684,6 @@ while IFS= read -r operation; do
     die "Pre-write absence recheck failed for reviewed create: ${client_id}"
 done <"$apply_manifest"
 
-changed_count=0
-created_count=0
-updated_count=0
 while IFS= read -r operation; do
   # Sequence is the manifest order, including noops, rather than mutation count.
   operation_sequence="$(jq -er --arg client_id "$(jq -er '.clientId' <<<"$operation")" '.operations[] | select(.clientId == $client_id) | .sequence' "$recovery_manifest")"
@@ -681,7 +765,7 @@ done <"$apply_manifest"
 # Re-read and revalidate the realm immediately before its own PUT. The outgoing
 # representation is built from this immediate live state so unmanaged realm
 # fields are retained.
-if [[ "$realm_action" == "update" ]]; then
+if [[ "$realm_action" == "update" || "$realm_action" == "create" ]]; then
   # Recheck the active container route immediately before applying SMTP settings.
   python3 "$ROOT_DIR/scripts/validate-password-reset-contract.py" --runtime
   require_env KC_SMTP_USERNAME
@@ -692,8 +776,13 @@ if [[ "$realm_action" == "update" ]]; then
   keycloak_api GET "/admin/realms/$(urlencode "$KC_TARGET_REALM")" >"$realm_immediate_live_file"
   project_live_to_desired_shape \
     "$realm_immediate_live_file" "$realm_desired_file" "$realm_immediate_before_file"
-  [[ "$(canonical_hash "$realm_immediate_before_file")" == "$realm_expected_before_sha256" ]] ||
-    die "Immediate pre-write realm state changed"
+  if [[ "$realm_action" == "update" ]]; then
+    [[ "$(canonical_hash "$realm_immediate_before_file")" == "$realm_expected_before_sha256" ]] ||
+      die "Immediate pre-write realm state changed"
+  else
+    [[ "$(canonical_hash "$realm_immediate_before_file")" == "$realm_expected_desired_sha256" ]] ||
+      die "Created realm drifted before final runtime binding"
+  fi
   jq -S -s \
     --arg smtp_username "$KC_SMTP_USERNAME" \
     --arg smtp_password "$KC_SMTP_PASSWORD" '
@@ -702,11 +791,23 @@ if [[ "$realm_action" == "update" ]]; then
       | .smtpServer.password = $smtp_password
     ' "$realm_immediate_live_file" "$realm_desired_file" >"$realm_merged_file"
   chmod 600 "$realm_merged_file"
+  active_sequence="$realm_sequence"
+  mutation_started=true
   keycloak_api PUT "/admin/realms/$(urlencode "$KC_TARGET_REALM")" "$realm_merged_file" >/dev/null
-  updated_count=$((updated_count + 1))
-  changed_count=$((changed_count + 1))
-  printf 'UPDATED=realm:%s\n' "$KC_TARGET_REALM"
+  mutated_count=$((mutated_count + 1))
+  mutation_started=false
+  active_sequence=""
+  if [[ "$realm_action" == "update" ]]; then
+    updated_count=$((updated_count + 1))
+    changed_count=$((changed_count + 1))
+    record_operation_state "$realm_sequence" updated
+    printf 'UPDATED=realm:%s\n' "$KC_TARGET_REALM"
+  else
+    record_operation_state "$realm_sequence" created
+    printf 'CREATED=realm:%s\n' "$KC_TARGET_REALM"
+  fi
 else
+  record_operation_state "$realm_sequence" unchanged
   printf 'UNCHANGED=realm:%s\n' "$KC_TARGET_REALM"
 fi
 

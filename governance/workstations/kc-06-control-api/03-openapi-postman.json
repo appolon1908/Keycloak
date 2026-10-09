@@ -1,0 +1,25 @@
+{
+  "workstation": "keycloak::kc-06-control-api::03-openapi-postman",
+  "product": "keycloak",
+  "section": "kc-06-control-api",
+  "subsection": "03-openapi-postman",
+  "branch": "subsection/kc-06-control-api--03-openapi-postman",
+  "parent_branch": "section/kc-06-control-api",
+  "order": 3,
+  "worktree": "/srv/codestra/workstations/Keycloak/sections/kc-06-control-api/subsections/03-openapi-postman/repo",
+  "depends_on": [
+    "keycloak::kc-04-authorization::03-resource-permissions",
+    "keycloak::kc-05-authentication::03-recovery",
+    "keycloak::kc-06-control-api::02-control-api"
+  ],
+  "status": "NOT_STARTED",
+  "required_gates": [
+    "lint",
+    "unit",
+    "integration",
+    "contract",
+    "security",
+    "clean_tree",
+    "remote_sha_match"
+  ]
+}

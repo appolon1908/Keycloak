@@ -1,0 +1,36 @@
+name: Workstation governance
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  promotion-gate:
+    name: promotion-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate bootstrap or fetch trusted base validator
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.base_ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          REPOSITORY: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          if [ "$HEAD_REF" = "governance/agent-hierarchy-main-v1" ] && [ "$BASE_REF" = "main" ]; then
+            echo "PROMOTION_ALLOWED=YES governance_main_bootstrap"
+            exit 0
+          fi
+
+          if [ "$HEAD_REF" = "governance/agent-hierarchy-v1" ] && [ "$BASE_REF" = "development" ]; then
+            echo "PROMOTION_ALLOWED=YES governance_development_bootstrap"
+            exit 0
+          fi
+
+          mkdir -p trusted-base
+          gh api             -H "Accept: application/vnd.github.raw+json"             "/repos/$REPOSITORY/contents/.codestra/validate-promotion.py?ref=$BASE_SHA"             > trusted-base/validate-promotion.py
+
+          python3 trusted-base/validate-promotion.py "$HEAD_REF" "$BASE_REF"

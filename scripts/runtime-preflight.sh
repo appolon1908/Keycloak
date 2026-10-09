@@ -114,9 +114,9 @@ done
 [[ "$EXPECTED_DEPLOY_SHA" =~ ^[0-9a-f]{40}$ ]] ||
   fail "Expected deployment SHA must be 40 lowercase hexadecimal characters"
 
-RUNTIME_GIT_REMOTE="${RUNTIME_GIT_REMOTE:-git@github.com:appolon1908-hue/Keycloak.git}"
+RUNTIME_GIT_REMOTE="${RUNTIME_GIT_REMOTE:-git@github.com:appolon1908/Keycloak.git}"
 RUNTIME_GIT_BRANCH="${RUNTIME_GIT_BRANCH:-main}"
-readonly EXPECTED_REMOTE='git@github.com:appolon1908-hue/Keycloak.git'
+readonly EXPECTED_REMOTE='git@github.com:appolon1908/Keycloak.git'
 readonly EXPECTED_BRANCH='main'
 
 [[ "$RUNTIME_GIT_REMOTE" == "$EXPECTED_REMOTE" ]] ||

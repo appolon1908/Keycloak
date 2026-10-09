@@ -1,0 +1,146 @@
+{
+  "authorization": "PENDING_INDEPENDENT_REVIEW",
+  "changes": [
+    {
+      "path": ".codestra/validate-promotion.py",
+      "previous_sha256": null,
+      "proposed_sha256": "de406400ac98e8e4498e92cdd1f4e94d34625b0c73ec7b8750e71fd2e0cd0797"
+    },
+    {
+      "path": "Dockerfile",
+      "previous_sha256": null,
+      "proposed_sha256": "f05edb7e34a8354c0650fee75bc7b83de8310b2e1e7461fdd388d8edf8f51120"
+    },
+    {
+      "path": "extensions/moneybee-email-otp/pom.xml",
+      "previous_sha256": null,
+      "proposed_sha256": "92d009cd0fdd79bf389fa85ef1bd0f6c576c02d82cf8349734476a8fc1e9cd6b"
+    },
+    {
+      "path": "governance/promotion-policy.json",
+      "previous_sha256": null,
+      "proposed_sha256": "67a316d7384ba7aa1003cc918eba580e63f027b266af81f91cc67231e75c24a2"
+    },
+    {
+      "path": "governance/promotion_guard.py",
+      "previous_sha256": null,
+      "proposed_sha256": "28ca4dd5438423683f4ed59205870b48982c1efacb67069ecfd1d05bed88d930"
+    },
+    {
+      "path": "scripts/test-plan-gate.sh",
+      "previous_sha256": null,
+      "proposed_sha256": "d723060eda8e0ad642e5db385eb2b189c4c7a4ee2fb7c4479c3886b971343a78"
+    },
+    {
+      "path": "scripts/validate-governance.sh",
+      "previous_sha256": "9e9e88e6d53812921b2b3c9479c847b28836e737c9b4fcd421c9cbfd8cbde474",
+      "proposed_sha256": "cf48d491fc4c7e8a4c6fbc80bed20ea1fd12e2917c404e7c465f6640b3bf9064"
+    },
+    {
+      "path": "tests/test_governed_promotion_chain.py",
+      "previous_sha256": null,
+      "proposed_sha256": "372fb616edfbf65f19f1b3ba7336684afa3ecd05586474f2a38536e5c1a43dd1"
+    },
+    {
+      "path": "tests/test_workstation_promotion_validator.py",
+      "previous_sha256": null,
+      "proposed_sha256": "c2eda7b7657043cc404cca49898a346dd47341d9563503391ffac56bb4414e9d"
+    }
+  ],
+  "manifest": {
+    "files": [
+      {
+        "path": ".codestra/validate-promotion.py",
+        "sha256": "de406400ac98e8e4498e92cdd1f4e94d34625b0c73ec7b8750e71fd2e0cd0797"
+      },
+      {
+        "path": ".github/workflows/keycloak-release-trust-root.yml",
+        "sha256": "5a5f017dcb11188d04f4dce0f4fa80656a36562f08aaa5d9982a1bfa889b5307"
+      },
+      {
+        "path": ".github/workflows/manual-release-intent.yml",
+        "sha256": "7f6b88e0a4a6ded29919d15ef19b4ead8e2269f2794e51fec6cffbce415fb4c9"
+      },
+      {
+        "path": ".github/workflows/validate.yml",
+        "sha256": "c84ec5e6f5a22289befcb179633a58bded339c12258552c0fc48a4b66c07fb2c"
+      },
+      {
+        "path": "Dockerfile",
+        "sha256": "f05edb7e34a8354c0650fee75bc7b83de8310b2e1e7461fdd388d8edf8f51120"
+      },
+      {
+        "path": "contracts/kyyow-saas-identity-v1.json",
+        "sha256": "dde36deb1236b1919ccb92bcf8a5a566b5d5d33372cd342215eaf2c2c5361013"
+      },
+      {
+        "path": "extensions/moneybee-email-otp/pom.xml",
+        "sha256": "92d009cd0fdd79bf389fa85ef1bd0f6c576c02d82cf8349734476a8fc1e9cd6b"
+      },
+      {
+        "path": "governance/promotion-policy.json",
+        "sha256": "67a316d7384ba7aa1003cc918eba580e63f027b266af81f91cc67231e75c24a2"
+      },
+      {
+        "path": "governance/promotion_guard.py",
+        "sha256": "28ca4dd5438423683f4ed59205870b48982c1efacb67069ecfd1d05bed88d930"
+      },
+      {
+        "path": "scripts/bootstrap_release_trust_root.py",
+        "sha256": "c9b44f5a258338aa00f66432cf900403c9b85dd3c58840ba54e41c8cd9d30c73"
+      },
+      {
+        "path": "scripts/test-plan-gate.sh",
+        "sha256": "d723060eda8e0ad642e5db385eb2b189c4c7a4ee2fb7c4479c3886b971343a78"
+      },
+      {
+        "path": "scripts/validate-governance.sh",
+        "sha256": "cf48d491fc4c7e8a4c6fbc80bed20ea1fd12e2917c404e7c465f6640b3bf9064"
+      },
+      {
+        "path": "scripts/validate-kong-oidc-contract.py",
+        "sha256": "a86d956b56ff50fcd726f39db68d3e533eb9a0e90a6de24f358a814adee1d835"
+      },
+      {
+        "path": "scripts/validate-kyyow-identity.py",
+        "sha256": "6c428936189249aae1b4dacb33a269bf66e7d33da2f31512156ea53add609dd6"
+      },
+      {
+        "path": "scripts/validate-password-reset-contract.py",
+        "sha256": "d9257b3863054e687d9393bb74b017c1f694e08784863619a86e325e02dcd488"
+      },
+      {
+        "path": "scripts/validate-repository-name-authority.py",
+        "sha256": "5e80dd020664783cb67d00231674160fa5d624c17afb288545006701f1235211"
+      },
+      {
+        "path": "scripts/validate-workflows.py",
+        "sha256": "f398c89b4ddb9cf8dff0090abd3f57ea5e204b43fe6bb1b2d9a64fe7c72488e0"
+      },
+      {
+        "path": "scripts/validate.sh",
+        "sha256": "0b409553123a8ebcf2cc3718aa9f7bb7ecc8fed2e9229c93022722037054afb6"
+      },
+      {
+        "path": "tests/test_governed_promotion_chain.py",
+        "sha256": "372fb616edfbf65f19f1b3ba7336684afa3ecd05586474f2a38536e5c1a43dd1"
+      },
+      {
+        "path": "tests/test_kyyow_identity.py",
+        "sha256": "f1133e8b04226a854b3484ded27149995d54dfceb8b1ff9dfbf062a9140d33e6"
+      },
+      {
+        "path": "tests/test_workstation_promotion_validator.py",
+        "sha256": "c2eda7b7657043cc404cca49898a346dd47341d9563503391ffac56bb4414e9d"
+      }
+    ],
+    "manifest_sha256": "852bc5db3282fc708feee3b148a696fa7c0bb584bab4577188e0b824e0df8d86",
+    "schema": "keycloak.bootstrap-closure.v1"
+  },
+  "policy_commit_sha": "d9db059c23f20255134828bb924137eaa0b9adb4",
+  "previous_manifest_sha256": "56bd6ae1cdf145c8e486d95307a6980db5e0f53742d9c1ea23e2b1aec63bd615",
+  "repository": "appolon1908/Keycloak",
+  "reviewed_source_sha": "18c55a47182e4e6a17e6f6936573a967daebbfed",
+  "schema": "keycloak.bootstrap-manifest-proposal.v1",
+  "scope": "EXTENDED_EXECUTABLE_AND_RUNTIME_IMAGE_CLOSURE"
+}

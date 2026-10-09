@@ -131,7 +131,20 @@ class FakeAdminAPI:
         from keycloak_admin_api import KeycloakAdminError
         if self.fail_reads: raise KeycloakAdminError("admin_transport_error","Keycloak Admin API transport failed")
         return copy.deepcopy(self.state[key])
-    def realm_state(self): return self._read("realm")
+    def realm_state(self):
+        from keycloak_admin_api import KeycloakAdminError
+        value=self.realm_state_optional()
+        if value is None: raise KeycloakAdminError("admin_http_error","Keycloak Admin API returned HTTP 404",404)
+        return value
+    def realm_state_optional(self):
+        if self.fail_reads: return self._read("realm")
+        value=self.state.get("realm")
+        return None if value is None else copy.deepcopy(value)
+    def create_realm(self,payload):
+        from keycloak_admin_api import KeycloakAdminError
+        if self.state.get("realm") is not None: raise KeycloakAdminError("admin_http_error","Keycloak Admin API returned HTTP 409",409)
+        self._mutate("create_realm")
+        self.state["realm"]=copy.deepcopy(payload)
     def clients(self): return self._read("clients")
     def client_scopes(self): return self._read("clientScopes")
     def realm_roles(self): return self._read("realmRoles")
@@ -153,6 +166,17 @@ class FakeAdminAPI:
             if c["id"]==internal_id: c.update(copy.deepcopy(payload))
     def delete_client(self,internal_id):
         self._mutate("delete_client",internal_id); self.state["clients"]=[c for c in self.state["clients"] if c["id"]!=internal_id]
+
+def missing_realm_fixture():
+    return {
+        "realm":None,
+        "clients":[],
+        "clientScopes":[],
+        "realmRoles":[],
+        "requiredActions":[],
+        "unregisteredRequiredActions":[],
+        "userProfile":{"attributes":[]},
+    }
 
 def make_service(tmp_path,api,desired=DESIRED):
     from keycloak_execution_store import EvidenceStore
@@ -176,6 +200,29 @@ def enable_staging_mutation(monkeypatch):
     monkeypatch.setenv("KEYCLOAK_ADMIN_BASE_URL","https://auth-staging.codestra.co")
     monkeypatch.setenv("KEYCLOAK_ADMIN_BEARER","unused-by-fake")
     monkeypatch.delenv("KEYCLOAK_DELETE_ENABLED",raising=False)
+
+def test_test_syn_control_plane_can_bootstrap_an_absent_realm(tmp_path,monkeypatch):
+    enable_test_syn_mutation(monkeypatch)
+    api=FakeAdminAPI(missing_realm_fixture()); service=make_service(tmp_path,api)
+    record=service.apply("bootstrap-realm")
+    assert record["status"]=="COMPLETED" and record["mutationPerformed"] is True
+    assert api.calls[0]==("create_realm",)
+    assert ("create_client","svc-a") in api.calls
+    assert api.state["realm"]["realm"]=="codestra"
+    assert {c["clientId"] for c in api.state["clients"]}=={"svc-a"}
+    realm_action=next(a for a in record["plan"]["actions"] if a["resource_type"]=="realm")
+    assert realm_action["kind"]=="CREATE"
+
+
+def test_staging_control_plane_refuses_missing_realm_owned_by_deploy_pipeline(tmp_path,monkeypatch):
+    from keycloak_admin_api import KeycloakAdminError
+    enable_staging_mutation(monkeypatch)
+    api=FakeAdminAPI(missing_realm_fixture()); service=make_service(tmp_path,api)
+    with pytest.raises(KeycloakAdminError) as exc:
+        service.apply("bootstrap-not-owned")
+    assert exc.value.code=="realm_bootstrap_required" and exc.value.status==409
+    assert api.calls==[] and service.store.list("executions")==[]
+
 
 def test_apply_persists_redacted_evidence_before_any_mutation(tmp_path,monkeypatch):
     enable_test_syn_mutation(monkeypatch)
@@ -375,6 +422,56 @@ def test_rollback_journal_survives_readback_failure_and_can_be_retried(tmp_path,
     assert second["status"]=="COMPLETED" and second["mutationPerformed"] is False and api.calls==[]
     assert service.execution(record["executionId"])["rollbackStatus"]=="ROLLED_BACK"
     assert {c["clientId"] for c in api.state["clients"]}=={"account"} and api.state["realm"]["resetPasswordAllowed"] is False
+
+def test_runtime_readiness_requires_exact_issuer_and_nonempty_jwks(tmp_path,monkeypatch):
+    import keycloak_control_api as control
+    monkeypatch.setenv("KEYCLOAK_ENVIRONMENT","production")
+    monkeypatch.setenv("KEYCLOAK_ADMIN_BASE_URL","https://auth.codestra.co")
+    monkeypatch.setenv("KEYCLOAK_ADMIN_BEARER","test-only")
+    api=FakeAdminAPI(live_fixture()); service=make_service(tmp_path,api)
+    endpoint="https://auth.codestra.co/realms/codestra"
+    def fetch(url,timeout=5.0):
+        if url.endswith("/.well-known/openid-configuration"):
+            return {"issuer":endpoint,"jwks_uri":endpoint+"/protocol/openid-connect/certs"}
+        return {"keys":[{"kid":"kid-1","alg":"RS256","use":"sig","n":"public-modulus","e":"AQAB"}]}
+    monkeypatch.setattr(control,"runtime_get_json",fetch)
+    runtime=service.runtime()
+    assert runtime["ready"] is True and runtime["issuerMatches"] is True
+    assert runtime["jwksKeyCount"]==1 and runtime["jwksKeys"]==[{"kid":"kid-1","alg":"RS256","use":"sig"}]
+    assert "public-modulus" not in json.dumps(runtime)
+    readiness=service.readiness()
+    assert readiness["ready"] is True and readiness["managedPendingMutations"]==0
+
+
+def test_runtime_readiness_fails_closed_when_codestra_realm_is_missing(tmp_path,monkeypatch):
+    import keycloak_control_api as control
+    from keycloak_admin_api import KeycloakAdminError
+    monkeypatch.setenv("KEYCLOAK_ENVIRONMENT","production")
+    service=make_service(tmp_path,FakeAdminAPI(live_fixture()))
+    def missing(_url,timeout=5.0):
+        raise KeycloakAdminError("runtime_http_error","identity runtime returned HTTP 404",404)
+    monkeypatch.setattr(control,"runtime_get_json",missing)
+    runtime=service.runtime()
+    assert runtime["ready"] is False
+    assert runtime["discoveryReachable"] is False
+    assert "runtime_http_error" in runtime["reasons"]
+    readiness=service.readiness()
+    assert readiness["ready"] is False and readiness["managedPendingMutations"] is None
+
+
+def test_runtime_readiness_rejects_wrong_issuer_even_with_valid_jwks(tmp_path,monkeypatch):
+    import keycloak_control_api as control
+    monkeypatch.setenv("KEYCLOAK_ENVIRONMENT","production")
+    service=make_service(tmp_path,FakeAdminAPI(live_fixture()))
+    def wrong(url,timeout=5.0):
+        if url.endswith("/.well-known/openid-configuration"):
+            return {"issuer":"https://wrong.example/realms/codestra","jwks_uri":"https://auth.codestra.co/realms/codestra/protocol/openid-connect/certs"}
+        return {"keys":[{"kid":"kid-1","alg":"RS256","use":"sig"}]}
+    monkeypatch.setattr(control,"runtime_get_json",wrong)
+    runtime=service.runtime()
+    assert runtime["ready"] is False and runtime["issuerMatches"] is False
+    assert "issuer_mismatch" in runtime["reasons"]
+
 
 def test_compile_endpoint_is_read_only():
     generated=ROOT/"generated"/"keycloak-identity-authority.v1.json"

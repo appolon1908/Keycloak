@@ -134,17 +134,32 @@ jq -S --arg version "$KC_SMTP_CREDENTIAL_VERSION" \
   "$ROOT_DIR/config/realms/codestra.json" >"$realm_desired_file"
 realm_live_file="$tmp_dir/realm-live.json"
 realm_before_file="$tmp_dir/realm-before.json"
-keycloak_api GET \
-  "/admin/realms/$(urlencode "$KC_TARGET_REALM")" \
-  >"$realm_live_file"
-project_live_to_desired_shape "$realm_live_file" "$realm_desired_file" "$realm_before_file"
+realm_status="$(
+  keycloak_api_get_status \
+    "/admin/realms/$(urlencode "$KC_TARGET_REALM")" \
+    "$realm_live_file"
+)"
 realm_action="noop"
-if ! jq -e -n \
-  --slurpfile before "$realm_before_file" \
-  --slurpfile desired "$realm_desired_file" \
-  '$before[0] == $desired[0]' >/dev/null; then
-  realm_action="update"
-fi
+realm_exists=true
+case "$realm_status" in
+  200)
+    project_live_to_desired_shape "$realm_live_file" "$realm_desired_file" "$realm_before_file"
+    if ! jq -e -n \
+      --slurpfile before "$realm_before_file" \
+      --slurpfile desired "$realm_desired_file" \
+      '$before[0] == $desired[0]' >/dev/null; then
+      realm_action="update"
+    fi
+    ;;
+  404)
+    printf '{}\n' >"$realm_before_file"
+    realm_action="create"
+    realm_exists=false
+    ;;
+  *)
+    die "Unexpected Keycloak realm read status: ${realm_status}"
+    ;;
+esac
 realm_before_sha256="$(canonical_hash "$realm_before_file")"
 realm_desired_sha256="$(canonical_hash "$realm_desired_file")"
 realm_resource_file="$tmp_dir/realm-resource.json"
@@ -165,10 +180,18 @@ jq -S -n \
       smtpCredentialVersion: $smtp_credential_version,
       before: $before[0],
       desired: $desired[0],
-      rollback: {
-        kind: "restore_managed_realm_overlay",
-        requiresReviewedPlan: true
-      }
+      rollback: (
+        if $action == "create" then {
+          kind: "disable_then_separate_reviewed_realm_delete",
+          preApplyState: "absent",
+          deleteRequiresSeparateReviewedRollback: true,
+          requiresReviewedPlan: true
+        } else {
+          kind: "restore_managed_realm_overlay",
+          preApplyState: "existing",
+          requiresReviewedPlan: true
+        } end
+      )
     }
   ' >"$realm_resource_file"
 
@@ -218,9 +241,13 @@ for client_id in "${managed_clients[@]}"; do
   safe_client_id="$(printf '%s' "$client_id" | LC_ALL=C tr -c '[:alnum:]_.-' '_')"
   client_list_file="$tmp_dir/client-list-${safe_client_id}.json"
 
-  keycloak_api GET \
-    "/admin/realms/$(urlencode "$KC_TARGET_REALM")/clients?clientId=${encoded_client_id}&exact=true" \
-    >"$client_list_file"
+  if [[ "$realm_exists" == true ]]; then
+    keycloak_api GET \
+      "/admin/realms/$(urlencode "$KC_TARGET_REALM")/clients?clientId=${encoded_client_id}&exact=true" \
+      >"$client_list_file"
+  else
+    printf '[]\n' >"$client_list_file"
+  fi
 
   matches="$(jq -er 'length' "$client_list_file")"
   [[ "$matches" -le 1 ]] || die "Multiple Keycloak clients matched clientId=${client_id}"
@@ -323,10 +350,13 @@ jq -S -s \
         excludedCount: ($excluded | length),
         driftCount: (
           ($clients | map(select(.action != "noop")) | length)
-          + (if $realm_policy[0].action == "update" then 1 else 0 end)
+          + (if $realm_policy[0].action == "noop" then 0 else 1 end)
         ),
         blockedCount: ($clients | map(select(.action == "blocked_missing")) | length),
-        createCount: ($clients | map(select(.action == "create")) | length),
+        createCount: (
+          ($clients | map(select(.action == "create")) | length)
+          + (if $realm_policy[0].action == "create" then 1 else 0 end)
+        ),
         updateCount: (
           ($clients | map(select(.action == "update")) | length)
           + (if $realm_policy[0].action == "update" then 1 else 0 end)

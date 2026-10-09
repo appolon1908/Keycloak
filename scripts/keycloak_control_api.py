@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 import argparse, json, os, re, sys, threading, uuid
+import urllib.error, urllib.request
 from pathlib import Path
 from urllib.parse import parse_qs,urlsplit
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from keycloak_admin_api import KeycloakAdminAPI,KeycloakAdminError
 from keycloak_identity_compiler import OUT as GENERATED_AUTHORITY,compile_identity,scoped_for_environment
-from keycloak_reconciliation import DEFAULT_ROLE_PREFIX,normalize_state,plan,apply_plan,verify_readback,rollback_plan,rollback_attribute_removals,created_inventory,mutation_performed,normalize_environment,digest
+from keycloak_reconciliation import DEFAULT_ROLE_PREFIX,normalize_state,plan,apply_plan,verify_readback,rollback_plan,rollback_attribute_removals,created_inventory,mutation_performed,normalize_environment,digest,hold_owner
 from keycloak_execution_store import EvidenceStore,EvidenceStoreError,redact_secret_material
 from keycloak_recovery_controller import RecoveryController
 from keycloak_observability import normalize_events,metrics as event_metrics,status as observability_status,ObservabilityError
@@ -21,6 +22,47 @@ PROMOTION_ID=re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}")
 ALLOWED_METHODS="GET, POST"
 IN_FLIGHT_STATUSES={"IN_PROGRESS","APPLIED_PENDING_READBACK"}
 READBACK_FAILURE_STATUSES={"READBACK_MISMATCH","READBACK_UNAVAILABLE"}
+ENDPOINT_ROOT=Path(__file__).resolve().parents[1]/"config"/"endpoints"
+MAX_RUNTIME_DOCUMENT_BYTES=1024*1024
+
+class _NoRuntimeRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self,req,fp,code,msg,headers,newurl):
+        return None
+
+_RUNTIME_OPENER=urllib.request.build_opener(_NoRuntimeRedirect)
+
+def runtime_endpoint_contract(environment:str)->dict:
+    env=normalize_environment(environment)
+    name={"production":"codestra.json","staging":"codestra-staging.json"}.get(env)
+    if not name:
+        raise KeycloakAdminError("runtime_environment_unknown","runtime issuer readback requires production or staging",409)
+    value=json.loads((ENDPOINT_ROOT/name).read_text(encoding="utf-8"))
+    return value
+
+def runtime_get_json(url:str,timeout:float=5.0)->dict:
+    parts=urlsplit(url)
+    if parts.scheme!="https" or not parts.hostname or parts.username or parts.password:
+        raise KeycloakAdminError("runtime_url_invalid","runtime identity endpoint must use credential-free HTTPS",500)
+    req=urllib.request.Request(url,headers={"Accept":"application/json"},method="GET")
+    try:
+        with _RUNTIME_OPENER.open(req,timeout=timeout) as resp:
+            raw=resp.read(MAX_RUNTIME_DOCUMENT_BYTES+1)
+            status=resp.status
+    except urllib.error.HTTPError as exc:
+        raise KeycloakAdminError("runtime_http_error",f"identity runtime returned HTTP {exc.code}",exc.code) from exc
+    except (OSError,urllib.error.URLError) as exc:
+        raise KeycloakAdminError("runtime_transport_error","identity runtime is unreachable",503) from exc
+    if status!=200:
+        raise KeycloakAdminError("runtime_http_error",f"identity runtime returned HTTP {status}",status)
+    if len(raw)>MAX_RUNTIME_DOCUMENT_BYTES:
+        raise KeycloakAdminError("runtime_response_too_large","identity runtime response exceeded the safety limit",502)
+    try:
+        value=json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise KeycloakAdminError("runtime_invalid_json","identity runtime returned invalid JSON",502) from exc
+    if not isinstance(value,dict):
+        raise KeycloakAdminError("runtime_invalid_json","identity runtime response must be an object",502)
+    return value
 
 def _flag(name:str)->bool: return os.environ.get(name,"").strip().lower()=="true"
 
@@ -48,6 +90,14 @@ class Service:
         return KeycloakAdminAPI(base,"codestra",token)
     def live(self):
         api=self._api()
+        realm=api.realm_state_optional()
+        if realm is None:
+            return {
+                "realm":{},"clients":[],"clientScopes":[],"realmRoles":[],
+                "clientRoles":[],"scopeMappings":[],"serviceAccountRoles":[],
+                "userProfileAttributes":[],"requiredActions":[],
+                "unregisteredRequiredActions":[]
+            }
         clients=api.clients()
         mappings=[]; client_roles=[]; service_roles=[]
         desired=self.desired()
@@ -69,7 +119,7 @@ class Service:
                 if roles is not None: service_roles.append({"clientId":client["clientId"],"realmRoles":roles})
         # The whole user profile is read so a rollback can restore any attribute an apply touched.
         profile=api.user_profile() or {}
-        return {"realm":api.realm_state(),"clients":clients,"clientScopes":api.client_scopes(),"realmRoles":api.realm_roles(),"clientRoles":client_roles,"scopeMappings":mappings,"serviceAccountRoles":service_roles,"userProfileAttributes":list(profile.get("attributes") or []),"requiredActions":api.required_actions(),"unregisteredRequiredActions":api.unregistered_required_actions()}
+        return {"realm":realm,"clients":clients,"clientScopes":api.client_scopes(),"realmRoles":api.realm_roles(),"clientRoles":client_roles,"scopeMappings":mappings,"serviceAccountRoles":service_roles,"userProfileAttributes":list(profile.get("attributes") or []),"requiredActions":api.required_actions(),"unregisteredRequiredActions":api.unregistered_required_actions()}
     def holds(self,environment=None):
         # Objects another writer owns in this environment are planned as HOLD, never written.
         env=environment if environment is not None else self.environment()
@@ -129,7 +179,14 @@ class Service:
                 if old.get("desiredStateDigest")!=desired_digest: raise KeycloakAdminError("idempotency_key_conflict","this idempotency key was used for a different desired state",409)
                 return old
             api=self._api()
-            pre=self.live(); p=plan(desired,pre,environment=env,holds=self.holds(env))
+            pre=self.live()
+            if not pre.get("realm") and hold_owner(self.holds(env),"realm","codestra"):
+                raise KeycloakAdminError(
+                    "realm_bootstrap_required",
+                    "the codestra realm is absent and bootstrap is owned by the governed deploy pipeline",
+                    409,
+                )
+            p=plan(desired,pre,environment=env,holds=self.holds(env))
             execution_id=str(uuid.uuid4()); pre_state,redacted=redact_secret_material(pre)
             record={"executionId":execution_id,"idempotencyKey":idempotency_key,"mode":"APPLY","environment":env,"status":"IN_PROGRESS","mutationPerformed":False,"desiredStateDigest":p["desiredSha256"],"preStateDigest":p["liveSha256"],"plan":p,"actionJournal":[],"preState":pre_state,"preStateRedactedPaths":redacted,"rollbackStatus":"NOT_RUN"}
             # Evidence is durable before the first mutation; if it cannot be written nothing is applied.
@@ -217,6 +274,92 @@ class Service:
         events=self.events(limit); st=self.observability_status()
         return event_metrics(events,configuration_drift=st["configurationDrift"],readback_failures=self.readback_failures())
 
+    def runtime(self):
+        endpoint=runtime_endpoint_contract(self.environment())
+        reasons=[]
+        discovery=None
+        jwks=None
+        try:
+            discovery=runtime_get_json(endpoint["discoveryUrl"])
+        except KeycloakAdminError as exc:
+            reasons.append(exc.code)
+        issuer_observed=(discovery or {}).get("issuer")
+        jwks_observed=(discovery or {}).get("jwks_uri")
+        issuer_matches=issuer_observed==endpoint["issuer"]
+        jwks_uri_matches=jwks_observed==endpoint["jwksUri"]
+        if discovery is not None and not issuer_matches: reasons.append("issuer_mismatch")
+        if discovery is not None and not jwks_uri_matches: reasons.append("jwks_uri_mismatch")
+        if discovery is not None and issuer_matches and jwks_uri_matches:
+            try:
+                jwks=runtime_get_json(endpoint["jwksUri"])
+            except KeycloakAdminError as exc:
+                reasons.append(exc.code)
+        keys=(jwks or {}).get("keys") if isinstance(jwks,dict) else None
+        keys=keys if isinstance(keys,list) else []
+        safe_keys=[
+            {"kid":str(k.get("kid") or ""),"alg":str(k.get("alg") or ""),"use":str(k.get("use") or "")}
+            for k in keys if isinstance(k,dict)
+        ]
+        if jwks is not None and not safe_keys: reasons.append("jwks_empty")
+        ready=discovery is not None and issuer_matches and jwks_uri_matches and bool(safe_keys) and not reasons
+        return {
+            "environment":self.environment(),
+            "realm":endpoint["realm"],
+            "expectedIssuer":endpoint["issuer"],
+            "expectedDiscoveryUrl":endpoint["discoveryUrl"],
+            "expectedJwksUri":endpoint["jwksUri"],
+            "issuerObserved":issuer_observed,
+            "jwksUriObserved":jwks_observed,
+            "discoveryReachable":discovery is not None,
+            "issuerMatches":issuer_matches,
+            "jwksUriMatches":jwks_uri_matches,
+            "jwksReachable":jwks is not None,
+            "jwksKeyCount":len(safe_keys),
+            "jwksKeys":safe_keys,
+            "ready":ready,
+            "reasons":sorted(set(reasons)),
+        }
+
+    def runtime_issuer(self):
+        r=self.runtime()
+        return {k:r[k] for k in (
+            "environment","realm","expectedIssuer","issuerObserved",
+            "discoveryReachable","issuerMatches","ready","reasons"
+        )}
+
+    def runtime_jwks(self):
+        r=self.runtime()
+        return {k:r[k] for k in (
+            "environment","expectedJwksUri","jwksUriObserved","jwksUriMatches",
+            "jwksReachable","jwksKeyCount","jwksKeys","ready","reasons"
+        )}
+
+    def readiness(self):
+        runtime=self.runtime()
+        drift=None
+        if runtime["ready"]:
+            try:
+                drift=self.drift()
+            except KeycloakAdminError as exc:
+                runtime["reasons"]=sorted(set(runtime["reasons"]+[exc.code]))
+                runtime["ready"]=False
+        pending=None if drift is None else sum(
+            1 for a in drift.get("actions",[])
+            if a.get("kind") not in {"KEEP","HOLD"}
+        )
+        ready=runtime["ready"] and pending==0
+        reasons=list(runtime["reasons"])
+        if pending not in (None,0): reasons.append("managed_drift")
+        return {
+            "service":"codestra-keycloak",
+            "ready":ready,
+            "environment":self.environment(),
+            "realm":"codestra",
+            "runtime":runtime,
+            "managedPendingMutations":pending,
+            "reasons":sorted(set(reasons)),
+        }
+
     def promotion(self,body):
         pid=body.get("promotionId")
         if pid is not None and (not isinstance(pid,str) or not PROMOTION_ID.fullmatch(pid)):
@@ -295,6 +438,16 @@ class Handler(BaseHTTPRequestHandler):
         if p=="/platform/v1/keycloak/observability/events":
             return self.runfn(lambda:{"events":self.service.events(self.bounded_int(q,"limit",100,1,500))})
         if p=="/platform/v1/keycloak/observability/metrics": return self.runfn(lambda:{"metrics":self.service.metrics(self.bounded_int(q,"limit",100,1,500))})
+        if p=="/platform/v1/keycloak/runtime": return self.runfn(lambda:{"runtime":self.service.runtime()})
+        if p=="/platform/v1/keycloak/runtime/issuer": return self.runfn(lambda:{"issuer":self.service.runtime_issuer()})
+        if p=="/platform/v1/keycloak/runtime/jwks": return self.runfn(lambda:{"jwks":self.service.runtime_jwks()})
+        if p=="/platform/v1/keycloak/readiness":
+            rid=self.rid()
+            try: value=self.service.readiness()
+            except KeycloakAdminError as exc:
+                status=exc.status if exc.status and 400 <= exc.status < 600 else 503
+                return self.send_json(status,{"ok":False,"error":{"code":exc.code,"message":str(exc)}},rid)
+            return self.send_json(200 if value["ready"] else 503,{"ok":value["ready"],"readiness":value},rid)
         if p=="/platform/v1/keycloak/promotion/policy": return self.runfn(lambda:{"policy":PROMOTION_POLICY})
         # Record routes take exactly one id segment; anything deeper is not a route.
         pid=self.record_id(p,"/platform/v1/keycloak/promotion/plans/")

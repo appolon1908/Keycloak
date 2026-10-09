@@ -30,7 +30,7 @@ Immediately after the protected squash merge, replace the bootstrap rule with
 `config/github/main-ruleset.json`. The final rule keeps every bootstrap control
 and additionally requires CODEOWNER review.
 
-The `.github/CODEOWNERS` file assigns `@appolon1908-hue` and `@kazan555` to the
+The `.github/CODEOWNERS` file assigns `@appolon1908` and `@kazan555` to the
 repository and to all identity configuration, workflow, script, deployment, and
 security-runbook paths. `require_last_push_approval` prevents the last pusher
 from satisfying the approval gate.
@@ -75,7 +75,7 @@ RUNTIME_ENV_FILE
 RUNTIME_CADDY_FILE
 RUNTIME_GIT_SSH_KEY
 RUNTIME_GIT_KNOWN_HOSTS
-RUNTIME_GIT_REMOTE=git@github.com:appolon1908-hue/Keycloak.git
+RUNTIME_GIT_REMOTE=git@github.com:appolon1908/Keycloak.git
 RUNTIME_GIT_BRANCH=main
 RUNTIME_PATHS_APPROVED_SHA256
 ```

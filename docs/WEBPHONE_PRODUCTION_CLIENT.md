@@ -71,4 +71,4 @@ Complete the independent protected-main maintenance process documented in
 `config/bootstrap/proposals/README.md` before treating bootstrap as passed.
 
 Consumer configuration and the authenticated preflight are in
-[platform PR #336](https://github.com/appolon1908-hue/codestra-production-platform/pull/336).
+[platform PR #336](https://github.com/appolon1908/codestra-production-platform/pull/336).

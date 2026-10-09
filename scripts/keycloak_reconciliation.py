@@ -209,9 +209,15 @@ def hold_owner(holds:list[dict[str,Any]]|None,resource_type:str,resource_id:str)
 
 def plan(desired:dict[str,Any],live:dict[str,Any],*,managed_inventory:dict[str,list[str]]|None=None,environment:str="unknown",holds:list[dict[str,Any]]|None=None)->dict[str,Any]:
     actions:list[Action]=[]; managed_inventory=managed_inventory or {}
-    if canonical(projection(desired.get("realm") or {},REALM_FIELDS))!=canonical(projection(live.get("realm") or {},REALM_FIELDS)):
-        actions.append(Action("UPDATE","realm",str((desired.get("realm") or {}).get("realm") or "codestra"),"managed_fields_drift"))
-    else: actions.append(Action("KEEP","realm",str((desired.get("realm") or {}).get("realm") or "codestra"),"in_sync"))
+    desired_realm=desired.get("realm") or {}
+    live_realm=live.get("realm") or {}
+    realm_id=str(desired_realm.get("realm") or "codestra")
+    if desired_realm and not live_realm:
+        actions.append(Action("CREATE","realm",realm_id,"missing_live"))
+    elif canonical(projection(desired_realm,REALM_FIELDS))!=canonical(projection(live_realm,REALM_FIELDS)):
+        actions.append(Action("UPDATE","realm",realm_id,"managed_fields_drift"))
+    else:
+        actions.append(Action("KEEP","realm",realm_id,"in_sync"))
     _plan_collection(actions,"client_scope",desired.get("clientScopes",[]),live.get("clientScopes",[]),"name",SCOPE_FIELDS,set(managed_inventory.get("clientScopes",[])))
     _plan_collection(actions,"realm_role",desired.get("realmRoles",[]),live.get("realmRoles",[]),"name",ROLE_FIELDS,set(managed_inventory.get("realmRoles",[])))
     _plan_collection(actions,"client",desired.get("clients",[]),live.get("clients",[]),"clientId",CLIENT_FIELDS,set(managed_inventory.get("clients",[])))
@@ -266,7 +272,9 @@ def validate_plan(plan_doc:dict[str,Any],desired:dict[str,Any],live:dict[str,Any
         if kind not in MUTATION_KINDS: raise RuntimeError(f"unsupported_action:{kind}")
         if kind=="DELETE" and (not allow_delete or not action.get("managed",False)): raise RuntimeError(f"delete_not_authorized:{rt}:{rid}")
         if rt=="realm":
-            if kind!="UPDATE" or not desired.get("realm"): raise RuntimeError("unsupported_realm_action")
+            if kind not in {"CREATE","UPDATE"} or not desired.get("realm"): raise RuntimeError("unsupported_realm_action")
+            if kind=="CREATE" and live.get("realm"): raise RuntimeError("realm_already_exists")
+            if kind=="UPDATE" and not live.get("realm"): raise RuntimeError("realm_missing")
         elif rt in COLLECTION_KEYS:
             key=COLLECTION_KEYS[rt]
             if kind in {"CREATE","UPDATE"} and rid not in maps[key]: raise RuntimeError(f"desired_resource_missing:{rt}:{rid}")
@@ -293,7 +301,7 @@ def validate_plan(plan_doc:dict[str,Any],desired:dict[str,Any],live:dict[str,Any
             if kind in {"UPDATE","DELETE"} and rid not in live_maps["userProfileAttributes"]: raise RuntimeError(f"live_resource_missing:{rt}:{rid}")
         elif rt=="required_action":
             if kind in {"CREATE","UPDATE"} and rid not in maps["requiredActions"]: raise RuntimeError(f"desired_resource_missing:{rt}:{rid}")
-            if kind=="CREATE" and rid not in unregistered_providers(live): raise RuntimeError(f"required_action_not_registered:{rid}")
+            if kind=="CREATE" and live.get("realm") and rid not in unregistered_providers(live): raise RuntimeError(f"required_action_not_registered:{rid}")
             if kind in {"UPDATE","DELETE"} and rid not in live_maps["requiredActions"]: raise RuntimeError(f"live_resource_missing:{rt}:{rid}")
         else: raise RuntimeError(f"unsupported_resource:{rt}")
 
@@ -317,8 +325,12 @@ def apply_plan(plan_doc:dict[str,Any],desired:dict[str,Any],live:dict[str,Any],a
             if kind not in MUTATION_KINDS: raise RuntimeError(str(action.get("reason") or f"unsupported_action:{kind}"))
             if kind=="DELETE" and (not allow_delete or not action.get("managed",False)): raise RuntimeError(f"delete_not_authorized:{rt}:{rid}")
             if rt=="realm":
-                if kind!="UPDATE": raise RuntimeError("unsupported_realm_action")
-                api.update_realm(projection(desired["realm"],REALM_FIELDS))
+                if kind=="CREATE":
+                    api.create_realm(dict(desired["realm"]))
+                elif kind=="UPDATE":
+                    api.update_realm(projection(desired["realm"],REALM_FIELDS))
+                else:
+                    raise RuntimeError("unsupported_realm_action")
             elif rt=="client":
                 d=maps["clients"].get(rid); cur=live_maps["clients"].get(rid)
                 if kind=="CREATE": api.create_client(d)
@@ -409,7 +421,10 @@ def apply_plan(plan_doc:dict[str,Any],desired:dict[str,Any],live:dict[str,Any],a
                 if kind=="DELETE": api.delete_required_action(rid)
                 else:
                     if kind=="CREATE":
-                        provider=next(r for r in live.get("unregisteredRequiredActions",[]) if r.get("providerId")==rid)
+                        provider=next((r for r in live.get("unregisteredRequiredActions",[]) if r.get("providerId")==rid),None)
+                        if provider is None:
+                            provider=next((r for r in api.unregistered_required_actions() if r.get("providerId")==rid),None)
+                        if provider is None: raise RuntimeError(f"required_action_not_registered:{rid}")
                         api.register_required_action({"providerId":rid,"name":provider.get("name") or rid})
                         current=api.required_action(rid)
                     else: current=live_maps["requiredActions"].get(rid)

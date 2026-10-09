@@ -62,9 +62,27 @@ All routes live under `/platform/v1/keycloak`. Responses are JSON with
 | GET | `/observability/status` | Managed drift, `pendingMutations`, `eventsEnabled` |
 | GET | `/observability/events?limit=` | Redacted realm events, `1..500` |
 | GET | `/observability/metrics?limit=` | Failure counters including `keycloak_readback_failures` |
+| GET | `/runtime` | Safe runtime identity metadata: expected/observed issuer, discovery/JWKS reachability and sanitized key metadata; never key material |
+| GET | `/runtime/issuer` | Issuer/discovery readiness only |
+| GET | `/runtime/jwks` | JWKS endpoint readiness plus `kid`/`alg`/`use` metadata only |
+| GET | `/readiness` | Corporate readiness. Returns 503 unless the canonical issuer/JWKS are valid and managed desired state has zero pending mutations |
 | GET | `/promotion/policy` | Promotion policy constants |
 | POST | `/promotion/plan` | Deterministic promotion packet; TEST_SYN can never reach production |
 | GET | `/promotion/plans/{id}` | Stored promotion packet |
+
+## Corporate identity readiness
+
+Native Keycloak process health is not sufficient for Codestra readiness. The control
+API's `/readiness` route verifies the environment's checked-in issuer contract, reads
+OIDC discovery without following redirects, requires the exact issuer and JWKS URI,
+requires a non-empty JWKS, and then requires zero managed drift. JWKS responses are
+reduced to `kid`, `alg`, and `use`; modulus, exponent, certificates, tokens and other
+key material are never returned by the control API.
+
+A missing `codestra` realm therefore reports not-ready even if Keycloak's native
+management health endpoint is UP. Production and staging realm bootstrap remain owned
+by the governed deploy pipeline; the control API returns `realm_bootstrap_required`
+rather than becoming a second writer.
 
 ## Managed resources
 

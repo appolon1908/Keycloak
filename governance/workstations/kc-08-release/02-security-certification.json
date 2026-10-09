@@ -1,0 +1,24 @@
+{
+  "workstation": "keycloak::kc-08-release::02-security-certification",
+  "product": "keycloak",
+  "section": "kc-08-release",
+  "subsection": "02-security-certification",
+  "branch": "subsection/kc-08-release--02-security-certification",
+  "parent_branch": "section/kc-08-release",
+  "order": 2,
+  "worktree": "/srv/codestra/workstations/Keycloak/sections/kc-08-release/subsections/02-security-certification/repo",
+  "depends_on": [
+    "keycloak::kc-07-reconciliation::03-repair",
+    "keycloak::kc-08-release::01-observability"
+  ],
+  "status": "NOT_STARTED",
+  "required_gates": [
+    "lint",
+    "unit",
+    "integration",
+    "contract",
+    "security",
+    "clean_tree",
+    "remote_sha_match"
+  ]
+}

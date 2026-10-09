@@ -120,7 +120,7 @@ def validate_contract(contract: dict[str, Any]) -> None:
         if boundary.get(key) is not False:
             raise DesiredStateError(f"boundary.{key} must be false")
     authority = contract.get("openbaoAuthority") or {}
-    if authority.get("repository") != "appolon1908-hue/Codestra-OpenBao" or authority.get("path") != "config/workload-secret-authority.v1.json":
+    if authority.get("repository") != "appolon1908/Codestra-OpenBao" or authority.get("path") != "config/workload-secret-authority.v1.json":
         raise DesiredStateError("OpenBao authority pointer drifted")
     if not re.fullmatch(r"[0-9a-f]{64}", str(authority.get("sha256", ""))):
         raise DesiredStateError("OpenBao authority sha256 is malformed")

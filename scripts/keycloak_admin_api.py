@@ -27,11 +27,11 @@ class KeycloakAdminAPI:
     def _url(self,suffix:str)->str:
         return f"{self.base_url}/admin/realms/{urllib.parse.quote(self.realm)}{suffix}"
 
-    def request(self,method:str,suffix:str,body:dict[str,Any]|None=None,expected:set[int]|None=None)->Any:
+    def _request_url(self,method:str,url:str,body:dict[str,Any]|None=None,expected:set[int]|None=None)->Any:
         data=None if body is None else json.dumps(body,separators=(",",":")).encode()
         headers={"Authorization":f"Bearer {self._bearer}","Accept":"application/json"}
         if data is not None: headers["Content-Type"]="application/json"
-        req=urllib.request.Request(self._url(suffix),data=data,headers=headers,method=method)
+        req=urllib.request.Request(url,data=data,headers=headers,method=method)
         try:
             with _OPENER.open(req,timeout=self.timeout) as resp:
                 status=resp.status; raw=resp.read()
@@ -44,7 +44,17 @@ class KeycloakAdminAPI:
         try: return json.loads(raw)
         except json.JSONDecodeError as exc: raise KeycloakAdminError("invalid_json","Keycloak Admin API returned invalid JSON",status) from exc
 
+    def request(self,method:str,suffix:str,body:dict[str,Any]|None=None,expected:set[int]|None=None)->Any:
+        return self._request_url(method,self._url(suffix),body,expected)
+
     def realm_state(self)->dict[str,Any]: return self.request("GET","") or {}
+    def realm_state_optional(self)->dict[str,Any]|None:
+        try: return self.realm_state()
+        except KeycloakAdminError as exc:
+            if exc.status==404: return None
+            raise
+    def create_realm(self,payload:dict[str,Any])->None:
+        self._request_url("POST",f"{self.base_url}/admin/realms",payload,{201})
     def clients(self)->list[dict[str,Any]]: return self.request("GET","/clients?max=1000") or []
     def client_scopes(self)->list[dict[str,Any]]: return self.request("GET","/client-scopes") or []
     # The role list is brief by default and omits attributes, which desired state manages.

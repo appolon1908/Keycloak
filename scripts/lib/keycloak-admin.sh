@@ -165,6 +165,40 @@ keycloak_authenticate() {
   export KC_ACCESS_TOKEN
 }
 
+keycloak_api_get_status() {
+  local path="$1"
+  local output_file="$2"
+
+  [[ -n "${KC_ACCESS_TOKEN:-}" ]] ||
+    die "keycloak_authenticate must be called before keycloak_api_get_status"
+  [[ "$path" == /* ]] || die "Keycloak API path must begin with /"
+  [[ -n "$output_file" && ! -L "$output_file" ]] ||
+    die "Keycloak API output must be a non-symlink path"
+
+  local -a transport_arguments=()
+  mapfile -d '' -t transport_arguments < <(keycloak_transport_arguments)
+
+  local status
+  status="$(
+    curl --silent --show-error \
+      "${transport_arguments[@]}" \
+      --connect-timeout "$KC_CONNECT_TIMEOUT" \
+      --max-time "$KC_MAX_TIME" \
+      --request GET \
+      --retry 3 \
+      --retry-delay 2 \
+      --retry-connrefused \
+      --header "Authorization: Bearer ${KC_ACCESS_TOKEN}" \
+      --header 'Accept: application/json' \
+      --output "$output_file" \
+      --write-out '%{http_code}' \
+      "${KC_BASE_URL}${path}"
+  )" || die "Keycloak GET request failed: $path"
+
+  [[ "$status" =~ ^[0-9]{3}$ ]] || die "Keycloak GET returned an invalid HTTP status"
+  printf '%s\n' "$status"
+}
+
 keycloak_api() {
   local method="$1"
   local path="$2"

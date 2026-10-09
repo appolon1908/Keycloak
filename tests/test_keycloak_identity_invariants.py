@@ -260,7 +260,7 @@ def test_every_service_client_has_complete_derived_metadata():
     inventory={row["clientId"]:row for row in model["serviceIdentities"]}
     assert set(inventory)==service_ids and len(inventory)==29
     for row in inventory.values():
-        assert row["owners"]==["appolon1908-hue","kazan555"] and row["purpose"] and row["identityType"]=="service"
+        assert row["owners"]==["appolon1908","kazan555"] and row["purpose"] and row["identityType"]=="service"
         assert row["audiences"] and row["environments"] and row["credential"]["secretFromEnvironment"].startswith("KC_CLIENT_SECRET_")
         assert row["credential"]["maxSecretAgeDays"]==90 and row["risk"] in {"low","medium","high"}
         assert row["keycloakAdminAccess"] in {"none","read-only","full"}

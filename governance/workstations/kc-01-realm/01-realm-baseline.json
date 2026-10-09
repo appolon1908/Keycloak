@@ -1,0 +1,21 @@
+{
+  "workstation": "keycloak::kc-01-realm::01-realm-baseline",
+  "product": "keycloak",
+  "section": "kc-01-realm",
+  "subsection": "01-realm-baseline",
+  "branch": "subsection/kc-01-realm--01-realm-baseline",
+  "parent_branch": "section/kc-01-realm",
+  "order": 1,
+  "worktree": "/srv/codestra/workstations/Keycloak/sections/kc-01-realm/subsections/01-realm-baseline/repo",
+  "depends_on": [],
+  "status": "NOT_STARTED",
+  "required_gates": [
+    "lint",
+    "unit",
+    "integration",
+    "contract",
+    "security",
+    "clean_tree",
+    "remote_sha_match"
+  ]
+}
