@@ -21,6 +21,10 @@
     {
       "head": "staging",
       "base": "production"
+    },
+    {
+      "head": "production",
+      "base": "main"
     }
   ],
   "bootstrap_exception": {
