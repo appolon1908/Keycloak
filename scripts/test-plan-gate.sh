@@ -645,7 +645,7 @@ jq -n '{armed: true, clientId: "klyrow-portal", remainingGets: 1, kind: "unmanag
   --recovery-dir "$test_root/recovery-unmanaged-race" >/dev/null
 jq -e '
   .["klyrow-portal"].representation.unmanagedConcurrentMarker == "preserved"
-  and .["klyrow-portal"].representation.redirectUris == ["https://klyrow.com/"]
+  and .["klyrow-portal"].representation.redirectUris == ["https://app.klyrow.com/auth/callback"]
 ' "$state_file" >/dev/null
 
 jq -S 'del(."klyrow-portal")' "$state_file" >"$state_file.tmp"
