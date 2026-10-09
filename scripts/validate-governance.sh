@@ -107,4 +107,6 @@ validate_ruleset "$final_ruleset" "Protect main" true
 printf 'CODEOWNERS_POLICY=PASS\n'
 printf 'BOOTSTRAP_RULESET_POLICY=PASS\n'
 printf 'FINAL_RULESET_POLICY=PASS\n'
+python3 -m unittest discover -s "$ROOT_DIR/tests" -p 'test_workstation_promotion_validator.py' -q
+printf 'WORKSTATION_PROMOTION_MATRIX=PASS\n'
 printf 'GOVERNANCE_VALIDATION=PASS\n'
