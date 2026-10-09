@@ -23,7 +23,7 @@ KC_PUBLIC_URL="${KC_PUBLIC_URL:-${KC_BASE_URL:-$canonical_public_url}}"
 KC_PUBLIC_URL="${KC_PUBLIC_URL%/}"
 KC_TARGET_REALM="${KC_TARGET_REALM:-$canonical_realm}"
 SMOKE_CLIENT_ID="${SMOKE_CLIENT_ID:-klyrow-portal}"
-SMOKE_REDIRECT_URI="${SMOKE_REDIRECT_URI:-https://klyrow.com/}"
+SMOKE_REDIRECT_URI="${SMOKE_REDIRECT_URI:-https://app.klyrow.com/auth/callback}"
 
 [[ "$KC_PUBLIC_URL" == "$canonical_public_url" ]] || {
   printf 'ERROR=noncanonical_public_url actual=%s expected=%s\n' \
