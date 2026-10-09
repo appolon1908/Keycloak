@@ -168,7 +168,7 @@ def certify(
     expected_client_id = contract.get("clientId")
     if expected_client_id != "klyrow-portal" or desired.get("clientId") != expected_client_id:
         raise CertificationError("Klyrow activation target changed unexpectedly")
-    if desired.get("redirectUris") != ["https://klyrow.com/"]:
+    if desired.get("redirectUris") != ["https://app.klyrow.com/auth/callback"]:
         raise CertificationError("Klyrow redirect URI must remain exact")
     if allowlist.get("clientId") != expected_client_id:
         raise CertificationError("Klyrow export allowlist does not match the activation target")
