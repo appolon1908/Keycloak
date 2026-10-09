@@ -35,6 +35,7 @@ ACTIVATION_READBACK_WORKFLOW = "keycloak-activation-readback.yml"
 ADDITIONAL_REVIEWED_WORKFLOWS = {
     "orbit-theme.yml",
     "scrapper-identity-contract.yml",
+    "workstation-governance.yml",
 }
 PASSWORD_RESET_WORKFLOWS = {
     "password-reset-staging-e2e.yml",
