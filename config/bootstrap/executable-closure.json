@@ -2,6 +2,10 @@
   "schema": "keycloak.bootstrap-closure.v1",
   "files": [
     {
+      "path": ".codestra/validate-promotion.py",
+      "sha256": "de406400ac98e8e4498e92cdd1f4e94d34625b0c73ec7b8750e71fd2e0cd0797"
+    },
+    {
       "path": ".github/workflows/keycloak-release-trust-root.yml",
       "sha256": "5a5f017dcb11188d04f4dce0f4fa80656a36562f08aaa5d9982a1bfa889b5307"
     },
@@ -23,7 +27,7 @@
     },
     {
       "path": "scripts/validate-governance.sh",
-      "sha256": "fb47093b167bb894b4c041bf9874964de9add683f64f583d391baea6d085ea93"
+      "sha256": "318349e853403fea94c193819e010bb69b4834990ae803cf98576ed6e3d4cb4e"
     },
     {
       "path": "scripts/validate-kong-oidc-contract.py",
@@ -52,7 +56,11 @@
     {
       "path": "tests/test_kyyow_identity.py",
       "sha256": "f1133e8b04226a854b3484ded27149995d54dfceb8b1ff9dfbf062a9140d33e6"
+    },
+    {
+      "path": "tests/test_workstation_promotion_validator.py",
+      "sha256": "c2eda7b7657043cc404cca49898a346dd47341d9563503391ffac56bb4414e9d"
     }
   ],
-  "manifest_sha256": "04a522bf8992ebe55559cbde1261407a7f452f4e51dd4519b09f887bfd5123f0"
+  "manifest_sha256": "5f8b328725017670da0168914361be0ab66079793628bc0db677fc3fe18a9714"
 }
