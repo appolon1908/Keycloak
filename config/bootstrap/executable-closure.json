@@ -18,12 +18,20 @@
       "sha256": "089cdc01d08d052a65af515690128eb0a6c6b912b1c498be2bcd4a18eb20b182"
     },
     {
+      "path": "governance/promotion-policy.json",
+      "sha256": "67a316d7384ba7aa1003cc918eba580e63f027b266af81f91cc67231e75c24a2"
+    },
+    {
+      "path": "governance/promotion_guard.py",
+      "sha256": "28ca4dd5438423683f4ed59205870b48982c1efacb67069ecfd1d05bed88d930"
+    },
+    {
       "path": "scripts/bootstrap_release_trust_root.py",
       "sha256": "c9b44f5a258338aa00f66432cf900403c9b85dd3c58840ba54e41c8cd9d30c73"
     },
     {
       "path": "scripts/validate-governance.sh",
-      "sha256": "fb47093b167bb894b4c041bf9874964de9add683f64f583d391baea6d085ea93"
+      "sha256": "db7fe98c4d647ed2a1007ec0d249be9f3d6ac8b63bfa05298560810fa09c5e6a"
     },
     {
       "path": "scripts/validate-kong-oidc-contract.py",
@@ -43,16 +51,20 @@
     },
     {
       "path": "scripts/validate-workflows.py",
-      "sha256": "bdb34c02b8e7a5c5339cb9d1871c9a5fa93f32211a5986a26046481d31eb93d4"
+      "sha256": "1761bcc2b183b4e0991688beeb5814ba3c4a06a2a99efdad5c86c25ff6d92f5e"
     },
     {
       "path": "scripts/validate.sh",
       "sha256": "0b409553123a8ebcf2cc3718aa9f7bb7ecc8fed2e9229c93022722037054afb6"
     },
     {
+      "path": "tests/test_governed_promotion_chain.py",
+      "sha256": "372fb616edfbf65f19f1b3ba7336684afa3ecd05586474f2a38536e5c1a43dd1"
+    },
+    {
       "path": "tests/test_kyyow_identity.py",
       "sha256": "f1133e8b04226a854b3484ded27149995d54dfceb8b1ff9dfbf062a9140d33e6"
     }
   ],
-  "manifest_sha256": "282e98b9a9f0bb5fc2140865bd5902a0d9caf0ec9b12cae36c2aedc674045f9d"
+  "manifest_sha256": "aece8afbbd8e93c89e2df09ab0769c99d51eb6e3ec70d556b44edaaebcc138e8"
 }

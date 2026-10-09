@@ -1,0 +1,23 @@
+{
+  "workstation": "keycloak::kc-02-organization::01-org-model",
+  "product": "keycloak",
+  "section": "kc-02-organization",
+  "subsection": "01-org-model",
+  "branch": "subsection/kc-02-organization--01-org-model",
+  "parent_branch": "section/kc-02-organization",
+  "order": 1,
+  "worktree": "/srv/codestra/workstations/Keycloak/sections/kc-02-organization/subsections/01-org-model/repo",
+  "depends_on": [
+    "keycloak::kc-01-realm::03-session-policy"
+  ],
+  "status": "NOT_STARTED",
+  "required_gates": [
+    "lint",
+    "unit",
+    "integration",
+    "contract",
+    "security",
+    "clean_tree",
+    "remote_sha_match"
+  ]
+}
