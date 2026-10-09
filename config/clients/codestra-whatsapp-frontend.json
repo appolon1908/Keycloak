@@ -1,0 +1,59 @@
+{
+  "clientId": "codestra-whatsapp-frontend",
+  "name": "Codestra WhatsApp Operator Console",
+  "description": "Review-gated public browser client for Codestra WhatsApp phone account administration; disabled until approved OAuth activation.",
+  "enabled": false,
+  "protocol": "openid-connect",
+  "publicClient": true,
+  "bearerOnly": false,
+  "consentRequired": false,
+  "standardFlowEnabled": true,
+  "implicitFlowEnabled": false,
+  "directAccessGrantsEnabled": false,
+  "serviceAccountsEnabled": false,
+  "authorizationServicesEnabled": false,
+  "frontchannelLogout": true,
+  "fullScopeAllowed": false,
+  "rootUrl": "https://whatsapp.codestra.co",
+  "baseUrl": "https://whatsapp.codestra.co/",
+  "redirectUris": [
+    "https://whatsapp.codestra.co/"
+  ],
+  "webOrigins": [
+    "https://whatsapp.codestra.co"
+  ],
+  "attributes": {
+    "pkce.code.challenge.method": "S256",
+    "access.token.lifespan": "300",
+    "post.logout.redirect.uris": "https://whatsapp.codestra.co/",
+    "oauth2.device.authorization.grant.enabled": "false",
+    "oidc.ciba.grant.enabled": "false"
+  },
+  "protocolMappers": [
+    {
+      "name": "codestra-whatsapp-api-audience",
+      "protocol": "openid-connect",
+      "protocolMapper": "oidc-audience-mapper",
+      "consentRequired": false,
+      "config": {
+        "included.custom.audience": "codestra-whatsapp",
+        "id.token.claim": "false",
+        "access.token.claim": "true"
+      }
+    },
+    {
+      "name": "codestra-whatsapp-tenant-id",
+      "protocol": "openid-connect",
+      "protocolMapper": "oidc-usermodel-attribute-mapper",
+      "consentRequired": false,
+      "config": {
+        "user.attribute": "tenant_id",
+        "claim.name": "tenant_id",
+        "jsonType.label": "String",
+        "access.token.claim": "true",
+        "id.token.claim": "false",
+        "userinfo.token.claim": "false"
+      }
+    }
+  ]
+}
