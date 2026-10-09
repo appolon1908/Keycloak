@@ -11,11 +11,11 @@
     },
     {
       "path": ".github/workflows/validate.yml",
-      "sha256": "1540a1629653a8130fd330bf1796e4c69d39b8e2f846c7cf11dfc9e01a2445ab"
+      "sha256": "c84ec5e6f5a22289befcb179633a58bded339c12258552c0fc48a4b66c07fb2c"
     },
     {
       "path": "contracts/kyyow-saas-identity-v1.json",
-      "sha256": "089cdc01d08d052a65af515690128eb0a6c6b912b1c498be2bcd4a18eb20b182"
+      "sha256": "dde36deb1236b1919ccb92bcf8a5a566b5d5d33372cd342215eaf2c2c5361013"
     },
     {
       "path": "scripts/bootstrap_release_trust_root.py",
@@ -23,7 +23,7 @@
     },
     {
       "path": "scripts/validate-governance.sh",
-      "sha256": "fb47093b167bb894b4c041bf9874964de9add683f64f583d391baea6d085ea93"
+      "sha256": "9e9e88e6d53812921b2b3c9479c847b28836e737c9b4fcd421c9cbfd8cbde474"
     },
     {
       "path": "scripts/validate-kong-oidc-contract.py",
@@ -31,7 +31,7 @@
     },
     {
       "path": "scripts/validate-kyyow-identity.py",
-      "sha256": "81a89804ff4cc91f22f7d25ba199d0376dfde7e8aa847e77a55b058e38909a21"
+      "sha256": "6c428936189249aae1b4dacb33a269bf66e7d33da2f31512156ea53add609dd6"
     },
     {
       "path": "scripts/validate-password-reset-contract.py",
@@ -39,7 +39,7 @@
     },
     {
       "path": "scripts/validate-repository-name-authority.py",
-      "sha256": "d56d85a41734dc468efecb99d590d0d33267dcd1c84f4ff4dd3fa93c2076bd96"
+      "sha256": "5e80dd020664783cb67d00231674160fa5d624c17afb288545006701f1235211"
     },
     {
       "path": "scripts/validate-workflows.py",
@@ -54,5 +54,5 @@
       "sha256": "f1133e8b04226a854b3484ded27149995d54dfceb8b1ff9dfbf062a9140d33e6"
     }
   ],
-  "manifest_sha256": "282e98b9a9f0bb5fc2140865bd5902a0d9caf0ec9b12cae36c2aedc674045f9d"
+  "manifest_sha256": "b2130391d19c2f2b26a35583ab5d8d1e33342b02b80cf9e6a5d5efc824459014"
 }

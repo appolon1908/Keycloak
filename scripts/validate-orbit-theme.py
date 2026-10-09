@@ -10,7 +10,7 @@ THEME = ROOT / "themes" / "codestra" / "login"
 
 def main() -> None:
     manifest = json.loads((ROOT / "orbit" / "adoption-manifest.json").read_text())
-    assert manifest["repository"] == "appolon1908-hue/Keycloak"
+    assert manifest["repository"] == "appolon1908/Keycloak"
     assert manifest["domain"] == "auth.codestra.co"
     assert manifest["requirements"]["supportedTheme"] is True
     properties = (THEME / "theme.properties").read_text()

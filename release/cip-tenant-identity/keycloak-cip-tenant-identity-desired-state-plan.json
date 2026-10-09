@@ -9,14 +9,14 @@
     "production cip-portal remains blocked until its origin is reviewed; unbound scopes stay unbound until Middleware routes exist"
   ],
   "audience": "middleware-api",
-  "configurationChecksum": "a790de74382dff2ca06bc0cb13c92211234ad856e6eea88e91b2497a26bf1abe",
+  "configurationChecksum": "b45200c03fe6a4206c9619059a7b10d7f28d12e5b81e9e28861c46cd555e5054",
   "environment": "staging",
   "issuer": "https://auth-staging.codestra.co/realms/codestra",
   "kind": "CodestraKeycloakCipTenantIdentityDesiredStatePlan",
   "middlewareRouteContract": {
     "parityEvidence": "config/certification/cip-f3-cross-repo-parity-recertification.v1.json",
     "path": "deploy/public-api-route-contract.json",
-    "repository": "ingtrader21-spec/Middleware-",
+    "repository": "appolon1908/Middleware-",
     "routeCount": 117,
     "sha256": "9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b"
   },
@@ -333,7 +333,7 @@
     },
     {
       "path": "config/desired-state/cip-tenant-identity/contract.json",
-      "sha256": "af7dc452969859370f82ac9a3479cd8cd01ed2bcb7b83bf2498f41fca19e978b"
+      "sha256": "a7cd50aeda19adfa3ea7f04dcb3e048524d2b52c6165c2e1871cb5400b5acf3d"
     },
     {
       "path": "config/desired-state/cip-tenant-identity/realm-roles/cip-audit-viewer.json",

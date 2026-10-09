@@ -6,10 +6,10 @@ from verify_intent import validate_plan, approved_reviewers
 
 class IntentTests(unittest.TestCase):
     def setUp(self):
-        self.plan = dict(schema="reviewed-image-publication/v1", repository="appolon1908-hue/Keycloak", source_sha="a"*40, source_tree="b"*40, image_repository="ghcr.io/appolon1908-hue/codestra-keycloak", publish_image=True, deploy_production=False, external_effects=False, sbom_required=True, provenance_required=True)
+        self.plan = dict(schema="reviewed-image-publication/v1", repository="appolon1908/Keycloak", source_sha="a"*40, source_tree="b"*40, image_repository="ghcr.io/appolon1908/codestra-keycloak", publish_image=True, deploy_production=False, external_effects=False, sbom_required=True, provenance_required=True)
     def verify(self, plan, digest=None):
         digest = digest or hashlib.sha256(json.dumps(plan,sort_keys=True,separators=(",",":")).encode()).hexdigest()
-        validate_plan(plan,"appolon1908-hue/Keycloak","a"*40,digest)
+        validate_plan(plan,"appolon1908/Keycloak","a"*40,digest)
     def test_valid(self): self.verify(self.plan)
     def test_hash_tampering(self):
         with self.assertRaises(ValueError): self.verify(self.plan,"0"*64)

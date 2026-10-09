@@ -9,12 +9,12 @@
     "production cip-portal remains blocked until its origin is reviewed; unbound scopes stay unbound until Middleware routes exist"
   ],
   "authority": {
-    "configurationChecksum": "a790de74382dff2ca06bc0cb13c92211234ad856e6eea88e91b2497a26bf1abe",
+    "configurationChecksum": "b45200c03fe6a4206c9619059a7b10d7f28d12e5b81e9e28861c46cd555e5054",
     "consumptionRule": "Kong imports this file as data only, pins it by sha256 and never edits Keycloak desired state.",
     "contract": "config/desired-state/cip-tenant-identity/contract.json",
-    "contractSha256": "af7dc452969859370f82ac9a3479cd8cd01ed2bcb7b83bf2498f41fca19e978b",
+    "contractSha256": "a7cd50aeda19adfa3ea7f04dcb3e048524d2b52c6165c2e1871cb5400b5acf3d",
     "desiredStatePlan": "release/cip-tenant-identity/keycloak-cip-tenant-identity-desired-state-plan.json",
-    "desiredStatePlanSha256": "d1a3ddbf1e7f03565343806daa8c06a5996144905a6efbb97fdaf80c47253c3b",
+    "desiredStatePlanSha256": "8dc90bdfe93670723a260a5d176d5de0ba5ef99cb236b0cc82db29b788022211",
     "hashRule": "contractSha256, tokenMatrixSha256 and parityEvidenceSha256 are sha256 over json.dumps(document, sort_keys=True, separators=(',', ':')).encode('utf-8'); desiredStatePlanSha256 is sha256 over the committed plan file bytes, as recorded in its .sha256 file",
     "parityEvidence": "config/certification/cip-f3-cross-repo-parity-recertification.v1.json",
     "parityEvidenceSha256": "6fad70e4cf2c319210cbc9f4fc96e3830dc8efae3a12ed03f1cc4555a3c54b80",
@@ -179,7 +179,7 @@
   ],
   "middlewareRouteContract": {
     "path": "deploy/public-api-route-contract.json",
-    "repository": "ingtrader21-spec/Middleware-",
+    "repository": "appolon1908/Middleware-",
     "routeCount": 117,
     "sha256": "9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b"
   },

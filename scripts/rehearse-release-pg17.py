@@ -22,7 +22,7 @@ def main():
     if os.environ.get("GITHUB_ACTIONS") != "true" or os.environ.get("RUNNER_ENVIRONMENT") != "github-hosted":
         raise SystemExit("Hosted GitHub runner required; production execution forbidden")
     image = os.environ["RELEASE_IMAGE"]
-    if not re.fullmatch(r"ghcr.io/appolon1908-hue/codestra-keycloak@sha256:[0-9a-f]{64}", image):
+    if not re.fullmatch(r"ghcr.io/appolon1908/codestra-keycloak@sha256:[0-9a-f]{64}", image):
         raise SystemExit("Exact immutable candidate required")
     pg = "postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94"
     prefix = "kc-cert-" + secrets.token_hex(6)

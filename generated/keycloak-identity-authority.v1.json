@@ -4339,7 +4339,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "adapter service",
@@ -4365,7 +4365,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "monitoring_writer service granted alerts.write",
@@ -4393,7 +4393,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "Confidential product backend identity for Kong -> Middleware command access. Secrets and tenant values remain external to Git.",
@@ -4422,7 +4422,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "Confidential product backend identity for Kong -> Middleware command access. Secrets and tenant values remain external to Git.",
@@ -4451,7 +4451,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "application service granted ai.inference.request",
@@ -4479,7 +4479,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "application service granted communication.email.request, communication.sms.request",
@@ -4508,7 +4508,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "application service granted marketing.campaign.request",
@@ -4536,7 +4536,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "read-only",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "Compatibility identity dedicated to the webphone session issuer; read-only Keycloak user lookup.",
@@ -4562,7 +4562,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "application service granted social.publish.request",
@@ -4590,7 +4590,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "provider_gateway service granted email.events.publish, email.inbound.publish",
@@ -4619,7 +4619,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "edge service granted middleware.request.forward, middleware.status.read",
@@ -4648,7 +4648,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "provider_gateway service granted crawler.progress.publish, crawler.results.publish",
@@ -4677,7 +4677,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "Confidential product backend identity for Kong -> Middleware command access. Secrets and tenant values remain external to Git.",
@@ -4706,7 +4706,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "adapter service",
@@ -4735,7 +4735,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "resource_server service granted callbacks.dispatch, crawler.jobs.read, crawler.jobs.submit, crawler.results.read, odoo.activities.write, odoo.leads.read, odoo.leads.write, telephony.commands.write, workflow.status.read, workflow.trigger",
@@ -4777,7 +4777,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "workload service granted ai.provider.dispatch, ai.provider.status.read, delivery.retry, dlq.replay, email.send, email.status.read, inbox.process, marketing.provider.dispatch, marketing.provider.status.read, outbox.dispatch, sms.send, sms.status.read, social.publish, social.status.read",
@@ -4818,7 +4818,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "Confidential product backend identity for Kong -> Middleware command access. Secrets and tenant values remain external to Git.",
@@ -4846,7 +4846,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "monitoring service granted health.read, metrics.read",
@@ -4875,7 +4875,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "automation service granted middleware.request.forward, middleware.status.read, workflow.result.publish",
@@ -4905,7 +4905,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "Confidential Odoo 19 workload identity for tenant-bound transactional email submission and read-back through Middleware only. Secrets and tenant values remain external to Git.",
@@ -4934,7 +4934,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "adapter service granted odoo.delivery.result.publish, odoo.events.publish",
@@ -4963,7 +4963,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "adapter service granted social.events.publish",
@@ -4991,7 +4991,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "Privileged tenant-bound workload identity for reviewed Middleware production-email policy operations only. It has no provider, workflow, or connector-command authority, and its secret remains outside Git.",
@@ -5020,7 +5020,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "workload service granted identity.request, integration.configure, tenant.provision",
@@ -5050,7 +5050,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "workload service granted leads.write, surveys.write",
@@ -5079,7 +5079,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "Confidential product backend identity for Kong -> Middleware command access. Secrets and tenant values remain external to Git.",
@@ -5108,7 +5108,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "provider_gateway service granted sms.events.publish, sms.inbound.publish",
@@ -5137,7 +5137,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "Confidential product backend identity for Kong -> Middleware command access. Secrets and tenant values remain external to Git.",
@@ -5166,7 +5166,7 @@
       "identityType": "service",
       "keycloakAdminAccess": "none",
       "owners": [
-        "appolon1908-hue",
+        "appolon1908",
         "kazan555"
       ],
       "purpose": "adapter service granted callbacks.update, recordings.metadata.publish, telephony.events.publish",
@@ -5179,7 +5179,7 @@
       "tenantBinding": "global"
     }
   ],
-  "sourceSha256": "62137bd0706043edaa1479bd97fa51f05a78b50619bdf1fb14881dd168d9bcae",
+  "sourceSha256": "93c46e66b67fbef243398b2bb7bcbe1c369c7496b25c0e8387662c2988d0e541",
   "stagedClients": [
     {
       "authorityGroup": "cip-tenant-identity",

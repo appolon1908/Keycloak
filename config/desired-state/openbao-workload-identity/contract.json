@@ -15,7 +15,7 @@
     "staging"
   ],
   "openbaoAuthority": {
-    "repository": "appolon1908-hue/Codestra-OpenBao",
+    "repository": "appolon1908/Codestra-OpenBao",
     "branch": "remediation/monitoring-openbao-integration-20260916",
     "path": "config/workload-secret-authority.v1.json",
     "vendoredCopy": "config/desired-state/openbao-workload-identity/openbao-workload-secret-authority.v1.json",

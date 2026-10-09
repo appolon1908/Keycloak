@@ -22,9 +22,9 @@ for variable_name in RUNTIME_REPO_DIR RUNTIME_GIT_SSH_KEY RUNTIME_GIT_KNOWN_HOST
   [[ ! -L "${!variable_name}" ]] || fail "$variable_name must not be a symlink"
 done
 
-RUNTIME_GIT_REMOTE="${RUNTIME_GIT_REMOTE:-git@github.com:appolon1908-hue/Keycloak.git}"
+RUNTIME_GIT_REMOTE="${RUNTIME_GIT_REMOTE:-git@github.com:appolon1908/Keycloak.git}"
 RUNTIME_GIT_BRANCH="${RUNTIME_GIT_BRANCH:-main}"
-[[ "$RUNTIME_GIT_REMOTE" == 'git@github.com:appolon1908-hue/Keycloak.git' ]] ||
+[[ "$RUNTIME_GIT_REMOTE" == 'git@github.com:appolon1908/Keycloak.git' ]] ||
   fail "Runtime remote is not canonical"
 [[ "$RUNTIME_GIT_BRANCH" == 'main' ]] || fail "Runtime branch must be main"
 
