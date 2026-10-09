@@ -120,8 +120,8 @@ required_activation_evidence = {
 require(set(activation["requiredEvidence"]) == required_activation_evidence,
         "activation read-back evidence is incomplete")
 klyrow = load(activation["desiredClientPath"])
-require(klyrow["redirectUris"] == ["https://klyrow.com/"], "Klyrow redirect must remain exact")
-require(klyrow["webOrigins"] == ["https://klyrow.com"], "Klyrow origin must remain exact")
+require(klyrow["redirectUris"] == ["https://app.klyrow.com/auth/callback"], "Klyrow redirect must remain exact")
+require(klyrow["webOrigins"] == ["https://app.klyrow.com"], "Klyrow origin must remain exact")
 require(klyrow["publicClient"] is True and klyrow["standardFlowEnabled"] is True,
         "Klyrow browser client must remain public authorization-code flow")
 require(klyrow["implicitFlowEnabled"] is False and klyrow["directAccessGrantsEnabled"] is False,
