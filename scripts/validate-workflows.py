@@ -33,6 +33,7 @@ MANUAL_RELEASE_WORKFLOW = "manual-release-intent.yml"
 IMAGE_RELEASE_WORKFLOW = "release-image.yml"
 ACTIVATION_READBACK_WORKFLOW = "keycloak-activation-readback.yml"
 ADDITIONAL_REVIEWED_WORKFLOWS = {
+    "codestra-control-plane.yml",
     "orbit-theme.yml",
     "scrapper-identity-contract.yml",
 }
