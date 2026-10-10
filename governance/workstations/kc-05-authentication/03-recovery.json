@@ -1,0 +1,24 @@
+{
+  "workstation": "keycloak::kc-05-authentication::03-recovery",
+  "product": "keycloak",
+  "section": "kc-05-authentication",
+  "subsection": "03-recovery",
+  "branch": "subsection/kc-05-authentication--03-recovery",
+  "parent_branch": "section/kc-05-authentication",
+  "order": 3,
+  "worktree": "/srv/codestra/workstations/Keycloak/sections/kc-05-authentication/subsections/03-recovery/repo",
+  "depends_on": [
+    "keycloak::kc-04-authorization::03-resource-permissions",
+    "keycloak::kc-05-authentication::02-mfa-passkeys"
+  ],
+  "status": "NOT_STARTED",
+  "required_gates": [
+    "lint",
+    "unit",
+    "integration",
+    "contract",
+    "security",
+    "clean_tree",
+    "remote_sha_match"
+  ]
+}

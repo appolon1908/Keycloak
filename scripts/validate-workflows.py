@@ -56,7 +56,7 @@ EXPECTED_WORKFLOWS = (
     | PR_AUTHORITY_WORKFLOWS
     | ADDITIONAL_REVIEWED_WORKFLOWS
     | PASSWORD_RESET_WORKFLOWS
-    | {"keycloak-release-trust-root.yml"}
+    | {"keycloak-release-trust-root.yml", "codestra-hierarchy-governance.yml"}
 )
 
 

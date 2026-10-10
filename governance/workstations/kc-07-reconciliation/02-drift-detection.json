@@ -1,0 +1,24 @@
+{
+  "workstation": "keycloak::kc-07-reconciliation::02-drift-detection",
+  "product": "keycloak",
+  "section": "kc-07-reconciliation",
+  "subsection": "02-drift-detection",
+  "branch": "subsection/kc-07-reconciliation--02-drift-detection",
+  "parent_branch": "section/kc-07-reconciliation",
+  "order": 2,
+  "worktree": "/srv/codestra/workstations/Keycloak/sections/kc-07-reconciliation/subsections/02-drift-detection/repo",
+  "depends_on": [
+    "keycloak::kc-06-control-api::03-openapi-postman",
+    "keycloak::kc-07-reconciliation::01-desired-state"
+  ],
+  "status": "NOT_STARTED",
+  "required_gates": [
+    "lint",
+    "unit",
+    "integration",
+    "contract",
+    "security",
+    "clean_tree",
+    "remote_sha_match"
+  ]
+}

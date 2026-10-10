@@ -1,0 +1,109 @@
+{
+  "product": "keycloak",
+  "repository": "appolon1908/Keycloak",
+  "promotion_chain": [
+    "subsection/*",
+    "section/*",
+    "development",
+    "testing",
+    "staging",
+    "production"
+  ],
+  "sections": [
+    {
+      "section": "kc-01-realm",
+      "branch": "section/kc-01-realm",
+      "depends_on": [],
+      "subsections": [
+        "01-realm-baseline",
+        "02-token-policy",
+        "03-session-policy"
+      ]
+    },
+    {
+      "section": "kc-02-organization",
+      "branch": "section/kc-02-organization",
+      "depends_on": [
+        "kc-01-realm"
+      ],
+      "subsections": [
+        "01-org-model",
+        "02-membership",
+        "03-tenant-binding"
+      ]
+    },
+    {
+      "section": "kc-03-clients-service-accounts",
+      "branch": "section/kc-03-clients-service-accounts",
+      "depends_on": [
+        "kc-02-organization"
+      ],
+      "subsections": [
+        "01-clients",
+        "02-service-accounts",
+        "03-secret-rotation"
+      ]
+    },
+    {
+      "section": "kc-04-authorization",
+      "branch": "section/kc-04-authorization",
+      "depends_on": [
+        "kc-03-clients-service-accounts"
+      ],
+      "subsections": [
+        "01-roles",
+        "02-scopes",
+        "03-resource-permissions"
+      ]
+    },
+    {
+      "section": "kc-05-authentication",
+      "branch": "section/kc-05-authentication",
+      "depends_on": [
+        "kc-04-authorization"
+      ],
+      "subsections": [
+        "01-login-flows",
+        "02-mfa-passkeys",
+        "03-recovery"
+      ]
+    },
+    {
+      "section": "kc-06-control-api",
+      "branch": "section/kc-06-control-api",
+      "depends_on": [
+        "kc-04-authorization",
+        "kc-05-authentication"
+      ],
+      "subsections": [
+        "01-admin-adapter",
+        "02-control-api",
+        "03-openapi-postman"
+      ]
+    },
+    {
+      "section": "kc-07-reconciliation",
+      "branch": "section/kc-07-reconciliation",
+      "depends_on": [
+        "kc-06-control-api"
+      ],
+      "subsections": [
+        "01-desired-state",
+        "02-drift-detection",
+        "03-repair"
+      ]
+    },
+    {
+      "section": "kc-08-release",
+      "branch": "section/kc-08-release",
+      "depends_on": [
+        "kc-07-reconciliation"
+      ],
+      "subsections": [
+        "01-observability",
+        "02-security-certification",
+        "03-promotion-rollback"
+      ]
+    }
+  ]
+}

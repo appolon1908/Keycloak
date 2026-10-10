@@ -1,0 +1,24 @@
+{
+  "workstation": "keycloak::kc-06-control-api::01-admin-adapter",
+  "product": "keycloak",
+  "section": "kc-06-control-api",
+  "subsection": "01-admin-adapter",
+  "branch": "subsection/kc-06-control-api--01-admin-adapter",
+  "parent_branch": "section/kc-06-control-api",
+  "order": 1,
+  "worktree": "/srv/codestra/workstations/Keycloak/sections/kc-06-control-api/subsections/01-admin-adapter/repo",
+  "depends_on": [
+    "keycloak::kc-04-authorization::03-resource-permissions",
+    "keycloak::kc-05-authentication::03-recovery"
+  ],
+  "status": "NOT_STARTED",
+  "required_gates": [
+    "lint",
+    "unit",
+    "integration",
+    "contract",
+    "security",
+    "clean_tree",
+    "remote_sha_match"
+  ]
+}

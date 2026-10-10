@@ -1,0 +1,23 @@
+{
+  "workstation": "keycloak::kc-07-reconciliation::01-desired-state",
+  "product": "keycloak",
+  "section": "kc-07-reconciliation",
+  "subsection": "01-desired-state",
+  "branch": "subsection/kc-07-reconciliation--01-desired-state",
+  "parent_branch": "section/kc-07-reconciliation",
+  "order": 1,
+  "worktree": "/srv/codestra/workstations/Keycloak/sections/kc-07-reconciliation/subsections/01-desired-state/repo",
+  "depends_on": [
+    "keycloak::kc-06-control-api::03-openapi-postman"
+  ],
+  "status": "NOT_STARTED",
+  "required_gates": [
+    "lint",
+    "unit",
+    "integration",
+    "contract",
+    "security",
+    "clean_tree",
+    "remote_sha_match"
+  ]
+}

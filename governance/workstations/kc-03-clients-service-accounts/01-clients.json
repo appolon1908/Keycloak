@@ -1,0 +1,23 @@
+{
+  "workstation": "keycloak::kc-03-clients-service-accounts::01-clients",
+  "product": "keycloak",
+  "section": "kc-03-clients-service-accounts",
+  "subsection": "01-clients",
+  "branch": "subsection/kc-03-clients-service-accounts--01-clients",
+  "parent_branch": "section/kc-03-clients-service-accounts",
+  "order": 1,
+  "worktree": "/srv/codestra/workstations/Keycloak/sections/kc-03-clients-service-accounts/subsections/01-clients/repo",
+  "depends_on": [
+    "keycloak::kc-02-organization::03-tenant-binding"
+  ],
+  "status": "NOT_STARTED",
+  "required_gates": [
+    "lint",
+    "unit",
+    "integration",
+    "contract",
+    "security",
+    "clean_tree",
+    "remote_sha_match"
+  ]
+}
