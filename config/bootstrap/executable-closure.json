@@ -23,7 +23,7 @@
     },
     {
       "path": "governance/promotion_guard.py",
-      "sha256": "28ca4dd5438423683f4ed59205870b48982c1efacb67069ecfd1d05bed88d930"
+      "sha256": "9028a96fdd2cb125d6436d59941704c7d8ed7ea2a612bba93a9025890136454c"
     },
     {
       "path": "scripts/bootstrap_release_trust_root.py",
@@ -59,12 +59,12 @@
     },
     {
       "path": "tests/test_governed_promotion_chain.py",
-      "sha256": "372fb616edfbf65f19f1b3ba7336684afa3ecd05586474f2a38536e5c1a43dd1"
+      "sha256": "c1846cc9b2d8e02bfb7bfcde918fef1130d12401efa0f56fe17ec4397ea75153"
     },
     {
       "path": "tests/test_kyyow_identity.py",
       "sha256": "f1133e8b04226a854b3484ded27149995d54dfceb8b1ff9dfbf062a9140d33e6"
     }
   ],
-  "manifest_sha256": "aece8afbbd8e93c89e2df09ab0769c99d51eb6e3ec70d556b44edaaebcc138e8"
+  "manifest_sha256": "e3ef0aa1935232219169b27631ec35933ff03861fe305d13fb9b9ea97b7fe18a"
 }

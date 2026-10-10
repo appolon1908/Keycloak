@@ -13,7 +13,10 @@ arg_parser.add_argument("--base")
 args = arg_parser.parse_args()
 head = args.head or os.environ.get("GITHUB_HEAD_REF", "")
 base = args.base or os.environ.get("GITHUB_BASE_REF", "")
-policy = json.loads(Path("governance/promotion-policy.json").read_text())
+root = Path(__file__).resolve().parent
+policy = json.loads((root / "promotion-policy.json").read_text())
+product_map = json.loads((root / "product-map.json").read_text())
+sections = {section["section"]: section for section in product_map["sections"]}
 
 bootstrap = policy["bootstrap_exception"]
 if (head, base) == (bootstrap["head"], bootstrap["base"]):
@@ -33,9 +36,14 @@ for rule in policy["accepted_promotions"]:
             marker and section_re.fullmatch(section)
             and task_re.fullmatch(task)
             and base == "section/" + section
+            and section in sections
+            and sections[section]["branch"] == base
+            and task in sections[section]["subsections"]
         )
     elif rule["head"] == "section/*":
-        accepted = bool(section_re.fullmatch(head[len("section/"):]) and base == "development")
+        section = head[len("section/"):]
+        accepted = bool(section_re.fullmatch(section) and base == "development"
+                        and section in sections and sections[section]["branch"] == head)
     elif "relation" in rule:
         accepted = False
     else:
