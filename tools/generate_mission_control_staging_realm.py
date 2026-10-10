@@ -28,7 +28,10 @@ def build(base: dict, contract: dict) -> dict:
         ("clientScopes", contract["clientScope"], "name"),
     ):
         items = merged.setdefault(key, [])
-        existing = next((x for x in items if x.get(field) == item[field]), None)
+        matches = [x for x in items if x.get(field) == item[field]]
+        if len(matches) > 1:
+            raise ValueError("conflicting_" + key)
+        existing = matches[0] if matches else None
         if existing is None:
             items.append(item)
         elif existing != item:

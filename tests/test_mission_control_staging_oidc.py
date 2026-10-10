@@ -37,3 +37,12 @@ def test_staging_pkce_audience_scope_and_no_apply():
     bad_existing=deepcopy(base);bad_existing.setdefault("clients",[]).append(broken["client"])
     with pytest.raises(ValueError,match="conflicting_clients"):
         build(bad_existing,contract)
+
+
+@pytest.mark.parametrize("key,contract_key", [("clients", "client"), ("clientScopes", "clientScope")])
+def test_duplicate_managed_entries_fail_closed(key, contract_key):
+    base = json.loads((ROOT / "config/realms/codestra.json").read_text())
+    contract = json.loads((ROOT / "staging/mission-control-oidc.v1.json").read_text())
+    base.setdefault(key, []).extend([deepcopy(contract[contract_key]), deepcopy(contract[contract_key])])
+    with pytest.raises(ValueError, match="conflicting_" + key):
+        build(base, contract)
