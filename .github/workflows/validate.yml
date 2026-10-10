@@ -54,7 +54,10 @@ jobs:
           set -Eeuo pipefail
           sudo apt-get update
           sudo apt-get install --yes jq shellcheck openssh-client
-          python3 -m pip install --disable-pip-version-check --no-input PyYAML==6.0.3
+          python3 -m pip install --disable-pip-version-check --no-input PyYAML==6.0.3 pytest==9.1.1
+
+      - name: Test source Mission Control staging identity compiler
+        run: python3 -m pytest -q tests/test_mission_control_staging_oidc.py
 
       - name: Validate exact source desired state and policy
         run: ./scripts/validate.sh
@@ -149,7 +152,10 @@ jobs:
           set -Eeuo pipefail
           sudo apt-get update
           sudo apt-get install --yes jq shellcheck openssh-client
-          python3 -m pip install --disable-pip-version-check --no-input PyYAML==6.0.3
+          python3 -m pip install --disable-pip-version-check --no-input PyYAML==6.0.3 pytest==9.1.1
+
+      - name: Test merge-result Mission Control staging identity compiler
+        run: python3 -m pytest -q tests/test_mission_control_staging_oidc.py
 
       - name: Validate exact merge result desired state and policy
         run: ./scripts/validate.sh
