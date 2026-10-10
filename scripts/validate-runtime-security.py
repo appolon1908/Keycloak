@@ -133,9 +133,10 @@ def verify_running_login_themes() -> None:
 
 compose = yaml.safe_load((ROOT / "compose.yaml").read_text())
 services = compose.get("services", {})
-if set(services) != {"postgres", "keycloak-image-policy", "keycloak"}:
-    fail("dedicated compose may contain only postgres, image policy, and keycloak")
+if set(services) != {"postgres-volume-init", "postgres", "keycloak-image-policy", "keycloak"}:
+    fail("dedicated compose may contain only volume init, postgres, image policy, and keycloak")
 
+volume_init = services["postgres-volume-init"]
 postgres = services["postgres"]
 image_policy = services["keycloak-image-policy"]
 keycloak = services["keycloak"]
@@ -153,6 +154,8 @@ for name, service in {"postgres": postgres, "keycloak": keycloak}.items():
         fail(f"{name} root filesystem must be read-only")
     if service.get("cap_drop") != ["ALL"]:
         fail(f"{name} must drop all capabilities")
+    if service.get("cap_add"):
+        fail(f"{name} must not add runtime capabilities")
     if service.get("security_opt") != ["no-new-privileges:true"]:
         fail(f"{name} must set no-new-privileges")
     if service.get("restart") != "unless-stopped":
@@ -167,6 +170,43 @@ for name, service in {"postgres": postgres, "keycloak": keycloak}.items():
         "max-file": "5",
     }:
         fail(f"{name} log rotation policy is invalid")
+
+if postgres.get("user") != "70:70":
+    fail("postgres must run as the pinned image's UID/GID 70:70")
+if postgres.get("depends_on") != {
+    "postgres-volume-init": {"condition": "service_completed_successfully"}
+}:
+    fail("postgres must wait for successful volume initialization")
+if postgres.get("volumes") != ["keycloak-postgres-data:/var/lib/postgresql/data"]:
+    fail("postgres must use only its dedicated data volume")
+if postgres.get("tmpfs") != [
+    "/tmp:size=32m,noexec,nosuid,nodev",
+    "/run/postgresql:size=8m,nosuid,nodev,uid=70,gid=70,mode=3775",
+]:
+    fail("postgres tmpfs ownership must support its non-root runtime")
+
+if volume_init.get("image") != postgres.get("image"):
+    fail("volume initializer must reuse the immutable postgres image")
+if volume_init.get("user") != "0:0" or volume_init.get("restart") != "no":
+    fail("volume initializer must be a one-shot root service")
+if volume_init.get("entrypoint") != ["/bin/sh", "-ec"] or volume_init.get("command") != [
+    "chown 70:70 /var/lib/postgresql/data && chmod 0700 /var/lib/postgresql/data"
+]:
+    fail("volume initializer may change only the data directory's ownership and mode")
+if volume_init.get("volumes") != postgres.get("volumes"):
+    fail("volume initializer must mount only the dedicated postgres data volume")
+if volume_init.get("network_mode") != "none" or volume_init.get("networks"):
+    fail("volume initializer must have no network")
+if volume_init.get("ports") or volume_init.get("environment") or volume_init.get("privileged"):
+    fail("volume initializer must not expose ports, receive credentials, or be privileged")
+if volume_init.get("read_only") is not True or volume_init.get("cap_drop") != ["ALL"]:
+    fail("volume initializer must have a read-only root and drop all default capabilities")
+if volume_init.get("cap_add") != ["CHOWN", "FOWNER"]:
+    fail("volume initializer may add only CHOWN and FOWNER")
+if volume_init.get("security_opt") != ["no-new-privileges:true"]:
+    fail("volume initializer must set no-new-privileges")
+if (volume_init.get("pids_limit"), volume_init.get("mem_limit"), volume_init.get("cpus")) != (32, "32m", 0.25):
+    fail("volume initializer resource limits are invalid")
 
 if image_policy.get("image") != postgres.get("image"):
     fail("image policy helper must reuse the immutable postgres image")

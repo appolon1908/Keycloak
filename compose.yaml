@@ -1,9 +1,33 @@
 name: codestra-keycloak
 
 services:
+  # The pinned Alpine image's postgres account is UID/GID 70:70. Prepare only
+  # the volume root; PostgreSQL initializes its contents as that non-root user.
+  postgres-volume-init:
+    image: postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+    user: "0:0"
+    restart: "no"
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - chown 70:70 /var/lib/postgresql/data && chmod 0700 /var/lib/postgresql/data
+    volumes:
+      - keycloak-postgres-data:/var/lib/postgresql/data
+    network_mode: none
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [CHOWN, FOWNER]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 32
+    mem_limit: 32m
+    cpus: 0.25
+
   postgres:
     image: postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+    user: "70:70"
     restart: unless-stopped
+    depends_on:
+      postgres-volume-init:
+        condition: service_completed_successfully
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-keycloak}
       POSTGRES_USER: ${POSTGRES_USER:-keycloak}
@@ -25,7 +49,7 @@ services:
     read_only: true
     tmpfs:
       - /tmp:size=32m,noexec,nosuid,nodev
-      - /run/postgresql:size=8m,nosuid,nodev
+      - /run/postgresql:size=8m,nosuid,nodev,uid=70,gid=70,mode=3775
     pids_limit: 200
     mem_limit: 1g
     cpus: 1.0
