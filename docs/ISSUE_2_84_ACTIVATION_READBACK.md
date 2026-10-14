@@ -15,7 +15,7 @@ The collector then performs only:
 3. One OAuth2 client-credentials `POST` for the dedicated read-back identity.
 4. Authenticated Keycloak Admin API `GET` calls to resolve `klyrow-portal` and fetch its current representation.
 5. Managed-field projection using `config/export-allowlists/klyrow-portal.json`.
-6. Exact comparison of that live projection with `config/clients/klyrow-portal.json`, including the reviewed `https://klyrow.com/` redirect.
+6. Exact comparison of that live projection with `config/clients/klyrow-portal.json`, including the reviewed `https://app.klyrow.com/auth/callback` redirect.
 7. A credential-free JSON evidence artifact containing only hashes, issuer, environment, redirect URI, exact repository SHA, timestamp, and the explicit `mutation_attempted=false` marker.
 
 The collector rejects redirects, non-HTTPS endpoints, ambiguous/missing clients, malformed discovery/JWKS data, environment mismatch, desired/live drift, and HTTP mutation methods.

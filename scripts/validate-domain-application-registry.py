@@ -275,8 +275,8 @@ def validate() -> None:
             if state == "managed":
                 if domain != "klyrow.com":
                     fail("only klyrow.com may use single-client managed mode")
-                if redirects != ["https://klyrow.com/"] or origins != [
-                    "https://klyrow.com"
+                if redirects != ["https://app.klyrow.com/auth/callback"] or origins != [
+                    "https://app.klyrow.com"
                 ]:
                     fail("klyrow.com exact redirect/origin changed")
                 if entry["enabled"] is not True:

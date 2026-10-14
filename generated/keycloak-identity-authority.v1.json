@@ -900,9 +900,9 @@
         "oauth2.device.authorization.grant.enabled": "false",
         "oidc.ciba.grant.enabled": "false",
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "https://klyrow.com/"
+        "post.logout.redirect.uris": "https://app.klyrow.com/login"
       },
-      "baseUrl": "https://klyrow.com/",
+      "baseUrl": "https://app.klyrow.com/login",
       "bearerOnly": false,
       "clientId": "klyrow-portal",
       "consentRequired": false,
@@ -915,13 +915,13 @@
       "protocol": "openid-connect",
       "publicClient": true,
       "redirectUris": [
-        "https://klyrow.com/"
+        "https://app.klyrow.com/auth/callback"
       ],
-      "rootUrl": "https://klyrow.com",
+      "rootUrl": "https://app.klyrow.com",
       "serviceAccountsEnabled": false,
       "standardFlowEnabled": true,
       "webOrigins": [
-        "https://klyrow.com"
+        "https://app.klyrow.com"
       ]
     },
     {
@@ -5179,7 +5179,7 @@
       "tenantBinding": "global"
     }
   ],
-  "sourceSha256": "93c46e66b67fbef243398b2bb7bcbe1c369c7496b25c0e8387662c2988d0e541",
+  "sourceSha256": "426f06e40e527ad728ca6bf852bee740b03174896dd85b38ca18f5d332242162",
   "stagedClients": [
     {
       "authorityGroup": "cip-tenant-identity",
