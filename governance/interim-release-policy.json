@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "policy_kind": "source_merge",
+  "repository": "appolon1908/Keycloak",
+  "authorization_date": "2026-11-02",
+  "required_checks": [
+    {
+      "context": "validate",
+      "integration_id": 15368,
+      "workflow": ".github/workflows/validate.yml"
+    },
+    {
+      "context": "validate-source-e2e",
+      "integration_id": 15368,
+      "workflow": ".github/workflows/validate-password-reset-e2e.yml"
+    },
+    {
+      "context": "validate-merge-result-e2e",
+      "integration_id": 15368,
+      "workflow": ".github/workflows/validate-password-reset-e2e.yml"
+    },
+    {
+      "context": "repository-name-authority",
+      "integration_id": 15368,
+      "workflow": ".github/workflows/repository-name-authority.yml"
+    },
+    {
+      "context": "bootstrap",
+      "integration_id": 15368,
+      "workflow": ".github/workflows/keycloak-release-trust-root.yml"
+    }
+  ],
+  "replaces_contexts": [
+    "codestra-control-plane",
+    "codestra/control-plane"
+  ],
+  "preserve": [
+    "other_required_checks",
+    "review_requirements",
+    "ref_conditions",
+    "bypass_actors",
+    "enforcement",
+    "force_push_protection",
+    "deletion_protection",
+    "deployment_authority"
+  ],
+  "production_activation_authorized": false,
+  "note": "GitHub rulesets remain the enforcement authority. This source-validation policy is not custom-controller certification or deployment authorization."
+}
