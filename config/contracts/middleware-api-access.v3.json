@@ -93,6 +93,8 @@
     "platform.command",
     "platform.command.read",
     "platform.command.replay",
+    "platform.leads.read",
+    "platform.leads.write",
     "platform.runtime.observe",
     "platform.services.read",
     "platform.services.write",

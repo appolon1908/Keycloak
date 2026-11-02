@@ -443,6 +443,8 @@
       "platform.tenants.read",
       "platform.services.read",
       "platform.services.write",
+      "platform.leads.read",
+      "platform.leads.write",
       "platform.sync.read",
       "platform.sync.reconcile",
       "platform.runtime.observe",
