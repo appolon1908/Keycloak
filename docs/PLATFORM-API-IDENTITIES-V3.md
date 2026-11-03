@@ -47,6 +47,20 @@ Replay additionally requires the `platform-operator` realm role. The role is pre
 
 For every non-denied route, the generated matrix preserves a required scope value. The one value `resolved_from_command_prefix` is explicitly modeled as a Middleware runtime selector rather than a literal Keycloak scope. Denied routes remain explicit deny decisions with no required scope. This is the basis for `MISSING_REQUIRED_SCOPES=0`; it does **not** create new client-scope files outside PAS-156's three owned platform scopes or widen any existing grant.
 
+### Unbound Leads declarations
+
+`config/contracts/middleware-unbound-scopes.v1.json` declares
+`platform.leads.read` and `platform.leads.write` as
+`UNBOUND_PENDING_MIDDLEWARE_ROUTE`. The generator includes these names in
+`unboundScopeDeclarations`, separately from the strictly route-derived
+`requiredScopes`. They have no routes and `grantAuthorized=false`.
+
+These declarations create no Keycloak client scope, client attachment, route
+authorization or runtime grant. Both names remain prohibited on CIP principals.
+The frozen 117-route source and its digest are unchanged. Adding a Leads route
+requires a separately reviewed route-contract update and explicit binding; the
+generator rejects a name that is simultaneously declared unbound and route-bound.
+
 ### Parallel-wave boundary
 
 PAS-156 does not modify `config/contracts/service-access-matrix.json`, release trust-root/bootstrap files, or PAS-157 caller/token certification files. PAS-157 owns resolution of symbolic/concrete callers, positive/negative token matrices, and final caller assignments.

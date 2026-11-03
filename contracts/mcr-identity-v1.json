@@ -5,7 +5,7 @@
   "runtimeApplyAuthorized": false,
   "sourcePins": {
     "config/contracts/middleware-caller-classification.v1.json": "083066e5eb58139b404bf5f18139ee3e6ad3a132802eaeb58b1386c0d8e13ff9",
-    "config/contracts/middleware-api-access.v3.json": "afb86bd1b2592cc36293310cf31a4eda55da19fe15e24daa6724db82bb438a36"
+    "config/contracts/middleware-api-access.v3.json": "77bc097578c66bb9077737738047bf8386a8a244e2be39fc19c426ae9f561e7f"
   },
   "issuers": {
     "staging": "https://auth-staging.codestra.co/realms/codestra",

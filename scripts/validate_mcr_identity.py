@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_PATH = ROOT / 'contracts/mcr-identity-v1.json'
 MATRIX_PATH = ROOT / 'config/certification/mcr-token-matrix.v1.json'
-CONTRACT_SHA256 = 'caca0005a5952d6d1476f64f36ebd77fcfb56c2896091e5061ebf7ce7320ca26'
+CONTRACT_SHA256 = 'c4aeed356f34edcf3cea0ca7195cedd68afb851832645172734d349d4534858c'
 MATRIX_SHA256 = '6ae4ff89253da909779ef1cf204c94ca644895dbf547d4ceba71937753d73ebe'
 
 
