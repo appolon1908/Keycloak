@@ -59,3 +59,18 @@ jobs:
           python -m pytest -q tests/test_cip_release_contract_integrity.py
           test -f release/cip-tenant-identity/keycloak-cip-gateway-identity-contract.v1.sha256
           test -f release/cip-tenant-identity/keycloak-cip-tenant-identity-desired-state-plan.sha256
+
+  native_identity:
+    name: keycloak/native-identity
+    if: ${{ always() }}
+    needs: [codestra_control_plane]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Require the identity validation job to pass
+        env:
+          IDENTITY_RESULT: ${{ needs.codestra_control_plane.result }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$IDENTITY_RESULT" = success
