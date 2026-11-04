@@ -101,6 +101,20 @@
     "platform.tenants.read",
     "telemetry.heartbeat.write"
   ],
+  "unboundScopeDeclarations": [
+    {
+      "name": "platform.leads.read",
+      "status": "UNBOUND_PENDING_MIDDLEWARE_ROUTE",
+      "routes": [],
+      "grantAuthorized": false
+    },
+    {
+      "name": "platform.leads.write",
+      "status": "UNBOUND_PENDING_MIDDLEWARE_ROUTE",
+      "routes": [],
+      "grantAuthorized": false
+    }
+  ],
   "scopeSelectors": [
     "resolved_from_command_prefix"
   ],
@@ -1633,6 +1647,7 @@
     }
   ],
   "notes": [
+    "Unbound scope declarations reserve reviewed names only; they create no routes, client scopes, grants, or runtime authorization.",
     "All 117 Middleware route rows are represented, including denied and private-only routes.",
     "Denied routes remain explicit deny decisions and have no required Keycloak scope.",
     "resolved_from_command_prefix is a Middleware runtime selector, not a literal Keycloak scope.",

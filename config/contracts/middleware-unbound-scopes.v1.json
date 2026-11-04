@@ -1,0 +1,17 @@
+{
+  "schema": "codestra.keycloak.middleware-unbound-scopes.v1",
+  "declarations": [
+    {
+      "name": "platform.leads.read",
+      "status": "UNBOUND_PENDING_MIDDLEWARE_ROUTE",
+      "routes": [],
+      "grantAuthorized": false
+    },
+    {
+      "name": "platform.leads.write",
+      "status": "UNBOUND_PENDING_MIDDLEWARE_ROUTE",
+      "routes": [],
+      "grantAuthorized": false
+    }
+  ]
+}

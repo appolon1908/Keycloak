@@ -12,6 +12,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "config" / "contracts" / "middleware-api-access.v3.json"
+UNBOUND_SCOPES = ROOT / "config" / "contracts" / "middleware-unbound-scopes.v1.json"
 
 PINNED_MIDDLEWARE_DIGEST = "9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b"
 SOURCE_SCHEMA = "codestra.middleware.public-api-route-contract.v2"
@@ -223,6 +224,28 @@ def route_projection(row: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def unbound_scope_declarations(
+    document: dict[str, Any], literal_scopes: set[str]
+) -> list[dict[str, Any]]:
+    """Preserve reviewed future names without creating route or grant authority."""
+    names = ["platform.leads.read", "platform.leads.write"]
+    expected = {
+        "schema": "codestra.keycloak.middleware-unbound-scopes.v1",
+        "declarations": [
+            {"name": name, "status": "UNBOUND_PENDING_MIDDLEWARE_ROUTE",
+             "routes": [], "grantAuthorized": False}
+            for name in names
+        ],
+    }
+    if document != expected or any(
+        row.get("grantAuthorized") is not False for row in document["declarations"]
+    ):
+        raise ValueError("unreviewed or access-granting unbound scope declaration")
+    if set(names) & literal_scopes:
+        raise ValueError("an unbound declaration now has a route; review its binding")
+    return document["declarations"]
+
+
 def build_document(source: dict[str, Any]) -> dict[str, Any]:
     routes, counts = validate_source(source)
     projected_routes = sorted(
@@ -302,10 +325,14 @@ def build_document(source: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "requiredScopes": literal_scopes,
+        "unboundScopeDeclarations": unbound_scope_declarations(
+            load_json(UNBOUND_SCOPES), set(literal_scopes)
+        ),
         "scopeSelectors": selectors,
         "missingRequiredScopes": missing_required,
         "routes": projected_routes,
         "notes": [
+            "Unbound scope declarations reserve reviewed names only; they create no routes, client scopes, grants, or runtime authorization.",
             "All 117 Middleware route rows are represented, including denied and private-only routes.",
             "Denied routes remain explicit deny decisions and have no required Keycloak scope.",
             "resolved_from_command_prefix is a Middleware runtime selector, not a literal Keycloak scope.",

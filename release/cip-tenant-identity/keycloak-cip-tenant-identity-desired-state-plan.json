@@ -9,7 +9,7 @@
     "production cip-portal remains blocked until its origin is reviewed; unbound scopes stay unbound until Middleware routes exist"
   ],
   "audience": "middleware-api",
-  "configurationChecksum": "a790de74382dff2ca06bc0cb13c92211234ad856e6eea88e91b2497a26bf1abe",
+  "configurationChecksum": "7fea4962af68fb6b39e08f8187b86285d0aa7a0e604609d6638c4371ec6e8408",
   "environment": "staging",
   "issuer": "https://auth-staging.codestra.co/realms/codestra",
   "kind": "CodestraKeycloakCipTenantIdentityDesiredStatePlan",
@@ -333,7 +333,7 @@
     },
     {
       "path": "config/desired-state/cip-tenant-identity/contract.json",
-      "sha256": "af7dc452969859370f82ac9a3479cd8cd01ed2bcb7b83bf2498f41fca19e978b"
+      "sha256": "15fbb879e36c79831265d856de322495e1e234b2ab75a186363b8cf2c00dfc5d"
     },
     {
       "path": "config/desired-state/cip-tenant-identity/realm-roles/cip-audit-viewer.json",

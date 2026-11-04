@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 AUTHORITY = ROOT / "config" / "contracts" / "middleware-api-access.v3.json"
 REALM = ROOT / "config" / "realms" / "codestra.json"
 CLIENT_DIR = ROOT / "config" / "clients"
+UNBOUND_SCOPES = ROOT / "config" / "contracts" / "middleware-unbound-scopes.v1.json"
 
 EXPECTED_DIGEST = "9c32daecd4a15104c6f9ff60ce19c8f7e78707fb31d9fd9fcb55b1b8dfa3512b"
 EXPECTED_SCHEMA = "codestra.keycloak.middleware-api-access.v3"
@@ -115,6 +116,30 @@ def validate() -> dict[str, int]:
     assert authority["scopeSelectors"] == [RUNTIME_SELECTOR]
     assert selectors == {RUNTIME_SELECTOR}
 
+    # Future names are declarations, never additions to the frozen route scopes.
+    unbound_names = {"platform.leads.read", "platform.leads.write"}
+    unbound = [
+        {"name": name, "status": "UNBOUND_PENDING_MIDDLEWARE_ROUTE",
+         "routes": [], "grantAuthorized": False}
+        for name in sorted(unbound_names)
+    ]
+    declaration_source = load(UNBOUND_SCOPES)
+    assert declaration_source == {
+        "schema": "codestra.keycloak.middleware-unbound-scopes.v1",
+        "declarations": unbound,
+    }
+    assert all(row["grantAuthorized"] is False for row in declaration_source["declarations"])
+    assert authority.get("unboundScopeDeclarations") == unbound
+    assert all(row["grantAuthorized"] is False for row in authority["unboundScopeDeclarations"])
+    assert not unbound_names.intersection(literal_scopes | selectors)
+    for scope in unbound_names:
+        assert not (ROOT / "config" / "client-scopes" / f"{scope}.json").exists()
+        assert not (ROOT / "config" / "desired-state" / "cip-tenant-identity"
+                    / "client-scopes" / f"{scope}.json").exists()
+    cip = load(ROOT / "config" / "desired-state" / "cip-tenant-identity" / "contract.json")
+    assert unbound_names <= set(cip["prohibitedOnCipPrincipals"]["scopes"])
+    assert not unbound_names.intersection(row["name"] for row in cip["productScopes"])
+
     kernel = {
         (row["method"], row["path"]): row
         for row in routes
@@ -153,11 +178,20 @@ def validate() -> dict[str, int]:
     realm = load(REALM)
     realm_defaults = set(realm.get("defaultDefaultClientScopes") or [])
     assert not realm_defaults.intersection(PLATFORM_SCOPES)
+    assert not unbound_names.intersection(
+        realm_defaults | set(realm.get("defaultOptionalClientScopes") or [])
+    )
 
-    for client_path in sorted(CLIENT_DIR.glob("*.json")):
+    client_paths = list(CLIENT_DIR.glob("*.json")) + list(
+        (ROOT / "config" / "desired-state" / "cip-tenant-identity" / "clients").glob("*.json")
+    )
+    for client_path in sorted(client_paths):
         client = load(client_path)
         default_scopes = set(client.get("defaultClientScopes") or [])
         assert not default_scopes.intersection(PLATFORM_SCOPES), client_path
+        assert not unbound_names.intersection(
+            default_scopes | set(client.get("optionalClientScopes") or [])
+        ), client_path
 
     role_refs = platform_authority["realmRoles"]
     assert len(role_refs) == 1

@@ -7,10 +7,14 @@ Named *certification* so scripts/validate.sh discovers it on every PR.
 
 from __future__ import annotations
 
+import copy
 import json
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
+from scripts import generate_middleware_api_access_v3 as access_generator
+from scripts import validate_middleware_api_access_v3 as access_cert
 from scripts import validate_middleware_caller_classification as caller_cert
 
 
@@ -62,6 +66,67 @@ class MiddlewareV3FreezeCertificationTests(unittest.TestCase):
         self.assertEqual(len(self.routes), FROZEN_ROUTE_COUNT)
         self.assertEqual(self.access["source"]["routeCount"], FROZEN_ROUTE_COUNT)
         self.assertEqual(self.callers["middleware"]["targetRouteCount"], FROZEN_ROUTE_COUNT)
+
+    def test_committed_access_authority_passes_its_documented_validator(self) -> None:
+        self.assertEqual(access_cert.validate(), self.access["source"]["classificationCounts"])
+
+    def test_committed_access_authority_regenerates_from_frozen_source(self) -> None:
+        self.assertEqual(self.access, access_generator.build_document(self.contract))
+
+    def test_unbound_declarations_cannot_authorize_routes_or_grants(self) -> None:
+        source = load(access_generator.UNBOUND_SCOPES)
+        changes = (
+            ("name", "platform.unknown"),
+            ("status", "BOUND"),
+            ("routes", [{"method": "GET", "path": "/invented"}]),
+            ("grantAuthorized", True),
+            ("grantAuthorized", 0),
+        )
+        for field, value in changes:
+            candidate = copy.deepcopy(source)
+            candidate["declarations"][0][field] = value
+            with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                access_generator.unbound_scope_declarations(candidate, set())
+        with self.assertRaises(ValueError):
+            access_generator.unbound_scope_declarations(source, {"platform.leads.read"})
+        for declarations in ([], source["declarations"] * 2, list(reversed(source["declarations"]))):
+            with self.subTest(declarations=declarations), self.assertRaises(ValueError):
+                access_generator.unbound_scope_declarations(
+                    {**source, "declarations": declarations}, set()
+                )
+
+    def test_validator_rejects_scope_drift_and_unbound_authority_changes(self) -> None:
+        loader = access_cert.load
+        candidates = []
+        for required in (
+            self.access["requiredScopes"] + ["platform.leads.read"],
+            self.access["requiredScopes"][1:],
+            self.access["requiredScopes"] * 2,
+        ):
+            candidate = copy.deepcopy(self.access)
+            candidate["requiredScopes"] = required
+            candidates.append(candidate)
+        for field, value in (("status", "BOUND"), ("routes", ["/invented"]),
+                             ("grantAuthorized", True), ("grantAuthorized", 0)):
+            candidate = copy.deepcopy(self.access)
+            candidate["unboundScopeDeclarations"][0][field] = value
+            candidates.append(candidate)
+        for candidate in candidates:
+            with self.subTest(candidate=candidate["requiredScopes"]), patch.object(
+                access_cert, "load", side_effect=lambda path: candidate if path == ACCESS_V3 else loader(path)
+            ), self.assertRaises(AssertionError):
+                access_cert.validate()
+
+    def test_validator_rejects_client_attachments_of_unbound_scopes(self) -> None:
+        loader = access_cert.load
+        client_path = next(iter(sorted(access_cert.CLIENT_DIR.glob("*.json"))))
+        for field in ("defaultClientScopes", "optionalClientScopes"):
+            client = copy.deepcopy(loader(client_path))
+            client[field] = list(client.get(field) or []) + ["platform.leads.read"]
+            with self.subTest(field=field), patch.object(
+                access_cert, "load", side_effect=lambda path: client if path == client_path else loader(path)
+            ), self.assertRaises(AssertionError):
+                access_cert.validate()
 
     def test_access_authority_matches_route_contract_row_for_row(self) -> None:
         self.assertEqual(set(self.routes), set(self.access_routes))
